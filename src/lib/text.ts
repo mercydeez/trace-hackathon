@@ -60,6 +60,16 @@ export function invertedIndexToText(index: Record<string, number[]>): string {
   return words.filter((w) => w !== undefined).join(" ").trim();
 }
 
+/** Plain in-text form, "(Roediger & Karpicke, 2006)", used only until the CSL formatter has answered. */
+export function inTextShort(authors: { family: string }[], year: number | null): string {
+  const y = year ?? "n.d.";
+  const [a, b] = authors;
+  if (!a) return `(Unknown author, ${y})`;
+  if (authors.length === 1) return `(${a.family}, ${y})`;
+  if (authors.length === 2 && b) return `(${a.family} & ${b.family}, ${y})`;
+  return `(${a.family} et al., ${y})`;
+}
+
 export function formatAuthorsShort(authors: { family: string }[], year: number | null): string {
   const y = year ?? "n.d.";
   const [a, b] = authors;

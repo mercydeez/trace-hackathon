@@ -14,6 +14,7 @@ export type IssueCode =
   | "plan_unapproved"
   | "evidence_set_unapproved"
   | "no_claims"
+  | "claim_empty"
   | "evidence_missing"
   | "evidence_unapproved"
   | "quote_mismatch"
@@ -71,6 +72,7 @@ export function inspectClaim(project: Project, claim: Claim): ClaimInspection {
     issues.push({ code, message: `Claim ${number}: ${message}`, claimId: claim.id, sourceId });
 
   if (claim.decision !== "rejected") {
+    if (!claim.text.trim()) add("claim_empty", "it has no text yet.");
     if (claim.kind === "evidence") {
       if (!evidence) {
         add("evidence_missing", "the evidence it cites is no longer in this project.");

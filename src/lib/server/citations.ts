@@ -38,6 +38,12 @@ export function htmlToParts(html: string): FormattedReference["parts"] {
   return parts.filter((p) => p.text);
 }
 
+/** Each reference formatted by itself: for the library, where two same-year works should not get a/b letters. */
+export function formatApaEach(inputs: CitableInput[]): FormattedReference[] {
+  return inputs.flatMap((i) => formatApa([i]));
+}
+
+/** References formatted as one list: for a brief, where same-author same-year works need a/b letters. */
 export function formatApa(inputs: CitableInput[]): FormattedReference[] {
   if (inputs.length === 0) return [];
   const cite = new Cite(inputs.map(toCsl));

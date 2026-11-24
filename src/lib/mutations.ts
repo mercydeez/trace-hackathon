@@ -137,7 +137,7 @@ export function updateCited(p: Project, id: string, patch: Partial<Biblio>): Pro
 }
 
 /** The student chooses to take one detail from the registry record. Explicit and logged; never automatic. */
-export function useRegistryValue(p: Project, id: string, field: IdentityField): Project {
+export function takeRegistryValue(p: Project, id: string, field: IdentityField): Project {
   return patchSource(p, id, (s) => {
     const r = s.registry?.record;
     if (!r) return s;

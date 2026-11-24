@@ -9,7 +9,7 @@ import type { FormattedReference } from "./api";
 import { sourceLink } from "./csl";
 import { buildDisclosure } from "./disclosure";
 import { evaluateExport, type ClaimInspection } from "./exportPolicy";
-import { newId, formatAuthorsShort } from "./text";
+import { newId, formatAuthorsShort, inTextShort } from "./text";
 import { ProjectSchema, SCHEMA_VERSION, type Claim, type Project, type Source } from "./types";
 
 export type ExportMode = "reviewed" | "draft";
@@ -97,7 +97,7 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
   for (const i of included) {
     const c = i.claim;
     const ref = i.source ? refById.get(i.source.id) : undefined;
-    const inText = c.kind === "inference" ? "" : ` ${ref?.inText ?? (i.source ? `(${formatAuthorsShort(i.source.cited.authors, i.source.cited.year)})` : "(source missing)")}`;
+    const inText = c.kind === "inference" ? "" : ` ${ref?.inText ?? (i.source ? inTextShort(i.source.cited.authors, i.source.cited.year) : "(source missing)")}`;
     out.push(`${i.number}. ${oneLine(c.text)}${inText}`);
     if (c.kind === "inference") {
       out.push("   - **Inference.** No source passage states this. It is the writer's own reasoning.");

@@ -1,1 +1,139 @@
 @import "tailwindcss";
+
+@theme {
+  /* Paper, ink and one emerald. Semantic colours are used only for status. */
+  --color-canvas: #faf7f1;
+  --color-surface: #ffffff;
+  --color-ink: #1d1b18;
+  --color-ink-soft: #57534b;
+  --color-ink-faint: #6e695f;
+  --color-line: #e2ddd3;
+  --color-line-strong: #cfc9bc;
+  --color-brand: #0e5a47;
+  --color-brand-deep: #0a4636;
+  --color-brand-tint: #e4f0eb;
+  --color-warn: #8a5200;
+  --color-warn-tint: #fbf0d9;
+  --color-bad: #a3271f;
+  --color-bad-tint: #fbe9e6;
+  --color-mark: #cde9dc;
+  --color-mark-near: #f8e3b0;
+
+  /* Self-hosted variable fonts with system fallbacks, so an offline demo still looks right. */
+  --font-serif: "Literata Variable", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-sans: "Atkinson Hyperlegible Next Variable", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+html {
+  background: var(--color-canvas);
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+button:not(:disabled),
+summary,
+label[for],
+select {
+  cursor: pointer;
+}
+
+/* The evidence passage is the one place the page raises its voice. */
+mark.match {
+  background: var(--color-mark);
+  color: inherit;
+  padding: 0.12em 0;
+  box-shadow: 0 0.14em 0 0 var(--color-brand);
+}
+
+mark.near {
+  background: var(--color-mark-near);
+  color: inherit;
+  padding: 0.12em 0;
+  box-shadow: 0 0.14em 0 0 var(--color-warn);
+}
+
+/* Native dialogs: a centred confirm box, and side drawers on small screens. */
+dialog {
+  color: var(--color-ink);
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-surface);
+  padding: 0;
+  max-width: none;
+  max-height: none;
+}
+
+dialog::backdrop {
+  background: rgb(29 27 24 / 0.38);
+}
+
+dialog.confirm {
+  margin: auto;
+  width: min(28rem, calc(100vw - 2rem));
+  border-radius: 6px;
+}
+
+dialog.drawer {
+  height: 100dvh;
+  width: min(30rem, 100vw);
+  border-top: 0;
+  border-bottom: 0;
+  overflow-y: auto;
+}
+
+dialog.drawer.right {
+  margin: 0 0 0 auto;
+  border-right: 0;
+}
+
+dialog.drawer.left {
+  margin: 0 auto 0 0;
+  width: min(19rem, 88vw);
+  border-left: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.drawer.right[open] {
+    animation: slide-in-right 160ms ease-out;
+  }
+  dialog.drawer.left[open] {
+    animation: slide-in-left 160ms ease-out;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(1.5rem);
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-1.5rem);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

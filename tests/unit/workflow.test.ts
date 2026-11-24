@@ -24,7 +24,7 @@ import {
   toggleEvidence,
   updateClaim,
   updateEvidenceText,
-  useRegistryValue,
+  takeRegistryValue,
 } from "@/lib/mutations";
 import { buildTrapProject } from "@/lib/trap";
 import { validateDraft } from "@/lib/validateDraft";
@@ -209,11 +209,11 @@ describe("citation trap", () => {
     let p = buildTrapProject(NOW);
     const altered = p.sources.find((s) => s.testCorruption)!;
 
-    p = useRegistryValue(p, altered.id, "year");
+    p = takeRegistryValue(p, altered.id, "year");
     expect(sourceIdentity(p.sources.find((s) => s.id === altered.id)!).status).toBe("mismatch");
     expect(codes(p)).toContain("identity_mismatch");
 
-    p = useRegistryValue(p, altered.id, "first_author");
+    p = takeRegistryValue(p, altered.id, "first_author");
     expect(sourceIdentity(p.sources.find((s) => s.id === altered.id)!).status).toBe("matched");
     expect(codes(p).sort()).toEqual(["claim_pending", "quote_mismatch"]);
 

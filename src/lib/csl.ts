@@ -47,6 +47,23 @@ export function missingForApa(cited: Biblio, doi: string | null): string[] {
   return missing;
 }
 
+/** Authors typed one per line as "Surname, Given names". A line without a comma is kept whole (an organisation). */
+export function parseAuthors(text: string): Biblio["authors"] {
+  return text
+    .split(/\n|;/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [family, ...given] = line.split(",");
+      const g = given.join(",").trim();
+      return g ? { family: (family ?? "").trim(), given: g } : { family: line };
+    });
+}
+
+export function authorsToText(authors: Biblio["authors"]): string {
+  return authors.map((a) => (a.given ? `${a.family}, ${a.given}` : a.family)).join("\n");
+}
+
 export function sourceLink(doi: string | null, cited: Biblio): string | null {
   if (doi) return doiUrl(doi);
   return cited.url && /^https?:\/\//i.test(cited.url) ? cited.url : null;

@@ -1,4 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/literata/wght.css";
+import "@fontsource-variable/literata/wght-italic.css";
+import "@fontsource-variable/atkinson-hyperlegible-next/wght.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
