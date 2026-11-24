@@ -1,0 +1,46 @@
+{
+  "_about": "SAMPLE OUTPUT. Written during development on 2026-11-24 with Claude Fable 5.2, by reading the Crossref abstracts in demo-sources.json. It is not the result of a live AI call inside TRACE. It has the same shape as a model answer and is loaded through the same validator (validateDraft), so every excerpt is checked against the stored abstract exactly as live output would be.",
+  "label": "Sample brief (written during development, not a live AI call)",
+  "claims": [
+    {
+      "text": "Students who took practice recall tests remembered more of a prose passage on tests two days and one week later than students who restudied it, although restudying gave better recall after five minutes.",
+      "kind": "evidence",
+      "evidenceId": "ev_demo_1",
+      "excerpt": "When the final test was given after 5 min, repeated studying improved recall relative to repeated testing. However, on the delayed tests, prior testing produced substantially greater retention than studying",
+      "support": "supports",
+      "limitations": "Abstract only. It reports two experiments with prose passages and gives no effect sizes."
+    },
+    {
+      "text": "Once an item had been learned, studying it again did not improve delayed recall, whereas being tested on it again did.",
+      "kind": "evidence",
+      "evidenceId": "ev_demo_2",
+      "excerpt": "Repeated studying after learning had no effect on delayed recall, but repeated testing produced a large positive effect.",
+      "support": "supports",
+      "limitations": "Abstract only. The material was foreign language vocabulary, so the result may not carry over to other kinds of learning."
+    },
+    {
+      "text": "A meta-analysis found practice tests more beneficial for learning than restudying.",
+      "kind": "evidence",
+      "evidenceId": "ev_demo_4",
+      "excerpt": "Results reveal that practice tests are more beneficial for learning than restudying and all other comparison conditions.",
+      "support": "supports",
+      "limitations": "Abstract only. No effect sizes are quoted, and the abstract says the effect varied with features of the tests, participants and studies."
+    },
+    {
+      "text": "A review of ten learning techniques recommended practice testing in place of rereading, which it found does not consistently improve performance.",
+      "kind": "evidence",
+      "evidenceId": "ev_demo_5",
+      "excerpt": "Most students report rereading and highlighting, yet these techniques do not consistently boost students’ performance, so other techniques should be used in their place (e.g., practice testing instead of rereading).",
+      "support": "supports",
+      "limitations": "Abstract only. The abstract summarises a long monograph and does not show how each rating was reached."
+    },
+    {
+      "text": "Taken together, this suggests that when the goal is to remember material for more than a few days, some rereading time is better spent on self-testing.",
+      "kind": "inference",
+      "evidenceId": "",
+      "excerpt": "",
+      "support": "partial",
+      "limitations": "This is a synthesis across the passages above. No single passage states it."
+    }
+  ]
+}

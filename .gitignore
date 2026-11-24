@@ -15,5 +15,12 @@ out/
 coverage/
 playwright-report/
 test-results/
+next-env.d.ts
+*.tsbuildinfo
 *.log
 .DS_Store
+
+# Local tool state and working files.
+.claude/
+submissions/deck/render/
+~$*.pptx

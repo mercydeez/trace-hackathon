@@ -1,0 +1,232 @@
+{
+  "_about": "Real Crossref records for the TRACE demo project, fetched through the app's own /api/doi route. Abstract text is as deposited with Crossref by the publishers, with JATS markup removed; copyright in the abstracts remains with the publishers. Regenerate with `npm run fixtures`.",
+  "fetchedAt": "2026-11-24T18:42:05.146Z",
+  "works": [
+    {
+      "doi": "10.1111/j.1467-9280.2006.01693.x",
+      "record": {
+        "title": "Test-Enhanced Learning",
+        "authors": [
+          {
+            "family": "Roediger",
+            "given": "Henry L."
+          },
+          {
+            "family": "Karpicke",
+            "given": "Jeffrey D."
+          }
+        ],
+        "year": 2006,
+        "container": "Psychological Science",
+        "volume": "17",
+        "issue": "3",
+        "pages": "249-255",
+        "type": "article-journal",
+        "url": "https://doi.org/10.1111/j.1467-9280.2006.01693.x",
+        "years": {
+          "print": 2006,
+          "online": 2006,
+          "issued": 2006
+        }
+      },
+      "abstract": "Taking a memory test not only assesses what one knows, but also enhances later retention, a phenomenon known as the testing effect. We studied this effect with educationally relevant materials and investigated whether testing facilitates learning only because tests offer an opportunity to restudy material. In two experiments, students studied prose passages and took one or three immediate free-recall tests, without feedback, or restudied the material the same number of times as the students who received tests. Students then took a final retention test 5 min, 2 days, or 1 week later. When the final test was given after 5 min, repeated studying improved recall relative to repeated testing. However, on the delayed tests, prior testing produced substantially greater retention than studying, even though repeated studying increased students' confidence in their ability to remember the material. Testing is a powerful means of improving learning, not just assessing it.",
+      "retrievedAt": "2026-11-24T18:42:02.222Z",
+      "url": "https://api.crossref.org/works/10.1111%2Fj.1467-9280.2006.01693.x"
+    },
+    {
+      "doi": "10.1126/science.1152408",
+      "record": {
+        "title": "The Critical Importance of Retrieval for Learning",
+        "authors": [
+          {
+            "family": "Karpicke",
+            "given": "Jeffrey D."
+          },
+          {
+            "family": "Roediger",
+            "given": "Henry L."
+          }
+        ],
+        "year": 2008,
+        "container": "Science",
+        "volume": "319",
+        "issue": "5865",
+        "pages": "966-968",
+        "type": "article-journal",
+        "url": "https://doi.org/10.1126/science.1152408",
+        "years": {
+          "print": 2008,
+          "issued": 2008
+        }
+      },
+      "abstract": "Learning is often considered complete when a student can produce the correct answer to a question. In our research, students in one condition learned foreign language vocabulary words in the standard paradigm of repeated study-test trials. In three other conditions, once a student had correctly produced the vocabulary item, it was repeatedly studied but dropped from further testing, repeatedly tested but dropped from further study, or dropped from both study and test. Repeated studying after learning had no effect on delayed recall, but repeated testing produced a large positive effect. In addition, students' predictions of their performance were uncorrelated with actual performance. The results demonstrate the critical role of retrieval practice in consolidating learning and show that even university students seem unaware of this fact.",
+      "retrievedAt": "2026-11-24T18:42:02.695Z",
+      "url": "https://api.crossref.org/works/10.1126%2Fscience.1152408"
+    },
+    {
+      "doi": "10.1111/j.1745-6916.2006.00012.x",
+      "record": {
+        "title": "The Power of Testing Memory: Basic Research and Implications for Educational Practice",
+        "authors": [
+          {
+            "family": "Roediger",
+            "given": "Henry L."
+          },
+          {
+            "family": "Karpicke",
+            "given": "Jeffrey D."
+          }
+        ],
+        "year": 2006,
+        "container": "Perspectives on Psychological Science",
+        "volume": "1",
+        "issue": "3",
+        "pages": "181-210",
+        "type": "article-journal",
+        "url": "https://doi.org/10.1111/j.1745-6916.2006.00012.x",
+        "years": {
+          "print": 2006,
+          "online": 2006,
+          "issued": 2006
+        }
+      },
+      "abstract": "A powerful way of improving one's memory for material is to be tested on that material. Tests enhance later retention more than additional study of the material, even when tests are given without feedback. This surprising phenomenon is called the testing effect, and although it has been studied by cognitive psychologists sporadically over the years, today there is a renewed effort to learn why testing is effective and to apply testing in educational settings. In this article, we selectively review laboratory studies that reveal the power of testing in improving retention and then turn to studies that demonstrate the basic effects in educational settings. We also consider the related concepts of dynamic testing and formative assessment as other means of using tests to improve learning. Finally, we consider some negative consequences of testing that may occur in certain circumstances, though these negative effects are often small and do not cancel out the large positive effects of testing. Frequent testing in the classroom may boost educational achievement at all levels of education.",
+      "retrievedAt": "2026-11-24T18:42:03.196Z",
+      "url": "https://api.crossref.org/works/10.1111%2Fj.1745-6916.2006.00012.x"
+    },
+    {
+      "doi": "10.3102/0034654316689306",
+      "record": {
+        "title": "Rethinking the Use of Tests: A Meta-Analysis of Practice Testing",
+        "authors": [
+          {
+            "family": "Adesope",
+            "given": "Olusola O."
+          },
+          {
+            "family": "Trevisan",
+            "given": "Dominic A."
+          },
+          {
+            "family": "Sundararajan",
+            "given": "Narayankripa"
+          }
+        ],
+        "year": 2017,
+        "container": "Review of Educational Research",
+        "volume": "87",
+        "issue": "3",
+        "pages": "659-701",
+        "type": "article-journal",
+        "url": "https://doi.org/10.3102/0034654316689306",
+        "years": {
+          "print": 2017,
+          "online": 2017,
+          "issued": 2017
+        }
+      },
+      "abstract": "The testing effect is a well-known concept referring to gains in learning and retention that can occur when students take a practice test on studied material before taking a final test on the same material. Research demonstrates that students who take practice tests often outperform students in nontesting learning conditions such as restudying, practice, filler activities, or no presentation of the material. However, evidence-based meta-analysis is needed to develop a comprehensive understanding of the conditions under which practice tests enhance or inhibit learning. This meta-analysis fills this gap by examining the effects of practice tests versus nontesting learning conditions. Results reveal that practice tests are more beneficial for learning than restudying and all other comparison conditions. Mean effect sizes were moderated by the features of practice tests, participant and study characteristics, outcome constructs, and methodological features of the studies. Findings may guide the use of practice tests to advance student learning, and inform students, teachers, researchers, and policymakers. This article concludes with the theoretical and practical implications of the meta-analysis.",
+      "retrievedAt": "2026-11-24T18:42:03.691Z",
+      "url": "https://api.crossref.org/works/10.3102%2F0034654316689306"
+    },
+    {
+      "doi": "10.1177/1529100612453266",
+      "record": {
+        "title": "Improving Students’ Learning With Effective Learning Techniques",
+        "authors": [
+          {
+            "family": "Dunlosky",
+            "given": "John"
+          },
+          {
+            "family": "Rawson",
+            "given": "Katherine A."
+          },
+          {
+            "family": "Marsh",
+            "given": "Elizabeth J."
+          },
+          {
+            "family": "Nathan",
+            "given": "Mitchell J."
+          },
+          {
+            "family": "Willingham",
+            "given": "Daniel T."
+          }
+        ],
+        "year": 2013,
+        "container": "Psychological Science in the Public Interest",
+        "volume": "14",
+        "issue": "1",
+        "pages": "4-58",
+        "type": "article-journal",
+        "url": "https://doi.org/10.1177/1529100612453266",
+        "years": {
+          "print": 2013,
+          "online": 2013,
+          "issued": 2013
+        }
+      },
+      "abstract": "Many students are being left behind by an educational system that some people believe is in crisis. Improving educational outcomes will require efforts on many fronts, but a central premise of this monograph is that one part of a solution involves helping students to better regulate their learning through the use of effective learning techniques. Fortunately, cognitive and educational psychologists have been developing and evaluating easy-to-use learning techniques that could help students achieve their learning goals. In this monograph, we discuss 10 learning techniques in detail and offer recommendations about their relative utility. We selected techniques that were expected to be relatively easy to use and hence could be adopted by many students. Also, some techniques (e.g., highlighting and rereading) were selected because students report relying heavily on them, which makes it especially important to examine how well they work. The techniques include elaborative interrogation, self-explanation, summarization, highlighting (or underlining), the keyword mnemonic, imagery use for text learning, rereading, practice testing, distributed practice, and interleaved practice.\n\nTo offer recommendations about the relative utility of these techniques, we evaluated whether their benefits generalize across four categories of variables: learning conditions, student characteristics, materials, and criterion tasks. Learning conditions include aspects of the learning environment in which the technique is implemented, such as whether a student studies alone or with a group. Student characteristics include variables such as age, ability, and level of prior knowledge. Materials vary from simple concepts to mathematical problems to complicated science texts. Criterion tasks include different outcome measures that are relevant to student achievement, such as those tapping memory, problem solving, and comprehension.\n\nWe attempted to provide thorough reviews for each technique, so this monograph is rather lengthy. However, we also wrote the monograph in a modular fashion, so it is easy to use. In particular, each review is divided into the following sections: General description of the technique and why it should work How general are the effects of this technique? 2a. Learning conditions 2b. Student characteristics 2c. Materials 2d. Criterion tasks Effects in representative educational contexts Issues for implementation Overall assessment\n\nThe review for each technique can be read independently of the others, and particular variables of interest can be easily compared across techniques.\n\nTo foreshadow our final recommendations, the techniques vary widely with respect to their generalizability and promise for improving student learning. Practice testing and distributed practice received high utility assessments because they benefit learners of different ages and abilities and have been shown to boost students’ performance across many criterion tasks and even in educational contexts. Elaborative interrogation, self-explanation, and interleaved practice received moderate utility assessments. The benefits of these techniques do generalize across some variables, yet despite their promise, they fell short of a high utility assessment because the evidence for their efficacy is limited. For instance, elaborative interrogation and self-explanation have not been adequately evaluated in educational contexts, and the benefits of interleaving have just begun to be systematically explored, so the ultimate effectiveness of these techniques is currently unknown. Nevertheless, the techniques that received moderate-utility ratings show enough promise for us to recommend their use in appropriate situations, which we describe in detail within the review of each technique.\n\nFive techniques received a low utility assessment: summarization, highlighting, the keyword mnemonic, imagery use for text learning, and rereading. These techniques were rated as low utility for numerous reasons. Summarization and imagery use for text learning have been shown to help some students on some criterion tasks, yet the conditions under which these techniques produce benefits are limited, and much research is still needed to fully explore their overall effectiveness. The keyword mnemonic is difficult to implement in some contexts, and it appears to benefit students for a limited number of materials and for short retention intervals. Most students report rereading and highlighting, yet these techniques do not consistently boost students’ performance, so other techniques should be used in their place (e.g., practice testing instead of rereading).\n\nOur hope is that this monograph will foster improvements in student learning, not only by showcasing which learning techniques are likely to have the most generalizable effects but also by encouraging researchers to continue investigating the most promising techniques. Accordingly, in our closing remarks, we discuss some issues for how these techniques could be implemented by teachers and students, and we highlight directions for future research.",
+      "retrievedAt": "2026-11-24T18:42:04.173Z",
+      "url": "https://api.crossref.org/works/10.1177%2F1529100612453266"
+    },
+    {
+      "doi": "10.1037/a0037559",
+      "record": {
+        "title": "The effect of testing versus restudy on retention: A meta-analytic review of the testing effect.",
+        "authors": [
+          {
+            "family": "Rowland",
+            "given": "Christopher A."
+          }
+        ],
+        "year": 2014,
+        "container": "Psychological Bulletin",
+        "volume": "140",
+        "issue": "6",
+        "pages": "1432-1463",
+        "type": "article-journal",
+        "url": "https://doi.org/10.1037/a0037559",
+        "years": {
+          "online": 2014,
+          "issued": 2014
+        }
+      },
+      "abstract": null,
+      "retrievedAt": "2026-11-24T18:42:04.642Z",
+      "url": "https://api.crossref.org/works/10.1037%2Fa0037559"
+    },
+    {
+      "doi": "10.1016/j.tics.2010.09.003",
+      "record": {
+        "title": "The critical role of retrieval practice in long-term retention",
+        "authors": [
+          {
+            "family": "Roediger",
+            "given": "Henry L."
+          },
+          {
+            "family": "Butler",
+            "given": "Andrew C."
+          }
+        ],
+        "year": 2011,
+        "container": "Trends in Cognitive Sciences",
+        "volume": "15",
+        "issue": "1",
+        "pages": "20-27",
+        "type": "article-journal",
+        "url": "https://doi.org/10.1016/j.tics.2010.09.003",
+        "years": {
+          "print": 2011,
+          "issued": 2011
+        }
+      },
+      "abstract": null,
+      "retrievedAt": "2026-11-24T18:42:05.140Z",
+      "url": "https://api.crossref.org/works/10.1016%2Fj.tics.2010.09.003"
+    }
+  ]
+}
