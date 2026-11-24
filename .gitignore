@@ -1,0 +1,19 @@
+# Private organiser inputs; do not accidentally publish contact information.
+inputs/
+
+# Secrets. Keep only a placeholder example in source control.
+.env
+.env.*
+!.env.example
+*.pem
+
+# Dependencies, build output and temporary local artefacts.
+node_modules/
+.next/
+out/
+.vercel/
+coverage/
+playwright-report/
+test-results/
+*.log
+.DS_Store
