@@ -132,7 +132,33 @@ test("citation trap: real DOI and real source, altered details and quotation are
   await expect(inspector.getByRole("button", { name: "Approve claim" })).toBeDisabled();
   await shot(page, "07-trap-quote-mismatch");
 
-  await inspector.getByLabel("Excerpt that supports it").fill("Students then took a final retention test 5 min, 2 days, or 1 week later.");
+  // Correct the quotation from the real passage: select the words in the stored text and use them.
+  await inspector.getByLabel("Stored source text").evaluate((el, sentence) => {
+    const start = (el.textContent ?? "").indexOf(sentence);
+    const end = start + sentence.length;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const range = document.createRange();
+    let pos = 0;
+    let started = false;
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const len = node.textContent?.length ?? 0;
+      if (!started && start < pos + len) {
+        range.setStart(node, start - pos);
+        started = true;
+      }
+      if (started && end <= pos + len) {
+        range.setEnd(node, end - pos);
+        break;
+      }
+      pos += len;
+    }
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+  }, "Students then took a final retention test 5 min, 2 days, or 1 week later.");
+  await inspector.getByRole("button", { name: "Use selected text as the excerpt" }).click();
+  await expect(inspector.getByLabel("Excerpt that supports it")).toHaveValue("Students then took a final retention test 5 min, 2 days, or 1 week later.");
   await inspector.getByLabel("Claim", { exact: true }).fill("Students who took practice recall tests were given a final test up to one week later.");
   await expect(inspector.getByText("Excerpt found in stored text").first()).toBeVisible();
   await inspector.getByRole("button", { name: "Approve claim" }).click();

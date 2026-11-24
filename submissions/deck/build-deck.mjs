@@ -5,11 +5,12 @@
 
 // ── STATUS ── rendered as the status line on slide 6. Replace at the final pass with real values.
 const STATUS = {
-  unitTests: 'to be confirmed', // number of unit tests passing
-  e2eTests: 'to be confirmed', // number of browser journey tests passing
-  date: 'to be confirmed', // date the tests were run
-  liveAi: 'to be confirmed', // live AI call verified: yes / no
-  deployed: 'to be confirmed', // URL, or "laptop demo declared"
+  // Values from the full run recorded in docs/qa-report.md. Update only from a real run.
+  unitTests: '94 of 94', // number of unit tests passing
+  e2eTests: '11 of 11', // number of browser journey tests passing
+  date: '24 Nov 2026', // date the tests were run
+  liveAi: 'No key yet', // live AI call verified: yes / no
+  deployed: 'Not yet', // URL, or "laptop demo declared"
 };
 const PLACEHOLDER = 'to be confirmed';
 

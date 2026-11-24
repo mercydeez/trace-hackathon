@@ -14,6 +14,13 @@ async function call(path, init) {
   return { status: res.status, body: await res.json() };
 }
 
+/** A registry record minus its list of years, which is the shape the formatter takes. */
+function withoutYears(record) {
+  const copy = { ...record };
+  delete copy.years;
+  return copy;
+}
+
 function report(name, pass, detail) {
   if (pass === null) return console.log(`SKIP  ${name} - ${detail}`);
   if (!pass) failed++;
@@ -38,7 +45,7 @@ report("OpenAlex abstract fallback", oa.body.ok && oa.body.data.text.length > 10
 const cite = await call("/api/cite", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ mode: "list", items: [{ id: "s1", doi: doi.body.data?.doi ?? "10.1126/science.1152408", cited: doi.body.ok ? (({ years, ...b }) => b)(doi.body.data.record) : { title: "x", authors: [], year: null } }] }),
+  body: JSON.stringify({ mode: "list", items: [{ id: "s1", doi: doi.body.data?.doi ?? "10.1126/science.1152408", cited: doi.body.ok ? withoutYears(doi.body.data.record) : { title: "x", authors: [], year: null } }] }),
 });
 report("APA 7 formatting", cite.body.ok && cite.body.data[0]?.text.includes("(2008)"), cite.body.ok ? cite.body.data[0].text : `${cite.body.kind}: ${cite.body.message}`);
 
