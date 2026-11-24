@@ -59,7 +59,35 @@ export function IdentityPanel({ source, compact }: { source: Source; compact?: b
       <p className="text-sm text-ink-soft">{identity.summary}</p>
       {source.testCorruption && <p className="rounded border border-bad/30 bg-bad-tint px-2.5 py-1.5 text-sm text-ink">{source.testCorruption}</p>}
 
-      {identity.fields.length > 0 && (
+      {/* In the narrow inspector, only the details that need attention are listed, stacked rather than tabulated. */}
+      {compact && (
+        <ul className="space-y-2">
+          {identity.fields
+            .filter((f) => f.verdict !== "match")
+            .map((f) => {
+              const v = VERDICT[f.verdict];
+              return (
+                <li key={f.field} className="rounded border border-line bg-canvas/60 p-2.5 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-ink">{FIELD_LABEL[f.field]}</span>
+                    <Chip tone={v.tone} icon={v.icon}>
+                      {v.label}
+                    </Chip>
+                  </div>
+                  <p className="mt-1.5 break-words">
+                    You cite <span className="font-medium text-ink">{f.cited}</span>. Crossref records <span className="font-medium text-ink">{f.registry}</span>.
+                  </p>
+                  <p className="mt-1 text-xs">{f.message}</p>
+                  <Button size="sm" className="mt-2" onClick={() => update((p) => takeRegistryValue(p, source.id, f.field), `Replaced the cited ${FIELD_LABEL[f.field].toLowerCase()} of “${source.cited.title}” with Crossref's value.`)}>
+                    Use Crossref&rsquo;s {FIELD_LABEL[f.field].toLowerCase()}
+                  </Button>
+                </li>
+              );
+            })}
+        </ul>
+      )}
+
+      {!compact && identity.fields.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[26rem] border-collapse text-sm">
             <thead>

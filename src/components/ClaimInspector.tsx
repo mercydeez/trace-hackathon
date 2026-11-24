@@ -126,7 +126,13 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
   const { update } = useStore();
   const [selection, setSelection] = useState("");
   const [confirm, setConfirm] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
   const claim = project.claims.find((c) => c.id === claimId);
+
+  // Each claim opens at the top of the panel, wherever the previous one was scrolled to.
+  useEffect(() => {
+    root.current?.closest("aside, dialog")?.scrollTo({ top: 0 });
+  }, []);
   // The editing fields start open when there is something to fix or fill in, and closed when the claim is in order.
   const [editing, setEditing] = useState(() => {
     if (!claim) return false;
@@ -156,7 +162,7 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
   const link = source ? sourceLink(source.doi, source.cited) : null;
 
   return (
-    <div className="flex flex-col">
+    <div ref={root} className="flex flex-col">
       <header className="flex items-start justify-between gap-3 border-b border-line px-5 pt-4 pb-3">
         <div>
           <h2 className="font-serif text-xl font-medium">Claim {i.number}</h2>
@@ -275,7 +281,7 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
               {blocking.length > 0 && decision !== "rejected" && (
                 <ul className="list-disc space-y-0.5 pl-4 text-bad">
                   {blocking.map((b) => (
-                    <li key={b.code}>{b.message.replace(/^Claim \d+: /, "Before approving: ")}</li>
+                    <li key={b.code}>{b.message.replace(/^Claim \d+: /, decision === "approved" ? "Still open: " : "Before approving: ")}</li>
                   ))}
                 </ul>
               )}

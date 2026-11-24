@@ -17,6 +17,8 @@ Machine: Windows 11, Node 22.21.0, npm 10.8.2. Browser tests in Microsoft Edge (
 | Live providers | `npm run smoke:live` | **passed**: 6 of 6 checks that ran; 1 **not run** (live AI: no key) |
 | Deck | `npm run deck`, then PowerPoint render | **passed**: 6 slides; all six rendered to PNG and read |
 
+**Re-run after the last interface adjustments, 24 November 2026, about 23:35 (+04:00):** typecheck **passed**, lint **passed**, unit tests **passed** 94 of 94, browser journeys **passed** 11 of 11 (which rebuilds the production app). `npm ci` and the live smoke test were **not run** again after those adjustments; they do not touch the files that changed.
+
 ### What the unit tests cover (94)
 
 - **DOI handling**: prefixes and case, suffix characters preserved, percent-encoding, invalid input, trailing-punctuation variant offered rather than applied, duplicate detection.
@@ -69,6 +71,8 @@ Captured by the browser tests into `docs/screenshots/` at 1440×900, 1366×768 a
 - The inspector opened at its checks rather than at the source passage, and scrolled the whole panel to the marked text. Reordered so the passage comes first and only the passage box scrolls.
 - On mobile the drawer's passage did not scroll to the marked words. Fixed.
 - A mobile screenshot caught the drawer mid-animation; screenshots now wait for animations to finish.
+- The reference-identity table was cramped inside the narrow inspector. There it is now a stacked list of only the details that need attention.
+- Opening a second claim kept the previous claim's scroll position. Each claim now opens at the top of the inspector.
 
 ## Not run, or not verified
 
