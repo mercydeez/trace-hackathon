@@ -1,13 +1,10 @@
 "use client";
 
-import { ArrowRight, Check, FlaskConical, LayoutGrid, ScanSearch, SearchCheck, ShieldAlert, TriangleAlert, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Check, FlaskConical, LayoutGrid, ShieldAlert, TriangleAlert } from "lucide-react";
+import { useEffect, useState } from "react";
 import { isEvidenceSetApproved, isPlanApproved } from "@/lib/approvals";
-import { buildDemoProject, demoSourcesAndEvidence, FIXTURES_FETCHED_AT } from "@/lib/demo";
-import { checkExcerpt } from "@/lib/excerpt";
+import { buildDemoProject, FIXTURES_FETCHED_AT } from "@/lib/demo";
 import { evaluateExport } from "@/lib/exportPolicy";
-import { emptyProject } from "@/lib/mutations";
-import { buildTrapProject } from "@/lib/trap";
 import type { Project } from "@/lib/types";
 import { BriefStep } from "./BriefStep";
 import { ClaimInspector } from "./ClaimInspector";
@@ -16,7 +13,8 @@ import { LibraryStep } from "./LibraryStep";
 import { PlanStep } from "./PlanStep";
 import { Sidebar } from "./Sidebar";
 import { StoreProvider, useStore } from "./store";
-import { Button, cx, Drawer, Notice, shortDate, TextArea, useMediaQuery } from "./ui";
+import { Brand, Button, cx, Drawer, Notice, shortDate, useMediaQuery } from "./ui";
+import { Welcome } from "./Welcome";
 
 type StepId = "plan" | "discover" | "library" | "brief";
 
@@ -55,145 +53,11 @@ function stepStates(project: Project): StepState[] {
   ];
 }
 
-function Brand({ compact }: { compact?: boolean }) {
-  return (
-    <span className="flex flex-none items-center gap-2">
-      <span aria-hidden className="trace-mark grid size-7 place-items-center rounded-lg text-white"><ScanSearch className="size-4" /></span>
-      <span className={cx("text-base font-bold tracking-[-0.02em] text-ink", compact && "lg:sr-only")}>TRACE</span>
-    </span>
-  );
-}
-
-// --- Welcome -------------------------------------------------------------------------------
-
-/* The trap, computed live from the demo fixture by the same function the workspace uses. */
-function TrapPreview() {
-  const result = useMemo(() => {
-    const ev = demoSourcesAndEvidence(new Date(0).toISOString()).evidence.find((e) => e.id === "ev_demo_1");
-    const real = "Students then took a final retention test 5 min, 2 days, or 1 week later.";
-    const altered = "Students then took a final retention test 5 min, 2 days, or 1 month later.";
-    return { ok: checkExcerpt(real, ev?.text).status === "matched", bad: checkExcerpt(altered, ev?.text).status === "mismatch" };
-  }, []);
-  return (
-    <figure className="evidence-preview overflow-hidden rounded-2xl bg-surface">
-      <figcaption className="flex items-center gap-3 border-b border-line px-5 py-4 sm:px-6">
-        <ScanSearch aria-hidden className="size-5 shrink-0 text-brand" />
-        <span><span className="block text-sm font-bold">Excerpt check</span><span className="block text-xs text-ink-soft">Roediger &amp; Karpicke (2006) · Crossref abstract</span></span>
-      </figcaption>
-      <ul className="divide-y divide-line px-5 sm:px-6">
-        <li className="py-4 sm:py-5">
-          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ok">
-            <Check aria-hidden className="size-4" /> {result.ok ? "Found in the stored abstract" : "Check unavailable"}
-          </p>
-          <p className="text-base leading-relaxed text-ink">&ldquo;Students then took a final retention test 5 min, 2 days, or 1 <strong className="rounded bg-ok-tint px-1 font-semibold">week</strong> later.&rdquo;</p>
-        </li>
-        <li className="py-4 sm:py-5">
-          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-bad">
-            <X aria-hidden className="size-4" /> {result.bad ? "Not in the stored abstract" : "Check unavailable"}
-          </p>
-          <p className="text-base leading-relaxed text-ink">&ldquo;Students then took a final retention test 5 min, 2 days, or 1 <strong className="rounded bg-bad-tint px-1 font-semibold">month</strong> later.&rdquo;</p>
-        </li>
-      </ul>
-      <p className="border-t border-line bg-s2/50 px-5 py-3 text-sm leading-relaxed text-ink-soft sm:px-6">One changed word blocks reviewed export. TRACE runs this check against the stored text.</p>
-    </figure>
-  );
-}
-
 /**
  * A step to open the next project at, set by a welcome-screen shortcut and used once.
  * ponytail: module-level one-shot flag, enough for one entry point; a router would replace it.
  */
 let openAt: StepId | null = null;
-
-function Welcome({ onOpenTools }: { onOpenTools: () => void }) {
-  const { addProject } = useStore();
-  const [question, setQuestion] = useState("");
-  const now = () => new Date().toISOString();
-  return (
-    <div className="welcome min-h-dvh">
-      <header className="mx-auto flex h-[4.5rem] max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
-        <Brand />
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <Button size="sm" variant="ghost" icon={LayoutGrid} onClick={onOpenTools}>Projects and tools</Button>
-          <a href="#new-project" className="hidden text-sm font-semibold text-ink-soft transition-colors hover:text-brand sm:inline">Start a project <ArrowRight aria-hidden className="ml-1 inline size-3.5" /></a>
-        </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-5 pb-12 sm:px-8">
-        <section className="grid items-center gap-8 pt-8 sm:pt-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,29rem)] lg:gap-14 lg:pt-16">
-          <div>
-            <h1 className="max-w-[12ch] text-[2.75rem] leading-[1.04] font-bold tracking-[-0.04em] text-balance sm:text-6xl lg:text-[4.5rem]">Research you can defend.</h1>
-            <p className="mt-5 max-w-[42ch] text-base leading-relaxed text-ink-soft sm:text-lg">
-              Find real sources, check each claim against its passage, and export a research brief you’ve reviewed yourself.
-            </p>
-            <div className="mt-7 flex flex-wrap items-center gap-2.5">
-              <Button variant="primary" icon={FlaskConical} onClick={() => addProject(buildDemoProject(now()))}>
-                Open the demo project
-              </Button>
-              <Button icon={ShieldAlert} onClick={() => addProject(buildTrapProject(now()))}>Run the citation trap</Button>
-              <Button
-                icon={SearchCheck}
-                onClick={() => {
-                  openAt = "discover";
-                  addProject(buildDemoProject(now()));
-                }}
-              >
-                Check a reference
-              </Button>
-            </div>
-            <p className="mt-3 text-sm text-ink-soft">Demo sources saved from Crossref · {shortDate(FIXTURES_FETCHED_AT)}</p>
-          </div>
-          <TrapPreview />
-        </section>
-
-        <section className="mt-14 grid gap-8 border-t border-line pt-8 lg:mt-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-12">
-          <div>
-            <h2 className="text-2xl font-bold tracking-[-0.02em]">How it works</h2>
-            <ol className="mt-6 grid gap-x-8 gap-y-6 sm:grid-cols-2">
-              {[
-                ["Plan", "Write your question, edit the search terms, and approve them."],
-                ["Discover", "Search Crossref, add a source by DOI, or check a citation someone gave you."],
-                ["Library and evidence", "Tag and annotate sources, then choose the passages you will work from."],
-                ["Brief and export", "Draft or write short claims, inspect each against its passage, approve, and export."],
-              ].map(([title, text], i) => (
-                <li key={title} className="grid grid-cols-[2rem_1fr] gap-x-3">
-                  <span aria-hidden className="grid size-8 place-items-center rounded-full bg-accent-soft text-sm font-bold text-accent-text">
-                    {i + 1}
-                  </span>
-                  <span>
-                    <span className="block text-base font-semibold text-ink">{title}</span>
-                    <span className="mt-1 block text-sm leading-relaxed text-ink-soft">{text}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
-          <form
-            id="new-project"
-            className="card scroll-mt-6 p-5 sm:p-6"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const q = question.trim();
-              if (q) addProject(emptyProject(q.length > 44 ? `${q.slice(0, 44).trimEnd()}…` : q, q, now()));
-            }}
-          >
-            <h2 className="text-xl font-bold tracking-[-0.02em]">Start with your own question</h2>
-            <label htmlFor="welcome-question" className="mt-2 block text-sm text-ink-soft">
-              Write a question a source could answer.
-            </label>
-            <TextArea id="welcome-question" rows={3} className="mt-4" maxLength={400} value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="For example: Does spacing study sessions improve exam results?" />
-            <Button type="submit" variant="primary" className="mt-4" disabled={!question.trim()}>
-              Start a project
-            </Button>
-          </form>
-        </section>
-
-        <p className="mt-14 border-t border-line pt-6 text-sm leading-relaxed text-ink-soft">
-          Your work is saved in this browser only, with no account. It is not a cloud backup. TRACE does not detect plagiarism, judge whether a source is correct, or replace your institution&rsquo;s academic-integrity rules.
-        </p>
-      </main>
-    </div>
-  );
-}
 
 // --- Project workspace ---------------------------------------------------------------------
 
@@ -363,7 +227,7 @@ function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: 
 }
 
 function Shell() {
-  const { ready, project, storageProblem, saveFailed, dismissStorageProblem, syncNotice, dismissSyncNotice } = useStore();
+  const { ready, project, addProject, storageProblem, saveFailed, dismissStorageProblem, syncNotice, dismissSyncNotice } = useStore();
   const [menu, setMenu] = useState(false);
 
   if (!ready) {
@@ -408,7 +272,16 @@ function Shell() {
           TRACE couldn’t save to this browser. Keep this tab open and download a backup from Projects and tools.
         </Notice>
       )}
-      {project ? <ProjectView key={project.id} project={project} onOpenTools={() => setMenu(true)} /> : <Welcome onOpenTools={() => setMenu(true)} />}
+      {project ? <ProjectView key={project.id} project={project} onOpenTools={() => setMenu(true)} /> : (
+        <Welcome
+          onOpenTools={() => setMenu(true)}
+          // "Check a reference" opens the demo at Discover, where checking a DOI is read-only.
+          onCheckReference={() => {
+            openAt = "discover";
+            addProject(buildDemoProject(new Date().toISOString()));
+          }}
+        />
+      )}
       <Drawer open={menu} side="left" label="Projects and tools" onClose={() => setMenu(false)}>
         <Sidebar onNavigate={() => setMenu(false)} />
       </Drawer>

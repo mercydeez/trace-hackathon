@@ -4,7 +4,11 @@ TRACE uses a light workspace with a restrained plum accent. Tokens live in `src/
 
 ## World
 
-A research workbench on near-white paper. Plum carries action and selection, teal marks a passed check, amber signals attention, and red marks a blocker. A soft colour wash frames the excerpt comparison on the welcome screen.
+A research workbench on near-white paper. Plum carries action and selection, teal marks a passed check, amber signals attention, and red marks a blocker.
+
+## Welcome screen
+
+The welcome screen uses plum type and a dark evidence panel as its focal point. `Welcome.tsx` and `EvidencePreview.tsx` use styles scoped to `.welcome*` in `globals.css`. The panel switches between the stored Roediger and Karpicke excerpt ("1 week") and the altered one ("1 month"). `checkExcerpt` compares both against the local demo fixture. A glyph and a text label show the result. The frosted result card is 92% opaque for readable text. Below the hero, visitors can read the workflow and start a project. Motion is limited to a brief reveal, the active-control pill and the status swap. Reduced-motion preferences turn off these effects.
 
 ## Layout
 
@@ -22,8 +26,8 @@ Three panes at desktop width: a 248px step rail (project, question, four steps),
 - **Radius:** 8 inputs, buttons and inner boxes · 12 cards and panels · full for status chips.
 - **Controls:** 40px (md) and 32px (sm), shared by inputs and buttons.
 - **Colour:** paper `#f8f7fa`, sheet `#fff`, tint `#f3f0f7`, ink `#241d32`, ink-soft `#5a5268`, faint `#6c6279`, rule `#e9e4ef`, rule-strong `#d8d0e3`, plum `#473471`, accent `#7052a0` and text `#62438d`, ok `#236b5e` on `#e2f3ef`, warn `#84530d` on `#fbeedb`, bad `#a92d26` on `#fce6e3`.
-- **Depth:** soft shadows on the welcome comparison, primary actions and floating layers.
-- **Motion:** 150 ms control feedback, a 260 ms excerpt preview reveal, and short dialog entrances. Reduced-motion preferences turn off these effects.
+- **Depth:** a deep shadow on the welcome evidence panel, soft shadows on primary actions and floating layers.
+- **Motion:** 150 ms control feedback, a 350 ms welcome reveal, a 160 ms excerpt status swap, and short dialog entrances. Reduced-motion preferences turn off these effects.
 
 ## Rules
 

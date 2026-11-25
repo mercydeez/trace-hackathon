@@ -369,3 +369,10 @@ The owner pasted the five-requirement brief saved unchanged in [claude-code-phas
 5. a copyable AI-use statement.
 
 It also listed two optional items: a welcome "Check a reference" entry, and server-side screening of AI answers. Asked how to ship while Vercel blocked pushes from this machine, the owner chose to set this repository's Git author to their own GitHub identity. Results are in [the QA report](qa-report.md) and [the Phase 2 submission notes](../submissions/phase-2-submission.md).
+
+## 18 — Landing page redesign
+
+- **Date:** 25 November 2026, about 22:35 Dubai time
+- **Tools:** Claude Code and Codex
+
+The owner asked for a stronger landing page with React, Framer Motion, and a visual style suited to TRACE. Codex sent [the landing page brief](claude-code-landing-page.md) to Claude Code in an isolated copy. Claude built a light editorial welcome page with an interactive excerpt comparison and a frosted result panel. Codex integrated Motion for React and verified the local production build, 192 unit tests, and 19 Chrome journeys. The new phone test exercises the preview by keyboard with reduced motion enabled.

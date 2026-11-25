@@ -1,10 +1,19 @@
 "use client";
 
-import { Inbox, X, type LucideIcon } from "lucide-react";
+import { Inbox, ScanSearch, X, type LucideIcon } from "lucide-react";
 import { useEffect, useId, useRef, useSyncExternalStore } from "react";
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
+}
+
+export function Brand({ compact }: { compact?: boolean }) {
+  return (
+    <span className="flex flex-none items-center gap-2">
+      <span aria-hidden className="trace-mark grid size-7 place-items-center rounded-lg text-white"><ScanSearch className="size-4" /></span>
+      <span className={cx("text-base font-bold tracking-[-0.02em] text-ink", compact && "lg:sr-only")}>TRACE</span>
+    </span>
+  );
 }
 
 // --- Buttons -------------------------------------------------------------------------------

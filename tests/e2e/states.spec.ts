@@ -184,6 +184,29 @@ test("keyboard: the demo is reachable and works without a mouse", async ({ page 
   expect(outline).not.toBe("none");
 });
 
+test("phone landing: the evidence preview works by keyboard with reduced motion", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+
+  const preview = page.getByRole("region", { name: "Excerpt check preview" });
+  const stored = preview.getByRole("radio", { name: "Stored excerpt" });
+  const altered = preview.getByRole("radio", { name: "Altered version" });
+  const result = preview.getByRole("status");
+  await expect(stored).toBeChecked();
+  await expect(result).toContainText("Matched: found in the stored abstract");
+
+  await stored.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(altered).toBeChecked();
+  await expect(result).toContainText("Mismatch: not in the stored abstract");
+  await expect(preview.locator("mark")).toHaveText("month");
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: testInfo.outputPath("landing-mobile.png"), fullPage: true, animations: "disabled" });
+});
+
 for (const size of [
   { name: "laptop-1366x768", width: 1366, height: 768 },
   { name: "mobile-390x844", width: 390, height: 844 },
