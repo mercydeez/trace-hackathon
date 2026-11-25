@@ -36,6 +36,7 @@ Last updated: 25 November 2026, Dubai time
 - 25 Nov 2026, ~11:40: after the ReproSense-style redesign, typecheck, lint, 94/94 unit and 11/11 browser journeys passed. The pre-redesign version is tagged `pre-redesign`.
 
 - 25 Nov 2026, 16:50–17:10: release verification of the full working tree in Claude Code. npm ci, lint, typecheck, 182/182 unit, build and 16/16 journeys passed; manual desktop (invalid key) and mobile (no key) runs passed; 5 defects fixed (see docs/qa-report.md).
+- 25 Nov 2026, ~17:45: **deployed** to https://trace-hackathon.vercel.app (release `3d32bb1`, tag `release-2026-11-25`; production deployment `3ubHyssr1ba1nDaaB6g9PJqHVS4H` with the Gemini key; rollback target `6dw5K7Y4m7miQwvnGHEjyZQZD4yv`). Verified in a clean session: core demo, trap and reviewed test copy, mobile, and a live AI draft. Note: Vercel Hobby blocks Git-push deploys while the repo is private, because commits come from a non-owner author; redeploy from the dashboard until the repo is public.
 
 Details: `docs/qa-report.md`.
 

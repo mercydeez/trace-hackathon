@@ -19,6 +19,21 @@ Results of checks that were actually run. Each line is **passed**, **failed** or
 | Mobile, 375 px | No horizontal overflow; the Claim Inspector opens full width |
 | `npm run smoke:live` against production | 6 passed, 1 failed, 1 skipped. The failure is the OpenAlex abstract fallback: **rate-limited** (HTTP 429) from Vercel's shared addresses, reported honestly as "could not check". A manual retry succeeded once. The live AI draft was skipped because no key was set. |
 
+### With live AI · about 17:45 Dubai time
+
+The owner added `GEMINI_API_KEY` (Production) in the Vercel dashboard. A Git push of `093b588`, which changed docs only, was **blocked** by Vercel. The Hobby plan does not deploy commits to a private repository from an author outside the account. The owner then redeployed the verified release from the dashboard, after Vercel's email verification.
+
+- **Current production:** deployment `3ubHyssr1ba1nDaaB6g9PJqHVS4H` (release `3d32bb1`, with the key).
+- **Rollback target:** `6dw5K7Y4m7miQwvnGHEjyZQZD4yv`, the same code without the key. Use Vercel → Deployments → Instant Rollback.
+
+| Check | Result |
+| --- | --- |
+| `/api/status` | `configured: true`, model `gemini-3.5-flash-lite` |
+| `npm run smoke:live` against production | 7 passed (status, Crossref search, DOI, unknown DOI, retraction, OpenAlex fallback, APA 7). The live draft returned **HTTP 503 from Google** on that run. A direct retry a few seconds later returned a valid draft. |
+| Live draft in the app, clean session | After Google's intermittent 503s, each shown as "The AI draft did not happen… Nothing was added", a retry added **3 claims, all excerpts found in the stored text**, labelled "AI draft", with model `gemini-3.5-flash-lite` named |
+
+Known limit: the free Gemini model sometimes answers 503 under load, and a retry usually succeeds. For the demo, keep "Load sample brief (not live AI)" as the fallback.
+
 Known limit added by hosting: anonymous OpenAlex calls from Vercel are often throttled. Setting `OPENALEX_API_KEY`, a free key from openalex.org, gives the site its own budget. It only matters when Crossref has no abstract for a paper.
 
 ## Release verification in the working tree · 25 November 2026, 16:50–17:10 Dubai time

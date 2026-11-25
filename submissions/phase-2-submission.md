@@ -54,7 +54,7 @@ State this plainly if asked, and keep it accurate.
 | OpenAlex abstract fallback | Live call, on request |
 | APA 7 references | Produced by Citation.js on the server from stored metadata |
 | Excerpt, identity, approval and export checks | Deterministic code, run in the browser |
-| AI drafting | [Live Gemini call with model ___ / Not configured: no key on this deployment] |
+| AI drafting | Live Gemini call with model gemini-3.5-flash-lite (free tier; occasional HTTP 503 from Google, retry or use the labelled sample) |
 | Sample brief | Sample output written during development, labelled as a sample everywhere, offered only in the demo project |
 | Demo sources | Real Crossref records saved on 24 November 2026 |
 | Citation trap | A labelled test copy with two deliberately corrupted items |
