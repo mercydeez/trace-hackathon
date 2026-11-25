@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 2026-11-24 23:25 (+04:00)
+Last updated: 2026-11-25 10:55 (+04:00)
 
 ## Status
 
@@ -11,7 +11,7 @@ Last updated: 2026-11-24 23:25 (+04:00)
 | 3. Scaffold + dependencies | done |
 | 4. Core library + unit tests | done |
 | 5. Real fixtures, sample brief, citation trap | done |
-| 6. Server routes + adapters | done; live AI call **not verified** (no key) |
+| 6. Server routes + adapters | done; live AI call verified 25 Nov |
 | 7. Phase 1 deck (6 slides, rendered and read) | done; **not uploaded** |
 | 8. Workspace UI | done |
 | 9. Browser tests + screenshot review | done |
@@ -27,6 +27,7 @@ Last updated: 2026-11-24 23:25 (+04:00)
 - `npm run build`: passed
 - `npm run test:e2e`: 11 of 11 passed (production build, Edge)
 - `npm run smoke:live`: 6 of 6 run checks passed; live AI draft not run (no key)
+- 25 Nov 2026, ~10:45: with a key in `.env.local`, `npm run smoke:live` passed 7 of 7 including a real Gemini draft; "Draft with AI" in the app added 4 claims, all quotes found in the stored abstracts; reviewed export disclosure named the model
 - Deck: 6 slides, rendered through PowerPoint, all slides read
 
 Details: `docs/qa-report.md`.
@@ -34,7 +35,7 @@ Details: `docs/qa-report.md`.
 ## Waiting on the user
 
 1. **Upload the deck** (`submissions/phase-1-deck.pptx`) before 9:00 AM on Thu 26 Nov. Steps: `docs/submission-checklist.md`.
-2. **Gemini key**: put `GEMINI_API_KEY=...` in `.env.local`, restart, run `npm run smoke:live`. Then update slide 6's status in `submissions/deck/build-deck.mjs` and run `npm run deck` if the deck is not uploaded yet.
+2. **Gemini key**: done and verified locally. For deployment, add the same key as an environment variable on the host. Keep it only in `.env.local` locally, never in `.env.example`.
 3. **Deploy** (Vercel login needed). Steps in `docs/submission-checklist.md`. The rules say to present from the submitted live link; laptop-only wording is ready as the fallback.
 4. **Make the repository public** at submission time.
 5. **Tell the organisers** about inactive teammates; fill in names in `docs/contributions.md`.
@@ -42,7 +43,6 @@ Details: `docs/qa-report.md`.
 
 ## Open risks
 
-- Live AI path has never made a real request. Until it does, plan to demo with the labelled sample and say so.
 - Not deployed.
 - Solo build in a four-person team; "every member contributes" is part of a 12-point rubric row.
 - SP Jain policy text not supplied; nothing in the app or deck quotes it.
@@ -50,4 +50,4 @@ Details: `docs/qa-report.md`.
 
 ## Next action
 
-After the user adds a key: run the live smoke test, try "Draft with AI" in the demo project, fix whatever the real response shape reveals, record the result in `docs/qa-report.md`, and update slide 6. On the day: follow `docs/day-of-playbook.md`.
+Upload the deck; deploy with `GEMINI_API_KEY` set on the host and run `npm run smoke:live` against the live URL. On the day: follow `docs/day-of-playbook.md`.

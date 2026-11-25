@@ -74,9 +74,20 @@ Captured by the browser tests into `docs/screenshots/` at 1440×900, 1366×768 a
 - The reference-identity table was cramped inside the narrow inspector. There it is now a stacked list of only the details that need attention.
 - Opening a second claim kept the previous claim's scroll position. Each claim now opens at the top of the inspector.
 
+## Live AI verification: 25 November 2026, about 10:45 (+04:00)
+
+A free-tier Gemini key was added to `.env.local` (git-ignored; it was briefly pasted into the tracked `.env.example`, moved out before any commit, and never appeared in a commit or push). The dev server was restarted.
+
+| Check | Result |
+|---|---|
+| `npm run smoke:live`, all 7 checks | **passed**. Live draft from `gemini-3.5-flash-lite` over 2 abstracts: 2 claims, 2 of 2 cite a supplied ID, 2 of 2 excerpts are byte-for-byte in their passage |
+| "Draft with AI" in the app: demo project, plan approved, 4 abstracts approved | **passed**. 4 claims added, 0 rejected; all 4 show "Excerpt found in stored text" |
+| Reviewed export after approving the 4 claims | **passed**. Not marked DRAFT; the disclosure states that 4 claims were drafted by `gemini-3.5-flash-lite` from 4 approved passages |
+
+This is one run on one evidence set. It shows the path works; it does not show the model always quotes exactly. When it does not, the excerpt check flags the claim and the gate blocks the reviewed export, which the automated tests cover with a mocked provider.
+
 ## Not run, or not verified
 
-- **A live AI call.** The adapter is written against the SDK's own type definitions and the provider's documented request shape, and the surrounding path is tested with a mocked provider, but no real Gemini request has been made. Run `npm run smoke:live` after adding a key.
 - **Deployment.** Not deployed. The production build runs locally.
 - **Browsers other than Edge (Chromium).** Firefox and Safari were not tested.
 - **Screen readers.** Roles, labels and focus order were written with care and partly exercised by role-based test selectors, but no screen-reader session was run.

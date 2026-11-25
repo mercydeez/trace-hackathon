@@ -245,3 +245,12 @@ Before finalising its plan the assistant asked three questions. The answers sele
 - **Model:** Claude Fable 5.2
 
 The assistant presented a written build plan (stack, simplifications, build order, verification, items needing the user). The user approved it without edits. No further instruction text was typed.
+
+## 4 — API key added
+
+- **Date:** 2026-11-25, morning (+04:00); the exact minute was not captured
+- **Model:** the user switched the session to **Claude Opus 5.5** (`claude-opus-5-5`) with `/model` before sending this message
+
+> I have pasted the api key in the env.example
+
+The key itself is not reproduced here. The assistant moved it from the tracked `.env.example` to the git-ignored `.env.local` before anything was committed, restored `.env.example`, and then verified live AI drafting (results in `docs/qa-report.md`).

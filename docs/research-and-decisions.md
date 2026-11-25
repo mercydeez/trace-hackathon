@@ -62,7 +62,7 @@ Abstract text is redistributed as retrieved from Crossref's open API for a small
 - Free-tier rate limits are not published on the rate-limits page (it points to AI Studio).
 - Privacy (Gemini API terms, effective 23 Mar 2026): on the free tier, content may be used to improve Google's products and human reviewers may read it; users are told not to send sensitive data. Apps offered to users in the EEA, Switzerland or the UK must use paid services.
 - **Decisions.** One function, `draftWithGemini`, behind `/api/draft`. `store: false`, one call, at most one retry on timeout or server error, none on 429. The app sends only the research question and the passages the student approved, shows that payload in full beforehand, and states the free-tier data-use position next to it.
-- **Not verified:** a real call. No key was available on the build machine when this was written. See `docs/qa-report.md` for the current state.
+- **Verified 25 Nov 2026:** real calls with a free-tier key succeeded through `npm run smoke:live` and through "Draft with AI" in the app. The request shape above worked unchanged. See `docs/qa-report.md`.
 
 ## Citation formatting
 

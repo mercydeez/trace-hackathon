@@ -9,7 +9,7 @@ const STATUS = {
   unitTests: '94 of 94', // number of unit tests passing
   e2eTests: '11 of 11', // number of browser journey tests passing
   date: '24 Nov 2026', // date the tests were run
-  liveAi: 'No key yet', // live AI call verified: yes / no
+  liveAi: 'Yes, 25 Nov', // live AI call verified: yes / no
   deployed: 'Not yet', // URL, or "laptop demo declared"
 };
 const PLACEHOLDER = 'to be confirmed';
