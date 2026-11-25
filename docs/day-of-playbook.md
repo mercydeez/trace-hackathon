@@ -28,6 +28,12 @@ New requirements arrive at the 1:15 PM briefing. There are 90 minutes, 1:30–3:
 
 If a change is not working by **2:25**, stop, revert that change (`git revert` or `git checkout pre-event -- <file>`), and ship what works. A requirement shown honestly as "partly done, here is what remains" is better than a broken demo.
 
+## Where a new requirement most likely lands
+
+- **A new rule or policy** (an AI restriction, a date limit, a source type): add a field to `RulesSchema` in `src/lib/types.ts`, a control in the "Rules in force" section of `src/components/PlanStep.tsx`, and an issue in `inspectClaim` in `src/lib/exportPolicy.ts`. `tests/unit/rules.test.ts` shows the pattern.
+- **A new check on claims**: a pure function beside `src/lib/claimNumbers.ts`, one issue code in `exportPolicy.ts`, one badge in `src/components/status.tsx`.
+- **A new source or registry**: an adapter beside `src/lib/server/crossref.ts` returning a `WorkRecord`.
+
 ## Requirements as given (paste here at 1:15)
 
 ```

@@ -299,3 +299,12 @@ The assistant read the live site's fonts, colour tokens, card and motion styles,
 > dont waste your time on dark light themes, keep it light only
 
 Only the light palette was implemented; there is no theme switch.
+## 10 — Workbench redesign and competitor analysis
+
+- **Date:** 2026-11-25, about 11:50 (+04:00)
+- **Model:** Claude Opus 5.5
+- **Sent with:** a file reference to `Ai-Club-Hackathon-main.zip` (a competitor team's repository, downloaded by the user from GitHub)
+
+> Looks very shit, the UI is also not very perfect, you have added colours but the spaces, layout architecure is very bad, use all the design and frontend skills available and make accordingly.. Also i have added a github repository which i downloaded from one our our competitors girhub, check what have he done, his UI, Whos logic is right and how can we overcome them
+
+The assistant read the competitor's zip in memory only (nothing extracted or copied into this repository) and audited TRACE's layout. It asked three questions; the answers were: keep the ReproSense look; a three-pane workbench layout; full scope including new features. A written plan was approved. The redesign and four features (claim-details check, project rules, retraction flag, reference-list check) were then built from TRACE's own code; only ideas were taken from the competitor analysis, in line with the event's no-copying rule.

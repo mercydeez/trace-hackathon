@@ -108,6 +108,21 @@ Node 22.12 or later is required (plugin-csl and vitest). Fonts are self-hosted f
 | APA formatting on the server | Keeps the CSL engine out of the browser bundle. |
 | Browser tests run in the installed Edge | No browser download; set `PW_CHANNEL=chromium` to use Playwright's own. |
 
+## Competitor comparison (25 Nov 2026)
+
+The active builder supplied another team's repository ("Paper Trail") as a zip downloaded from GitHub. It was read in memory only. No code, copy or visual asset was taken into TRACE (event rule RR p.2 #10). Facts below describe the snapshot read, not later work.
+
+| Area | Paper Trail (snapshot) | TRACE |
+|---|---|---|
+| Reference existence | Crossref, DataCite, doi.org and OpenAlex; retraction flags; bulk paste; a "wrong paper" verdict. But a bare DOI that resolves is reported as confirmed without comparing anything, and a ±1 year difference passes silently. | Crossref with explicit field-by-field comparison; online/print year shown as a note; now also retraction notices and a pasted-list check in which a bare DOI is "DOI found, nothing to compare". |
+| Claim supported by source | Not built on main; a keyword "challenge" heuristic; the landing demo of claim support is scripted. | Deterministic excerpt match against stored text, plus (new) a check that numbers and negations in the claim appear in the excerpt. |
+| AI | Gateway present but returned "not built yet" (HTTP 501). | One live Gemini call over approved passages, verified on 25 Nov; output validated against approved evidence IDs. |
+| Human control and governance | AI-level dial; a policy file with a Rules page. | Fingerprinted approvals that go stale on edit; one export gate; (new) per-project rules in force, enforced at export and in the draft route. |
+| Citations and export | No citation formatting on main. | APA 7 via Citation.js; Markdown brief with a computed AI-use disclosure. |
+| Visual polish | Strong: 3D landing, receipt and stamp visuals, step rail. | Rebuilt as a three-pane workbench (this date). |
+
+What TRACE adopted as *ideas*, implemented independently: retraction flags, checking a pasted reference list, and a rules/policy surface for day-of changes.
+
 ## Visual design (25 Nov 2026)
 
 On the active builder's instruction, the interface follows the look of ReproSense (`reprosense.vercel.app`), light theme only. The values below were read from the live site's CSS:

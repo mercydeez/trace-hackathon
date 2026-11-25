@@ -27,12 +27,19 @@ Eight minutes of demo, two minutes of questions, strictly timed (Rules p. 2). Pr
 | 5:15 | Sidebar: **Run the citation trap.** Read the red banner aloud. | "This is a labelled test copy with two planted errors. Nothing is hard-coded: it is ordinary project data going through the same validators." |
 | 5:40 | Inspect claim 1. Point at "1 month" in the claim and the amber-marked "…or 1 week later" in the source. | "**The paper is real. That does not make this claim supported.** The quote says one month; the abstract says one week." |
 | 6:10 | Select the real sentence in the source text, press **Use selected text as the excerpt**, correct the claim wording, approve. | "I fix it from the real passage. One blocker gone, one left." |
+| 6:10b | (If time) Before approving claim 1, show that fixing only the quote is not enough: put the real "1 week" excerpt back but leave "one month" in the claim. | "The quote is now genuine, but the claim still says one month. The numbers check blocks it: every number in the claim must appear in the excerpt." |
 | 6:30 | Inspect claim 2. Show the identity table: year and first author disagree. Press **Use Crossref's year**; still blocked. Press **Use Crossref's first author**. | "Real DOI, wrong details. TRACE shows the disagreement and does not repair it silently. Fixing the year alone is not enough: each issue clears only when it is actually resolved." |
 | 7:00 | Reviewed export is enabled again. | "Now the gate opens." |
 | 7:00–7:30 | Day-of change (fill in on the day). | "This afternoon we were asked for ___. We changed ___, in one place, and the design from our deck is unchanged." |
 | 7:30 | Close on limits. | "What we don't claim: we read abstracts, not full papers; a text match is not proof the paper is right; the AI's support rating can be wrong; and this is not plagiarism detection. The student stays responsible, and the tool says so." |
 
 If time is short, drop 1:50 and 5:00. Never drop 5:15–7:00.
+
+### Optional beats if a judge asks for more (about 30 seconds each)
+
+- **Check a reference list** (Discover → Check a list): paste a reference list with one bare DOI and one wrong year. "A DOI that resolves is reported as 'nothing to compare', never as confirmed. The wrong year is named field by field."
+- **Retraction**: add DOI `10.1016/S0140-6736(97)11096-0` by DOI. "Its details match Crossref, and it is retracted. Two different questions, two different labels, and the export is blocked."
+- **Rules in force** (Plan step): switch AI drafting off. "This is where an assignment's AI policy goes. The draft button, the server and the export gate all enforce it, and the disclosure states it."
 
 ## Two minutes of questions
 
@@ -65,6 +72,9 @@ In the browser's local storage. No accounts or tracking. Search terms go to Cros
 
 **"Is the audit trail tamper-proof?"**
 No. It is a local convenience history and we say so.
+
+**"Another team checks DOIs against four registries. Why only Crossref?"**
+Breadth is useful, but a DOI that resolves says nothing about whether it is the paper you meant. We compare the details you cite with the record, and we never call a bare DOI "confirmed". Retraction notices come through Crossref from Retraction Watch.
 
 **"What changed today?"**
 Answer from the before/after note in `docs/day-of-playbook.md`.

@@ -74,6 +74,20 @@ Captured by the browser tests into `docs/screenshots/` at 1440×900, 1366×768 a
 - The reference-identity table was cramped inside the narrow inspector. There it is now a stacked list of only the details that need attention.
 - Opening a second claim kept the previous claim's scroll position. Each claim now opens at the top of the inspector.
 
+## Workbench redesign and new features: 25 November 2026, about 12:00–12:20 (+04:00)
+
+The previous redesign is tagged `pre-workbench`.
+
+| Check | Result |
+|---|---|
+| `npm run typecheck`, `npm run lint` | **passed** |
+| `npm test` | **passed**, 141 of 141 in 10 files (new: claim details, reference-list parsing and verdicts, rules, retraction) |
+| `npm run test:e2e` | **passed**, 14 of 14 (new: check a reference list; AI drafting switched off by the rules; numbers check on a half-repaired trap claim) |
+| `npm run smoke:live` | **passed**, 8 of 8: Crossref search and DOI lookup, unknown DOI is "not found", a real retraction notice read from Crossref (Wakefield et al. 1998, retracted 2010), OpenAlex abstract, APA formatting, and a live Gemini draft |
+| Design detector (`impeccable detect`) on the changed components | **passed**, no findings |
+| Screenshots at 1440×900, 1366×768 and 390×844 | reviewed once; fixed: cut-off "Projects and tools" in the rail, one-line step states, a stretched term input, quote-mark spacing |
+
+Two sample claims were corrected because the new claim-details check found they stated details their excerpts did not contain: claim 1 now quotes the sentence that names the delays, and claim 4 no longer says "ten" techniques.
 ## Visual redesign: 25 November 2026, about 11:40 (+04:00)
 
 The interface was restyled to match ReproSense, light theme only:

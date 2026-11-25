@@ -37,7 +37,10 @@ npm start
 | Crossref search, DOI lookup, citation checking | live | live |
 | OpenAlex abstract fallback | live | live |
 | Library: tags, notes, filters, duplicate prevention | yes | yes |
-| Excerpt, identity, approval and export checks | yes | yes |
+| Check a pasted reference list (up to 15) | live | live |
+| Retraction notices from Crossref | live | live |
+| Rules in force (AI drafting on/off, oldest year, block retracted) | yes | yes |
+| Excerpt, claim-details, identity, approval and export checks | yes | yes |
 | APA 7 references, Markdown brief, JSON backup | yes | yes |
 | Hand-written claims linked to passages | yes | yes |
 | "Draft with AI" | disabled, and says why | one structured call over the approved passages |
