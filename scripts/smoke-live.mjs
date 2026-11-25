@@ -39,6 +39,10 @@ report("Crossref DOI lookup", doi.body.ok && doi.body.data.record.year === 2008,
 const unknown = await call(`/api/doi?doi=${encodeURIComponent("10.1234/trace-smoke-test-no-such-doi")}`);
 report("unknown DOI is 'not_found'", unknown.status === 404 && unknown.body.kind === "not_found", `HTTP ${unknown.status}, kind: ${unknown.body.kind}`);
 
+// A paper Crossref lists as retracted (Wakefield et al., 1998, retracted 2010).
+const retracted = await call(`/api/doi?doi=${encodeURIComponent("10.1016/S0140-6736(97)11096-0")}`);
+report("retraction notice read from Crossref", retracted.body.ok && retracted.body.data.record.retraction?.kind === "retraction", retracted.body.ok ? `retraction: ${JSON.stringify(retracted.body.data.record.retraction ?? null)}` : `${retracted.body.kind}: ${retracted.body.message}`);
+
 const oa = await call(`/api/abstract?doi=${encodeURIComponent("10.1037/a0037559")}`);
 report("OpenAlex abstract fallback", oa.body.ok && oa.body.data.text.length > 100, oa.body.ok ? `${oa.body.data.text.length} characters` : `${oa.body.kind}: ${oa.body.message}`);
 

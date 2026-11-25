@@ -1,17 +1,20 @@
 "use client";
 
-import { BookmarkPlus, Check, ExternalLink, FileText, FileX2, Search, WifiOff } from "lucide-react";
+import { BookmarkPlus, Check, ExternalLink, FileText, FileX2, ListChecks, Search, WifiOff } from "lucide-react";
 import { useState } from "react";
 import { callApi, type SearchResult, type WorkRecord } from "@/lib/api";
 import { isPlanApproved } from "@/lib/approvals";
 import { parseAuthors, SOURCE_TYPES } from "@/lib/csl";
 import { doiUrl, normaliseDoi } from "@/lib/doi";
 import { sourceIdentity } from "@/lib/identity";
+import type { FieldCheck } from "@/lib/identity";
+import { judgeReference, citedFromParsed, type ListVerdict } from "@/lib/refCheck";
+import { MAX_REFERENCES, parseReference, splitReferences, type ParsedReference } from "@/lib/refList";
 import { addSource, findDuplicate, manualSource, sourceFromWork } from "@/lib/mutations";
 import { planQuery } from "@/lib/plan";
 import { formatAuthorsShort } from "@/lib/text";
 import type { Lookup, Outcome, Source } from "@/lib/types";
-import { IDENTITY, StatusChip } from "./status";
+import { IDENTITY, RETRACTED, StatusChip } from "./status";
 import { useProject, useStore } from "./store";
 import { Button, Chip, cx, Empty, Field, Notice, SectionTitle, Select, TextArea, TextInput } from "./ui";
 
@@ -366,8 +369,140 @@ function ByHand() {
   );
 }
 
+// --- Check a pasted reference list ----------------------------------------------------------
+
+const VERDICT: Record<ListVerdict, { tone: "ok" | "warn" | "bad" | "neutral"; label: string }> = {
+  match: { tone: "ok", label: "Details match Crossref" },
+  doi_only: { tone: "neutral", label: "DOI found, nothing to compare" },
+  possible: { tone: "warn", label: "Possible match, check it" },
+  mismatch: { tone: "bad", label: "Details disagree with Crossref" },
+  no_close_match: { tone: "warn", label: "No close match in Crossref" },
+  not_found: { tone: "warn", label: "Not found in Crossref" },
+  could_not_check: { tone: "neutral", label: "Could not check" },
+};
+
+interface ListRow {
+  parsed: ParsedReference;
+  verdict: ListVerdict;
+  work: WorkRecord | null;
+  fields: FieldCheck[];
+  note: string | null;
+}
+
+async function checkOne(parsed: ParsedReference): Promise<ListRow> {
+  if (parsed.doi) {
+    const r = await callApi<WorkRecord>(`/api/doi?doi=${encodeURIComponent(parsed.doi)}`);
+    if (!r.ok) return { parsed, verdict: r.kind === "not_found" ? "not_found" : "could_not_check", work: null, fields: [], note: r.kind === "not_found" ? "This does not show the paper is fake: it may be registered elsewhere, or the DOI may be mistyped." : r.message };
+    const j = judgeReference(parsed, r.data.record, "doi");
+    return { parsed, verdict: j.verdict, work: r.data, fields: j.fields, note: null };
+  }
+  if (parsed.query.length < 8) return { parsed, verdict: "could_not_check", work: null, fields: [], note: "Too little text to search for." };
+  const r = await callApi<SearchResult>(`/api/search?${new URLSearchParams({ q: parsed.query, rows: "1" })}`);
+  if (!r.ok) return { parsed, verdict: "could_not_check", work: null, fields: [], note: r.message };
+  const top = r.data.items[0];
+  if (!top) return { parsed, verdict: "not_found", work: null, fields: [], note: "Crossref returned nothing for this text. That is not evidence it was never published." };
+  const j = judgeReference(parsed, top.record, "search");
+  return { parsed, verdict: j.verdict, work: top, fields: j.fields, note: "No DOI was given, so this is Crossref's closest record. Confirm it is the work you meant." };
+}
+
+function CheckList() {
+  const project = useProject();
+  const { update } = useStore();
+  const [text, setText] = useState("");
+  const [rows, setRows] = useState<ListRow[]>([]);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const refs = splitReferences(text);
+  const capped = refs.slice(0, MAX_REFERENCES);
+
+  async function run() {
+    const parsed = capped.map(parseReference);
+    setRows([]);
+    setProgress({ done: 0, total: parsed.length });
+    const out: ListRow[] = [];
+    // One at a time: the server queues Crossref calls anyway, and results appear as they arrive.
+    for (const p of parsed) {
+      out.push(await checkOne(p));
+      setRows([...out]);
+      setProgress({ done: out.length, total: parsed.length });
+    }
+    setProgress(null);
+  }
+
+  function add(row: ListRow) {
+    if (!row.work) return;
+    const { source, evidence } = sourceFromWork(row.work, "citation_check", new Date().toISOString());
+    // Keep the details as the reference gave them, so the comparison with Crossref stays visible.
+    const given = citedFromParsed(row.parsed);
+    source.cited = {
+      ...source.cited,
+      title: given.title || source.cited.title,
+      year: given.year ?? source.cited.year,
+      authors: given.authors[0] && given.authors[0].family.toLowerCase() !== (source.cited.authors[0]?.family ?? "").toLowerCase() ? given.authors : source.cited.authors,
+    };
+    update((p) => addSource(p, source, evidence), `Added “${source.cited.title}” from a checked reference list.`);
+  }
+
+  return (
+    <div className="space-y-4">
+      <Field label="Reference list" hint={`Paste up to ${MAX_REFERENCES} references, one per line or separated by blank lines. DOIs are used when present; otherwise TRACE searches Crossref.`}>
+        {(id) => <TextArea id={id} rows={6} value={text} maxLength={12000} onChange={(e) => setText(e.target.value)} placeholder="Roediger, H. L., & Karpicke, J. D. (2006). Test-enhanced learning… https://doi.org/10.1111/j.1467-9280.2006.01693.x" />}
+      </Field>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="primary" icon={ListChecks} disabled={capped.length === 0 || progress !== null} onClick={() => void run()}>
+          {progress ? `Checking ${progress.done + 1} of ${progress.total}…` : `Check ${capped.length || ""} reference${capped.length === 1 ? "" : "s"}`.replace("  ", " ")}
+        </Button>
+        {refs.length > MAX_REFERENCES && <span className="text-sm text-warn">Only the first {MAX_REFERENCES} will be checked.</span>}
+      </div>
+
+      {rows.length > 0 && (
+        <ol className="divide-y divide-line rounded-lg border border-line" aria-live="polite" aria-label="Checked references">
+          {rows.map((row, n) => {
+            const v = VERDICT[row.verdict];
+            const disagree = row.fields.filter((f) => f.verdict === "mismatch");
+            const saved = row.work ? findDuplicate(project, { doi: row.work.doi, cited: row.work.record }) : undefined;
+            return (
+              <li key={n} className="p-4">
+                <p className="line-clamp-2 text-sm text-ink">{row.parsed.raw}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Chip tone={v.tone} icon={v.tone === "ok" ? Check : v.tone === "bad" ? FileX2 : undefined}>
+                    {v.label}
+                  </Chip>
+                  {row.work?.record.retraction && <StatusChip badge={RETRACTED} />}
+                </div>
+                {disagree.length > 0 && (
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {disagree.map((f) => (
+                      <li key={f.field}>
+                        <span className="font-semibold">{f.field === "first_author" ? "First author" : f.field === "title" ? "Title" : "Year"}:</span> given “{f.cited}”, Crossref has “{f.registry}”.
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {row.work && row.verdict !== "match" && <p className="mt-2 text-sm text-ink-soft">Crossref record: {row.work.record.title} ({row.work.record.year ?? "n.d."})</p>}
+                {row.note && <p className="mt-1 text-sm text-ink-soft">{row.note}</p>}
+                {row.work && (
+                  <div className="mt-3">
+                    {saved ? (
+                      <Chip tone="neutral" icon={Check}>
+                        In your library
+                      </Chip>
+                    ) : (
+                      <Button size="sm" icon={BookmarkPlus} onClick={() => add(row)}>
+                        Add to library
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
 export function DiscoverStep({ goToPlan }: { goToPlan: () => void }) {
-  const [mode, setMode] = useState<"doi" | "hand">("doi");
+  const [mode, setMode] = useState<"doi" | "list" | "hand">("doi");
   return (
     <div className="step-body grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_25rem]">
       <SearchPanel goToPlan={goToPlan} />
@@ -377,6 +512,7 @@ export function DiscoverStep({ goToPlan }: { goToPlan: () => void }) {
           {(
             [
               ["doi", "By DOI"],
+              ["list", "Check a list"],
               ["hand", "By hand"],
             ] as const
           ).map(([id, label]) => (
@@ -385,7 +521,7 @@ export function DiscoverStep({ goToPlan }: { goToPlan: () => void }) {
             </button>
           ))}
         </div>
-        <div role="tabpanel">{mode === "doi" ? <ByDoi /> : <ByHand />}</div>
+        <div role="tabpanel">{mode === "doi" ? <ByDoi /> : mode === "list" ? <CheckList /> : <ByHand />}</div>
       </section>
     </div>
   );
