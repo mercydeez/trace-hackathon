@@ -10,6 +10,8 @@ https://github.com/mercydeez/trace-hackathon
 
 Make the repository public before submitting, and open it in a private window to confirm.
 
+**Checked 25 Nov 2026, about 23:20:** while the repository is private, both this URL and the prompt-log URL return **404** to a signed-out visitor. Before submitting, the owner either makes it public (Settings → General → Danger Zone → Change visibility) or adds the organisers as collaborators. Choose one and then re-check in a private window.
+
 ## 2. Prompt log
 
 ```
@@ -25,6 +27,20 @@ The log is chronological and includes the build prompt, the set-up answers, the 
 ```
 https://trace-hackathon.vercel.app
 ```
+
+Verified signed out on 25 Nov 2026 at about 23:20, release commit `9b97481` (Vercel deployment `4WectjuLoxHFoXPjF1Bt4YWg5m5G`). Rollback: Vercel → Deployments → Instant Rollback to `3ubHyssr1ba1nDaaB6g9PJqHVS4H`.
+
+### The five judging requirements: demo action and evidence
+
+| Requirement | Demo action on the live site | Evidence (actual results, 25 Nov 2026) |
+|---|---|---|
+| 1. Verification is read-only; only an explicit Add changes the library | Welcome → **Check a reference** → check DOI `10.1126/science.1152408` with year 2025. The library count stays at 7. Then a wrong-year DOI that is not yet saved: the only action is **Use Crossref's details and add** | Browser test "check by DOI is read-only…" passed. On production: count stayed 7, then went 7 → 8 only on the explicit add. A stale result hides when the input changes; out-of-order answers are dropped. |
+| 2. Fake references stay out of trusted output | Check DOI `10.1234/trace-smoke-test-no-such-doi`. In **Check a list**, paste `Imaginary, A. (2025). The violet stapler theorem for interstellar note-taking.` | On production: **Not found in Crossref** with no add button, and **No close match in Crossref** with no buttons. Hand-entered references are **Not yet verified**: they block a reviewed export (unit test) and are left out of the APA list with a count (browser test). A timeout shows **Could not check**, "no evidence that the paper does not exist" (browser test, mocked 429). |
+| 3. A trust label on every reference and claim, with a legend | Open "What the labels mean" in Discover, Library or Brief. Point at the search rows, DOI preview, list rows, Library rows, Brief reference list and each claim card | Claim card on production: **Sample, not live AI · Details match Crossref · Excerpt found in stored text · Student approved**. A fuzzy title shows **Partial match: check details** (unit test). The comparison names **First author's surname**. |
+| 4. APA 7 reference list from the Library | Library → **Copy APA 7 reference list** or **Download APA 7 reference list** | On production: 8 references shown, and `references-apa7-2026-11-25.txt` downloaded with 8 entries. The browser test checks that the copied and downloaded text match. Excluded records are counted with reasons. Formatting errors offer a retry, and a refused clipboard shows selectable text. |
+| 5. Copyable AI-use statement | Brief and export → **Copy AI-use statement** | On production, after approving all 4 sample claims: "…labelled SAMPLE brief… I reviewed and approved all 4 claims…". Before approval it says "I have approved 0 of 3 claims so far" (phone run). Passage counts come from the run that produced the claims (unit test). |
+
+Totals for this release: 192 of 192 unit tests, 18 of 18 browser journeys, 8 of 8 live smoke checks against production (including a real Gemini draft through the new server-side screen).
 
 **If not deployed** (use this wording instead, as the guidelines allow):
 

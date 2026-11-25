@@ -2,6 +2,36 @@
 
 Results of checks that were actually run. Each line is **passed**, **failed** or **not run**. Nothing is listed as passed without a run behind it.
 
+## Phase 2 judging requirements · 25 November 2026, about 22:00–23:30 Dubai time
+
+Built and verified by Claude Code (Claude Opus 5.5) from `docs/claude-code-phase-2.md`.
+
+**Release:** commit `9b97481`, Vercel deployment `4WectjuLoxHFoXPjF1Bt4YWg5m5G`, https://trace-hackathon.vercel.app. Its commit is authored as the owner's GitHub account, so the push deployed; earlier pushes were blocked. **Rollback target:** `3ubHyssr1ba1nDaaB6g9PJqHVS4H` (release `3d32bb1`, with the key).
+
+| Check | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | **Passed** |
+| `npm test` | **Passed**, 192 of 192 in 14 files. New: partial match; Not yet verified blocking a claim and an in-text citation; APA list eligibility; AI-use statement for live, sample, manual, mixed and edited work; run-linked passage count; server screening. |
+| `npm run build`, `npm run test:e2e` (production build, Edge) | **Passed**, 18 of 18. New or rewritten: read-only DOI check, list check with a fabricated reference, APA 7 list and AI-use statement copy and download, welcome "Check a reference". |
+| Local production build, 1366 px, live Crossref | Real DOI `10.1126/science.1152408` with year 2025: **Details disagree with Crossref**; "In your library · Your saved record was not changed"; library count unchanged (7) |
+| Local production build, 375 px, no key | APA 7 list (7 references). The clipboard was refused in the preview pane, and both copy buttons showed the selectable fallback. Statement: "I have approved 0 of 3 claims so far". Claim chips: Sample · Details match Crossref · Excerpt found · Waiting. No horizontal overflow. |
+| `npm run smoke:live` against this deployment | **8 of 8 passed**, including a real Gemini draft through the new server-side screen (2 claims, both citing supplied IDs, excerpts byte-for-byte) |
+| Production, clean browser session with no Vercel login | See the table below. Every row passed. |
+
+| Production check (signed out) | Result |
+| --- | --- |
+| Welcome → **Check a reference** | Opens Discover at the DOI check, with the library at 7 |
+| Fake DOI `10.1234/trace-smoke-test-no-such-doi` | "Not found in Crossref. This does not show the paper is fake"; **no add button**; library still 7 |
+| Real DOI `10.1126/science.1152408` with year 2025 | **Details disagree with Crossref**; already saved, so "Your saved record was not changed"; library still 7 |
+| Fabricated `Imaginary, A. (2025). The violet stapler theorem…` in Check a list | **No close match in Crossref**; **no buttons**; "Nothing can be added from this result" |
+| Real unsaved DOI `10.1037/e741342011-107` (2009) cited as 2002 | Details disagree; the **only** action was "Use Crossref's details and add"; library 7 → 8; Library row shows **Details match Crossref** |
+| APA 7 list | 8 references on screen; `references-apa7-2026-11-25.txt` downloaded with 8 entries |
+| Sample brief, all 4 claims approved | Chips: Sample, not live AI · Details match Crossref · Excerpt found in stored text · Student approved. Statement: "I reviewed and approved all 4 claims…". Reviewed brief downloaded with its AI-use disclosure. |
+| Phone, 375 px | Discover, Library and Brief: no horizontal overflow |
+| Code access signed out | `github.com/mercydeez/trace-hackathon` and the prompt-log URL return **404** (the repository is private). Owner to decide: make it public, or add the organisers as collaborators. |
+
+Not covered by an automated check: copying in a real browser where clipboard permission is granted (the browser suite grants it; the preview pane refused it, which exercised the fallback).
+
 ## Production deployment · 25 November 2026, about 17:20 Dubai time
 
 - **URL:** https://trace-hackathon.vercel.app. Vercel Hobby, GitHub import of `mercydeez/trace-hackathon`, branch `main`.

@@ -117,7 +117,7 @@ Fix only the quote and the claim's "one month" is still blocked.
 
 | Risk | How the design handles it |
 |---|---|
-| Invented citations | Sources enter only through Crossref search, DOI lookup, or as references clearly labelled "entered by hand, not checked". AI never writes a reference. |
+| Invented citations | Sources enter only through Crossref search, DOI lookup, or as hand-entered references labelled "Not yet verified", kept out of reviewed exports. AI never writes a reference. |
 | False or overstated claims | Each claim is tied to an excerpt that is text-matched; unsupported points are labelled inference; every claim carries a limitations line; "abstract only" is always shown. |
 | Plagiarism | Excerpts are kept as quotations with their source, in the workspace and in the export. TRACE does not detect plagiarism and says so. |
 | Privacy | No accounts, tracking or personal data. Work stays in the browser. Only the question and approved passages reach the AI provider, and its data-use terms are shown. |
@@ -180,4 +180,4 @@ Accounts and collaboration; PDF or full-text ingestion; browser extension; plagi
 | Another export format | one builder function |
 | A new workflow step | one tab and one approval fingerprint |
 
-**Status line:** 182 of 182 unit tests and 16 of 16 browser journey tests passing on 25 Nov 2026; live AI call verified: yes, 25 Nov (gemini-3.5-flash-lite, free tier; drafted claims cited only supplied evidence IDs and their excerpts were found verbatim); deployed: trace-hackathon.vercel.app.
+**Status line:** 192 of 192 unit tests and 18 of 18 browser journey tests passing on 25 Nov 2026; live AI call verified: yes, 25 Nov (gemini-3.5-flash-lite, free tier; drafted claims cited only supplied evidence IDs and their excerpts were found verbatim); deployed: trace-hackathon.vercel.app.

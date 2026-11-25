@@ -6,8 +6,8 @@
 // ── STATUS ── rendered as the status line on slide 6. Replace at the final pass with real values.
 const STATUS = {
   // Values from the full run recorded in docs/qa-report.md. Update only from a real run.
-  unitTests: '182 of 182', // number of unit tests passing
-  e2eTests: '16 of 16', // number of browser journey tests passing
+  unitTests: '192 of 192', // number of unit tests passing
+  e2eTests: '18 of 18', // number of browser journey tests passing
   date: '25 Nov 2026', // date the tests were run
   liveAi: 'Yes, 25 Nov', // live AI call verified: yes / no
   deployed: 'trace-hackathon.vercel.app', // URL, or "laptop demo declared"
@@ -486,7 +486,7 @@ function frame(n, kickers, title, headline, o = {}) {
     ethicsHead: ['Risk', 'How the design handles it'],
     ethics: [
       ['Invented citations',
-        'Sources enter only through Crossref search, DOI lookup, or as references clearly labelled “entered by hand, not checked”. AI never writes a reference.'],
+        'Sources enter only through Crossref search, DOI lookup, or as hand-entered references labelled “Not yet verified”, kept out of reviewed exports. AI never writes a reference.'],
       ['False or overstated claims',
         'Sourced claims are checked against excerpts. Inferences are labelled. Evidence scope and claim limitations are visible during review.'],
       ['Plagiarism',

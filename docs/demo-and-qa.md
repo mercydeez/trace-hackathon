@@ -8,6 +8,23 @@ Eight minutes of demo, two minutes of questions, strictly timed (Rules p. 2). Pr
 2. Run the live smoke test before presenting. Use the labelled sample if live drafting is unavailable.
 3. Prepare a local production server on the presentation laptop. Its stored fixtures, citation formatting and export work without internet access while that server is running.
 
+## Judging walkthrough: the five requirements (about 4 minutes)
+
+Use this when a judge asks to see the requirements one by one, or as the opening half of the demo. Start on the welcome screen of the live site in a fresh browser.
+
+| Step | Do | Say |
+|---|---|---|
+| 1 | **Check a reference**. Enter DOI `10.1234/trace-smoke-test-no-such-doi` and press **Check DOI**. | "An invented DOI: *Not found in Crossref*, and there is no add button. Not found isn't proof it's fake, so we don't call it fake. We just don't trust it." |
+| 2 | **Check a list** tab. Paste `Imaginary, A. (2025). The violet stapler theorem for interstellar note-taking.` and press **Check 1 reference**. | "A made-up citation with no DOI. Crossref's closest record doesn't match, so *No close match*, and nothing can be added." |
+| 3 | **By DOI** tab. DOI `10.1126/science.1152408`, Year `2025`, **Check DOI**. Point at the library count in the sidebar. | "A real paper with the wrong year. *Details disagree with Crossref*, field by field, and only the first author's surname is compared, as the screen says. Checking never changes the library: still 7 sources." |
+| 4 | Open **What the labels mean**. | "Every reference and claim carries one of these labels. Each is evidence about one check, never a general 'verified'." |
+| 5 | Plan → **Approve plan** → Library. Tick **Use in the evidence set** on three abstracts → **Review evidence set** → **Approve evidence set**. | "The student decides what the AI may see." |
+| 6 | **Draft with AI**, or **Load sample brief (not live AI)** if Google is busy. Inspect claim 1, then **Approve**. | "Separate labels: who wrote it, whether the reference matches Crossref, whether the quote is in the stored text, and the student's decision." |
+| 7 | Library → **Copy APA 7 reference list** (or Download). | "The whole library as an APA 7 list, formatted by Citation.js from Crossref's records. Unverified references are left out and counted." |
+| 8 | Brief → **Copy AI-use statement**. Paste it into a text box or email. | "A paste-ready statement built from what actually happened. It says 'reviewed and approved' only once every claim is approved." |
+
+If the network is slow, steps 1–3 can fail as **Could not check**: say "a timeout is no evidence either way" and continue with step 4. Steps 4–8 work with the stored demo data.
+
 ## The eight minutes
 
 | Time | Do | Say |

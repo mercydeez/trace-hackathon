@@ -356,3 +356,16 @@ Codex updated the [final release prompt](claude-code-final-pass.md) and invoked 
 - **Model:** Claude Opus 5.5 (Claude Code)
 
 The owner pasted the release prompt saved in [claude-code-final-pass.md](claude-code-final-pass.md) unchanged, and chose a Vercel GitHub import through Claude in Chrome, with the owner adding the Gemini key on the host. Claude Code verified the working tree from a clean install. A separate review agent audited the patch. Claude Code fixed the defects it could reproduce, ran the browser checks, and prepared the release. Results are in [the QA report](qa-report.md).
+## 17 — Phase 2 judging requirements
+
+- **Date:** 25 November 2026, about 22:30 Dubai time
+- **Model:** Claude Opus 5.5 (Claude Code)
+
+The owner pasted the five-requirement brief saved unchanged in [claude-code-phase-2.md](claude-code-phase-2.md):
+1. read-only verification with an explicit Add;
+2. fake references kept out of trusted output;
+3. a trust label on every reference and claim;
+4. a Library APA 7 reference list;
+5. a copyable AI-use statement.
+
+It also listed two optional items: a welcome "Check a reference" entry, and server-side screening of AI answers. Asked how to ship while Vercel blocked pushes from this machine, the owner chose to set this repository's Git author to their own GitHub identity. Results are in [the QA report](qa-report.md) and [the Phase 2 submission notes](../submissions/phase-2-submission.md).

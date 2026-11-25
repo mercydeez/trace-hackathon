@@ -37,6 +37,7 @@ Last updated: 25 November 2026, Dubai time
 
 - 25 Nov 2026, 16:50–17:10: release verification of the full working tree in Claude Code. npm ci, lint, typecheck, 182/182 unit, build and 16/16 journeys passed; manual desktop (invalid key) and mobile (no key) runs passed; 5 defects fixed (see docs/qa-report.md).
 - 25 Nov 2026, ~17:45: **deployed** to https://trace-hackathon.vercel.app (release `3d32bb1`, tag `release-2026-11-25`; production deployment `3ubHyssr1ba1nDaaB6g9PJqHVS4H` with the Gemini key; rollback target `6dw5K7Y4m7miQwvnGHEjyZQZD4yv`). Verified in a clean session: core demo, trap and reviewed test copy, mobile, and a live AI draft. Note: Vercel Hobby blocks Git-push deploys while the repo is private, because commits come from a non-owner author; redeploy from the dashboard until the repo is public.
+- 25 Nov 2026, ~23:30: **Phase 2 judging requirements** shipped (commit `9b97481`, deployment `4WectjuLoxHFoXPjF1Bt4YWg5m5G`): read-only checks with an explicit Add, Not yet verified kept out of trusted output, trust labels with a legend, a Library APA 7 list, and a copyable AI-use statement. 192/192 unit, 18/18 journeys, 8/8 live smoke on production, and the signed-out production walkthrough all passed. Repo Git author is now the owner's GitHub identity, so pushes deploy. The repo is still private, so organiser access is the owner's choice.
 
 Details: `docs/qa-report.md`.
 
