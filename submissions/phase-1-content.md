@@ -33,9 +33,9 @@ Six slides, judged without a presentation (Submission Guidelines p.1). This file
 | # | Step | Who | What happens |
 |---|---|---|---|
 | 1 | Ask | Student | Writes the research question. |
-| 2 | Plan | Code + Student | Rule-based search terms (no AI); the student edits terms and year scope. **Checkpoint 1: approve the plan.** |
+| 2 | Plan | Code + Student | Rule-based search terms (no AI); the student edits terms and year scope and sets the rules in force. **Checkpoint 1: approve the plan and its rules.** |
 | 3 | Discover | Code — FIND | Live Crossref search. Each result shows title, authors, year, venue, DOI and whether an abstract exists. |
-| 4 | Organise | Student | Save to the library, tag, annotate, filter. Add by DOI. Check a citation someone gave you. Duplicate DOIs are blocked. |
+| 4 | Organise | Student | Save to the library, tag, annotate, filter. Add by DOI. Check a citation someone gave you, or a pasted reference list. Duplicate DOIs are blocked. |
 | 5 | Approve evidence | Student | Select passages and see exactly what will be sent to the model. **Checkpoint 2: approve the evidence set.** No source text means no AI summary. |
 | 6 | Draft | AI — DRAFT | One structured call returns at most 5 claim cards, each with an evidence ID and a verbatim excerpt. Without AI: write claims by hand, or load a clearly labelled sample. |
 | 7 | Check and inspect | Code — CHECK, then Student | Code validates every claim. The student opens the Claim Inspector, edits or rejects. **Checkpoint 3: approve each claim.** |
@@ -75,6 +75,7 @@ Six slides, judged without a presentation (Submission Guidelines p.1). This file
 | No abstract available | Saved as metadata only; no AI summary is offered. |
 | No AI key, or the AI call fails | Retry, write manually, or load the labelled sample. Never a silent substitute. |
 | Model cites an unknown ID or adds a DOI | That item is rejected and shown as rejected. |
+| Paper retracted | Shown as Retracted beside identity; blocked at export by default. |
 
 **Realistic to change in 90 minutes.** One file per provider, one pure function per check, one export gate. A new rule touches one function and its test.
 
@@ -82,17 +83,17 @@ Six slides, judged without a presentation (Submission Guidelines p.1). This file
 
 ## Slide 4 — Guardrails: code paths, not promises [Guardrails, 6 pts]
 
-**Headline:** Eight mechanisms, and one test case that shows them working.
+**Headline:** Eight risks, the code path for each, and one test case that shows them working.
 
 | What could go wrong | Mechanism in TRACE |
 |---|---|
-| An invented reference | References are built only from stored registry metadata by a CSL formatter. The AI's output schema has no field for a title, author, year or DOI; extra fields cause rejection. |
+| An invented reference | References are built only from stored registry metadata by a CSL formatter. The AI's output schema has no title, author, year or DOI field; extra fields cause rejection. |
 | Citing a source the student never approved | ID allow-list: the model may return only evidence IDs from the approved set. Anything else is rejected and shown. |
 | A quote that is not in the source | Deterministic excerpt match against the stored text. Curly quotes, spacing and case are tolerated; numbers, negations and punctuation are not. The real passage is highlighted. |
-| A real DOI with the wrong details | Cited title, first author and year are compared with the Crossref record. Disagreements are displayed, never silently repaired. |
-| A guess stated as fact | Points without a source passage must be marked "inference". Support ratings are labelled "AI-suggested, can be wrong". No confidence scores and no global "Verified" badge. |
-| An approval that no longer applies | Each approval stores a fingerprint of what was approved. Any later edit makes it "stale". |
-| Unreviewed work leaving the tool | One export gate re-checks IDs, quotes, approvals and mismatches at export time. Anything else downloads as DRAFT. |
+| A claim that says more than its quote | Claim-details check: numbers and negations in the claim must also appear in the excerpt it quotes, or reviewed export is blocked. Deterministic, no AI. |
+| A real DOI with the wrong details, or a retracted paper | Cited title, first author and year are compared with the Crossref record; disagreements are shown, never silently repaired. Crossref retraction notices (largely Retraction Watch data) give a separate "Retracted" status, blocked at export by default. |
+| A guess stated as fact | Points without a source passage are marked "inference". Support ratings are labelled "AI-suggested, can be wrong". No confidence scores, no global "Verified" badge. |
+| A stale approval, or unreviewed work leaving the tool | Approvals store a fingerprint; any later edit makes them "stale". One export gate re-checks IDs, quotes, claim details, approvals, mismatches and project rules; anything else downloads as DRAFT. |
 | A failure dressed up as success | "Not found" and "Could not check" are different states. Sample output is labelled in the workspace, on each claim and in the export. Hard limits: 6 passages, 5 claims, 1 AI call, 1 retry. Source text is treated as data, never as instructions. |
 
 **The citation trap (in the demo).** A labelled test copy of the demo project with two planted errors:
@@ -101,6 +102,8 @@ Six slides, judged without a presentation (Submission Guidelines p.1). This file
 2. A real source with a quotation changed from "1 week" to "1 month" → **quote mismatch**.
 
 Both are caught by the same validators used in normal work. Reviewed export is blocked. Fixing one error clears only that error.
+
+Fix only the quote and the claim's "one month" is still blocked.
 
 > **The paper is real. That does not make this claim supported.**
 
@@ -125,9 +128,9 @@ Both are caught by the same validators used in normal work. Reviewed export is b
 
 **Governance**
 
-- **Accountability.** The student is the author and approves the plan, the evidence set and every claim. TRACE never approves on the student's behalf. The export states that the student reviewed each claim and remains responsible. The builders are accountable for the tool doing what it says: the checks are unit-tested and the limits are documented.
+- **Accountability.** The student is the author and approves the plan, the evidence set and every claim. TRACE never approves on the student's behalf. The export states that the student reviewed each claim and remains responsible. The builders answer for the tool doing what it says: the checks are unit-tested, the limits documented.
 - **AI disclosure.** Generated from recorded activity, not a fixed paragraph: which claims were AI-drafted (model named), which are sample output, which the student wrote; what was sent to the model; what was rejected; what the checks do and do not show.
-- **Rules and policies followed.** Hackathon rules: sample content labelled, no invented references, no personal or confidential data, prompt log kept. Provider terms: Crossref rate limits, OpenAlex budget, Gemini free-tier terms. SP Jain's academic-integrity and AI-use policies apply to how a student uses the output; their text was not supplied to us, so TRACE enforces disclosure and human sign-off rather than quoting clauses. We will confirm specifics with the organisers.
+- **Rules and policies followed.** Project rules: set by the student in the Plan step to match the assignment's policy: AI drafting on (approved passages only) or off, oldest publication year, block retracted sources. The export gate, the draft button and the server enforce them; the disclosure lists them. Hackathon rules: sample content labelled, no invented references, no personal or confidential data, prompt log kept. Provider terms: Crossref rate limits, OpenAlex budget, Gemini free-tier terms. SP Jain's academic-integrity and AI-use policies apply to how a student uses the output; their text was not supplied to us, so TRACE enforces disclosure and human sign-off rather than quoting clauses. We will confirm specifics with the organisers.
 - **What TRACE does not claim.** Plagiarism detection, that sources are correct, institutional approval, or a tamper-proof audit trail. The activity history is local and for convenience.
 
 ---
@@ -140,10 +143,11 @@ Both are caught by the same validators used in normal work. Reviewed export is b
 - The eight-step journey on one page.
 - Live Crossref search and DOI lookup; OpenAlex abstract fallback.
 - Library with tags, notes, filters and duplicate prevention.
-- Evidence approval with a preview of exactly what is sent.
-- One live AI provider (Gemini), a full manual path, and a labelled sample brief.
+- Evidence approval with a preview of what is sent.
+- One live AI provider (Gemini), a full manual path, a labelled sample brief.
 - Claim Inspector and citation trap.
-- APA 7 references (Citation.js); Markdown brief; JSON project backup; browser-local persistence.
+- Reference-list check; retraction flag; project rules.
+- APA 7 references (Citation.js); Markdown brief; JSON backup; browser-local storage.
 
 **Deliberately out of scope**
 Accounts and collaboration; PDF or full-text ingestion; browser extension; plagiarism detection; systematic-review coverage.
@@ -152,7 +156,8 @@ Accounts and collaboration; PDF or full-text ingestion; browser extension; plagi
 - Search → save → tag → reload → approve → brief → inspect → export runs end to end.
 - A model answer that cites an unknown ID, or carries a DOI or author field, is rejected.
 - An altered number or a dropped negation in a quotation fails the check.
-- Editing a claim, a passage or the question makes approvals stale and blocks the reviewed export.
+- A claim stating a number its excerpt lacks is blocked.
+- Editing a claim, a passage or the question makes approvals stale and blocks reviewed export.
 - A timeout shows "Could not check", never "Not found".
 - Sample output stays labelled through to the exported file.
 
@@ -170,8 +175,9 @@ Accounts and collaboration; PDF or full-text ingestion; browser extension; plagi
 |---|---|
 | Another source or AI provider | one adapter file |
 | A new check or trust label | one pure function, plus the export gate |
+| A new rule or policy | one field in Rules in force, plus the export gate |
 | Another citation style | one CSL style name |
 | Another export format | one builder function |
 | A new workflow step | one tab and one approval fingerprint |
 
-**STATUS LINE (fill in at final pass with real numbers):** `<N>` unit tests and `<M>` browser journey tests passing on `<date>`; live AI call verified: `<yes/no>`; deployed: `<url or "laptop demo declared">`.
+**Status line:** 141 of 141 unit tests and 14 of 14 browser journey tests passing on 25 Nov 2026; live AI call verified: yes, 25 Nov (gemini-3.5-flash-lite, free tier; drafted claims cited only supplied evidence IDs and their excerpts were found verbatim); deployed: not yet.
