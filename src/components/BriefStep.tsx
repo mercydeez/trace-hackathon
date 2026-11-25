@@ -12,7 +12,7 @@ import { buildDraftPayload, LIMITS, type DraftEvidenceInput } from "@/lib/prompt
 import { formatAuthorsShort, inTextShort, newId } from "@/lib/text";
 import type { Project } from "@/lib/types";
 import { validateDraft } from "@/lib/validateDraft";
-import { DECISION, excerptBadge, IDENTITY, originBadge, StatusChip } from "./status";
+import { DECISION, excerptBadge, IDENTITY, RETRACTED, originBadge, StatusChip } from "./status";
 import { useProject, useReferences, useStore, type References } from "./store";
 import { Button, cx, downloadText, Empty, Notice, ReferenceText, SectionTitle, shortDate } from "./ui";
 
@@ -269,6 +269,7 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
 function worstIssueBadge(i: ClaimInspection) {
   const codes = i.issues.map((x) => x.code);
   if (codes.includes("evidence_missing")) return { tone: "bad" as const, icon: X, label: "Passage missing" };
+  if (codes.includes("source_retracted")) return RETRACTED;
   if (codes.includes("identity_mismatch") && i.identity) return IDENTITY[i.identity.status];
   if (codes.includes("quote_mismatch") || codes.includes("quote_not_checkable")) return excerptBadge(i.excerpt);
   if (codes.includes("claim_detail_unsupported")) return { tone: "bad" as const, icon: X, label: "Claim detail not in excerpt" };

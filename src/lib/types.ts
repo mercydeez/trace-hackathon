@@ -24,7 +24,17 @@ export const BiblioSchema = z.object({
 export type Biblio = z.infer<typeof BiblioSchema>;
 
 /** A registry record also carries every year the registry lists, so online/print differences stay visible. */
+/** A retraction or withdrawal notice that the registry links to this work (Crossref `updated-by`). */
+export const RetractionSchema = z.object({
+  kind: z.enum(["retraction", "withdrawal"]),
+  noticeDoi: z.string().nullable(),
+  date: z.string().nullable(),
+  source: z.string().nullable(),
+});
+export type Retraction = z.infer<typeof RetractionSchema>;
+
 export const RegistryRecordSchema = BiblioSchema.extend({
+  retraction: RetractionSchema.optional(),
   years: z.object({
     print: z.number().int().optional(),
     online: z.number().int().optional(),

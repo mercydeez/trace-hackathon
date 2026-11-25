@@ -22,6 +22,7 @@ export type IssueCode =
   | "quote_not_checkable"
   | "claim_detail_unsupported"
   | "rule_ai_off"
+  | "source_retracted"
   | "rule_min_year"
   | "claim_pending"
   | "claim_stale"
@@ -97,6 +98,14 @@ export function inspectClaim(project: Project, claim: Claim): ClaimInspection {
           add("identity_mismatch", "the reference details disagree with Crossref.", source?.id);
         }
       }
+    }
+    const retraction = identity?.retraction;
+    if (retraction && project.rules.blockRetracted) {
+      add(
+        "source_retracted",
+        `its source has a ${retraction.kind} notice in Crossref${retraction.date ? ` (${retraction.date.slice(0, 4)})` : ""}. Remove the source or reject the claim.`,
+        source?.id,
+      );
     }
     // Rules in force (set by the student in the Plan step).
     if (project.rules.aiDrafting === "off" && claim.origin === "live_ai") {

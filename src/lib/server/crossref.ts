@@ -12,7 +12,7 @@ import type { Outcome, RegistryRecord } from "../types";
 import { fetchJson, serialQueue, ttlCache } from "./http";
 
 const BASE = "https://api.crossref.org";
-const SELECT = "DOI,title,author,container-title,volume,issue,page,type,published-print,published-online,issued,abstract,URL";
+const SELECT = "DOI,title,author,container-title,volume,issue,page,type,published-print,published-online,issued,abstract,URL,updated-by";
 
 const schedule = serialQueue();
 const cache = ttlCache<unknown>(10 * 60_000, 200);
@@ -37,7 +37,22 @@ const WorkSchema = z.object({
   issued: DateSchema,
   abstract: z.string().optional(),
   URL: z.string().optional(),
+  "updated-by": z
+    .array(z.object({ type: z.string().optional(), DOI: z.string().optional(), source: z.string().optional(), updated: z.object({ "date-time": z.string().optional() }).optional() }))
+    .optional(),
 });
+
+/** Crossref records retraction and withdrawal notices (largely from Retraction Watch) in `updated-by`. */
+function retractionOf(w: z.infer<typeof WorkSchema>): RegistryRecord["retraction"] {
+  const notice = (w["updated-by"] ?? []).find((u) => u.type === "retraction" || u.type === "withdrawal");
+  if (!notice) return undefined;
+  return {
+    kind: notice.type === "withdrawal" ? "withdrawal" : "retraction",
+    noticeDoi: notice.DOI?.toLowerCase() ?? null,
+    date: notice.updated?.["date-time"]?.slice(0, 10) ?? null,
+    source: notice.source ?? null,
+  };
+}
 
 /** Crossref work types -> CSL types used by the APA formatter. */
 const CSL_TYPE: Record<string, string> = {
@@ -82,6 +97,8 @@ export function normaliseWork(raw: unknown, retrievedAt: string, url: string): W
     url: w.URL,
     years: JSON.parse(JSON.stringify(years)),
   };
+  const retraction = retractionOf(w);
+  if (retraction) record.retraction = retraction;
   const abstract = w.abstract ? jatsToText(w.abstract) : "";
   return { doi: w.DOI.toLowerCase(), record, abstract: abstract || null, retrievedAt, url };
 }

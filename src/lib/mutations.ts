@@ -58,8 +58,10 @@ export function approvePlan(p: Project, at: string): Project {
 // --- Sources -----------------------------------------------------------------------------
 
 function biblioOf(record: WorkRecord["record"]): Biblio {
-  const { years: _years, ...biblio } = record;
+  // Registry-only fields (every listed year, any retraction notice) stay on the snapshot, not on what is cited.
+  const { years: _years, retraction: _retraction, ...biblio } = record;
   void _years;
+  void _retraction;
   return biblio;
 }
 

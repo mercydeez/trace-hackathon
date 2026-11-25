@@ -20,6 +20,8 @@ export interface FieldCheck {
 
 export interface Identity {
   status: IdentityStatus;
+  /** Separate from the details check: a real, correctly cited paper can still be retracted. */
+  retraction: RegistryRecord["retraction"] | null;
   fields: FieldCheck[];
   summary: string;
   registryRetrievedAt: string | null;
@@ -122,6 +124,7 @@ export function sourceIdentity(source: Source): Identity {
       fields: [],
       summary: "Entered by hand. Not checked against any registry.",
       registryRetrievedAt: null,
+      retraction: null,
     };
   }
   if (source.registry) {
@@ -137,6 +140,7 @@ export function sourceIdentity(source: Source): Identity {
         ? `${mismatches} cited detail(s) disagree with the Crossref record retrieved ${date}.${stale}`
         : `Cited details agree with the Crossref record retrieved ${date}${notes ? `, with ${notes} point(s) to check` : ""}.${stale}`,
       registryRetrievedAt: source.registry.retrievedAt,
+      retraction: source.registry.record.retraction ?? null,
     };
   }
   if (source.lookup.status === "not_found") {
@@ -146,6 +150,7 @@ export function sourceIdentity(source: Source): Identity {
       summary:
         "Not found in Crossref. That does not show the paper is fake: it may be registered elsewhere, or the DOI may be mistyped.",
       registryRetrievedAt: null,
+      retraction: null,
     };
   }
   if (source.lookup.status === "could_not_check") {
@@ -154,6 +159,7 @@ export function sourceIdentity(source: Source): Identity {
       fields: [],
       summary: `Could not check: ${source.lookup.detail ?? "the registry did not answer"}. Try again later.`,
       registryRetrievedAt: null,
+      retraction: null,
     };
   }
   return {
@@ -161,5 +167,6 @@ export function sourceIdentity(source: Source): Identity {
     fields: [],
     summary: "A DOI is recorded but has not been checked against the registry yet.",
     registryRetrievedAt: null,
+    retraction: null,
   };
 }

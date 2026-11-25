@@ -9,7 +9,7 @@ import { setRegistry, takeRegistryValue, updateCited } from "@/lib/mutations";
 import type { Source } from "@/lib/types";
 import { IDENTITY, StatusChip } from "./status";
 import { useStore } from "./store";
-import { Button, Chip, Field, TextArea, TextInput } from "./ui";
+import { Button, Chip, Field, Notice, TextArea, TextInput } from "./ui";
 
 const FIELD_LABEL: Record<FieldCheck["field"], string> = { title: "Title", first_author: "First author", year: "Year", venue: "Journal" };
 
@@ -57,6 +57,19 @@ export function IdentityPanel({ source, compact }: { source: Source; compact?: b
         )}
       </div>
       <p className="text-sm text-ink-soft">{identity.summary}</p>
+      {identity.retraction && (
+        <Notice tone="bad" icon={TriangleAlert} role="note">
+          <strong className="font-semibold">Crossref lists a {identity.retraction.kind} notice for this paper</strong>
+          {identity.retraction.date && <> ({identity.retraction.date})</>}
+          {identity.retraction.source === "retraction-watch" && <>, from Retraction Watch</>}.{" "}
+          {identity.retraction.noticeDoi && (
+            <a className="font-semibold text-accent-text underline underline-offset-2" href={`https://doi.org/${identity.retraction.noticeDoi}`} target="_blank" rel="noreferrer">
+              Read the notice
+            </a>
+          )}{" "}
+          A retracted paper should not be used as evidence for a claim. The details above can still match: they answer a different question.
+        </Notice>
+      )}
       {source.testCorruption && <p className="rounded-lg border border-bad/30 bg-bad-tint px-2.5 py-1.5 text-sm text-ink">{source.testCorruption}</p>}
 
       {/* In the narrow inspector, only the details that need attention are listed, stacked rather than tabulated. */}

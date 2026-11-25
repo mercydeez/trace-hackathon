@@ -9,7 +9,7 @@ import { abstractEvidence, addEvidence, pastedEvidence, removeEvidence, removeSo
 import { formatAuthorsShort } from "@/lib/text";
 import type { Evidence, Source } from "@/lib/types";
 import { IdentityPanel } from "./IdentityPanel";
-import { ACCESS, IDENTITY, StatusChip } from "./status";
+import { ACCESS, IDENTITY, RETRACTED, StatusChip } from "./status";
 import { useProject, useReferences, useStore, type References } from "./store";
 import { Button, Chip, ConfirmDialog, cx, Empty, Field, Notice, ReferenceText, SectionTitle, Select, shortDate, TextArea, TextInput, useMediaQuery } from "./ui";
 
@@ -150,6 +150,7 @@ function SourceRow({ source, selected, onSelect }: { source: Source; selected: b
       </span>
       <span className="flex flex-wrap gap-1">
         <StatusChip badge={IDENTITY[identity.status]} />
+        {identity.retraction && <StatusChip badge={RETRACTED} />}
         <StatusChip badge={ACCESS[evidenceAccess(project, source.id)]} />
         {inSet && (
           <Chip tone="ok" icon={ListChecks}>

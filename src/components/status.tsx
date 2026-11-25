@@ -27,7 +27,11 @@ interface Badge {
   label: string;
 }
 
+/** Shown beside identity, never merged with it: a correctly cited paper can still be retracted. */
+export const RETRACTED: Badge = { tone: "bad", icon: TriangleAlert, label: "Retracted" };
+
 /** 1. Reference identity. "Details match Crossref" is about the citation details only. */
+
 export const IDENTITY: Record<IdentityStatus, Badge> = {
   matched: { tone: "ok", icon: Check, label: "Details match Crossref" },
   mismatch: { tone: "bad", icon: TriangleAlert, label: "Details disagree with Crossref" },
