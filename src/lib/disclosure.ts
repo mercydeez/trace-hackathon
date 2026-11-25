@@ -51,9 +51,15 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation):
       "References were formatted from stored metadata by Citation.js (APA 7th edition style), not written by an AI model.",
   );
   lines.push(
-    "TRACE checked two things automatically: that each quoted excerpt appears, by text matching, in the stored source passage, and that cited " +
-      "details agree with the Crossref record for the DOI. These checks do not establish that a source is correct, that a claim follows from " +
+    "TRACE checked three things automatically: that each quoted excerpt appears, by text matching, in the stored source passage; that the numbers " +
+      "and negations stated in each claim also appear in its excerpt; and that cited details agree with the Crossref record for the DOI. These checks do not establish that a source is correct, that a claim follows from " +
       "its excerpt, or that the work is free of plagiarism. Any support rating shown beside a claim was suggested by the AI model or the sample and can be wrong.",
+  );
+  const r = project.rules;
+  lines.push(
+    `Rules in force for this project: AI drafting ${r.aiDrafting === "off" ? "switched off" : "allowed from student-approved passages only"}; ` +
+      `${r.minYear ? `sources published in ${r.minYear} or later` : "no publication-year limit"}; ` +
+      `retracted sources ${r.blockRetracted ? "blocked" : "allowed, with a warning"}.`,
   );
   lines.push("The student reviewed and approved each claim individually and remains responsible for the content of this brief.");
   return lines;

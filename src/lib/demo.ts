@@ -9,7 +9,7 @@ import sampleBrief from "@/data/sample-brief.json";
 import type { WorkRecord } from "./api";
 import { suggestPlan } from "./plan";
 import { hashText, newId } from "./text";
-import type { Evidence, Project, Source } from "./types";
+import { DEFAULT_RULES, type Evidence, type Project, type Source } from "./types";
 
 export const DEMO_QUESTION = "Does retrieval practice improve long-term retention compared with rereading?";
 export const SAMPLE_LABEL: string = sampleBrief.label;
@@ -74,6 +74,7 @@ export function buildDemoProject(now: string): Project {
     kind: "demo",
     question: DEMO_QUESTION,
     plan: suggestPlan(DEMO_QUESTION),
+    rules: { ...DEFAULT_RULES },
     sources,
     evidence,
     evidenceSet: { ids: [], approvedFingerprint: null, approvedAt: null },

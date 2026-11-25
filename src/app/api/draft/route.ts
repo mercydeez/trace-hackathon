@@ -8,6 +8,8 @@ export const maxDuration = 60;
 const allow = rateLimiter(6, 60_000);
 
 const Body = z.object({
+  /** The project's rule. Checked here as well as in the browser; it only guards honest clients (no accounts). */
+  aiDrafting: z.enum(["approved_evidence", "off"]).default("approved_evidence"),
   question: z.string().max(LIMITS.maxQuestionChars * 2),
   evidence: z
     .array(z.object({ id: z.string().min(1).max(60), label: z.string().max(200), text: z.string().max(LIMITS.maxTotalChars) }))
@@ -35,7 +37,10 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return respond({ ok: false, kind: "bad_request", message: "The request is larger than TRACE allows." });
   }
-  const { question, evidence } = parsed.data;
+  const { question, evidence, aiDrafting } = parsed.data;
+  if (aiDrafting === "off") {
+    return respond({ ok: false, kind: "bad_request", message: "AI drafting is switched off in this project's rules, so no request was sent." });
+  }
   const problem = checkPayloadInputs(question, evidence);
   if (problem) return respond({ ok: false, kind: "bad_request", message: PROBLEMS[problem] });
 

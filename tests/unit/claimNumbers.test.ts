@@ -81,15 +81,15 @@ describe("checkClaimDetails: negations", () => {
 describe("checkClaimDetails on the sample brief", () => {
   const claims = sample.claims;
 
-  it("passes every sample claim except the two whose excerpt omits a stated number", () => {
+  it("passes every sample claim: each number and negation it states is in its excerpt", () => {
+    // Claim 1's excerpt starts at the sentence naming the delays; claim 4 no longer says "ten".
     const flagged = claims.map((c) => checkClaimDetails(c.text, c.excerpt).map((i) => i.claimText));
-    // Claim 1 states "two days" and "one week"; its excerpt only mentions "5 min".
-    // Claim 4 states "ten" techniques; its excerpt does not (the abstract says "10" in another paragraph).
-    expect(flagged).toEqual([["two days", "one week"], [], [], ["ten"], []]);
+    expect(flagged).toEqual([[], [], [], [], []]);
   });
 
-  it("passes sample claim 1 once its excerpt starts one sentence earlier in the abstract", () => {
+  it("would flag the earlier wording of sample claims 1 and 4", () => {
     const first = claims[0]!;
-    expect(checkClaimDetails(first.text, `${REAL} ${first.excerpt}`)).toEqual([]);
+    expect(checkClaimDetails(first.text, first.excerpt.replace(`${REAL} `, "")).map((i) => i.claimText)).toEqual(["two days", "one week"]);
+    expect(checkClaimDetails(`A review of ten learning techniques. ${claims[3]!.text}`, claims[3]!.excerpt).map((i) => i.claimText)).toEqual(["ten"]);
   });
 });

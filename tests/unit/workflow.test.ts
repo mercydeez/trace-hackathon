@@ -229,6 +229,34 @@ describe("citation trap", () => {
   });
 });
 
+describe("claim details (numbers and negations) in the gate", () => {
+  it("flags a claim that states a number its excerpt does not contain, even when the quotation itself is genuine", () => {
+    let p = buildTrapProject(NOW);
+    const bad = p.claims[0]!;
+    // The student fixes the quotation from the real passage but leaves "one month" in the claim.
+    p = updateClaim(p, bad.id, { excerpt: "Students then took a final retention test 5 min, 2 days, or 1 week later." });
+    expect(inspectClaim(p, p.claims[0]!).excerpt.status).toBe("matched");
+    const issues = inspectClaim(p, p.claims[0]!).issues.map((x) => x.code);
+    expect(issues).toContain("claim_detail_unsupported");
+    expect(evaluateExport(p).blockers.find((b) => b.code === "claim_detail_unsupported")?.message).toContain("one month");
+  });
+
+  it("clears once the claim matches the excerpt, or the claim is marked as inference", () => {
+    let p = buildTrapProject(NOW);
+    const id = p.claims[0]!.id;
+    p = updateClaim(p, id, { excerpt: "Students then took a final retention test 5 min, 2 days, or 1 week later." });
+    const fixed = updateClaim(p, id, { text: "Students were given a final test up to one week later." });
+    expect(inspectClaim(fixed, fixed.claims[0]!).issues.map((x) => x.code)).not.toContain("claim_detail_unsupported");
+    const inference = updateClaim(p, id, { kind: "inference" });
+    expect(inspectClaim(inference, inference.claims[0]!).issues.map((x) => x.code)).not.toContain("claim_detail_unsupported");
+  });
+
+  it("leaves every sample claim free of detail issues", () => {
+    const p = reviewedDemo();
+    for (const c of p.claims) expect(inspectClaim(p, c).details).toEqual([]);
+  });
+});
+
 describe("mixing origins", () => {
   it("keeps sample, live and manual claims distinguishable", () => {
     let p = reviewedDemo();

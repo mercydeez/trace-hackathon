@@ -120,6 +120,18 @@ export const PlanSchema = z.object({
 });
 export type Plan = z.infer<typeof PlanSchema>;
 
+/**
+ * Rules in force for this project: the assignment's or institution's constraints, set by the student.
+ * Defaults apply to projects saved before rules existed, so stored data stays readable.
+ */
+export const RulesSchema = z.object({
+  aiDrafting: z.enum(["approved_evidence", "off"]),
+  minYear: z.number().int().nullable(),
+  blockRetracted: z.boolean(),
+});
+export type Rules = z.infer<typeof RulesSchema>;
+export const DEFAULT_RULES: Rules = { aiDrafting: "approved_evidence", minYear: null, blockRetracted: true };
+
 export const AiRunSchema = z.object({
   id: z.string(),
   at: z.string(),
@@ -141,6 +153,7 @@ export const ProjectSchema = z.object({
   kind: z.enum(["user", "demo", "trap"]),
   question: z.string(),
   plan: PlanSchema,
+  rules: RulesSchema.default(DEFAULT_RULES),
   sources: z.array(SourceSchema),
   evidence: z.array(EvidenceSchema),
   evidenceSet: z.object({

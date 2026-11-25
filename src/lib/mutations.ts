@@ -9,7 +9,7 @@ import { sameDoi } from "./doi";
 import type { IdentityField } from "./identity";
 import { suggestPlan } from "./plan";
 import { hashText, newId } from "./text";
-import type { AiRun, Biblio, Claim, Evidence, Lookup, Plan, Project, RegistrySnapshot, Source } from "./types";
+import { DEFAULT_RULES, type AiRun, type Biblio, type Claim, type Evidence, type Lookup, type Plan, type Project, type RegistrySnapshot, type Source, type Rules } from "./types";
 import type { AcceptedDraftClaim } from "./validateDraft";
 
 export const MAX_ACTIVITY = 200;
@@ -21,6 +21,7 @@ export function emptyProject(name: string, question: string, now: string): Proje
     kind: "user",
     question,
     plan: suggestPlan(question),
+    rules: { ...DEFAULT_RULES },
     sources: [],
     evidence: [],
     evidenceSet: { ids: [], approvedFingerprint: null, approvedAt: null },
@@ -44,6 +45,10 @@ export function setQuestion(p: Project, question: string): Project {
 
 export function setPlan(p: Project, patch: Partial<Pick<Plan, "terms" | "yearFrom" | "yearTo" | "scopeNote">>): Project {
   return { ...p, plan: { ...p.plan, ...patch } };
+}
+
+export function setRules(p: Project, patch: Partial<Rules>): Project {
+  return { ...p, rules: { ...p.rules, ...patch } };
 }
 
 export function approvePlan(p: Project, at: string): Project {

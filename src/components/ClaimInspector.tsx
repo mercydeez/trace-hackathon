@@ -282,6 +282,19 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
                     </p>
                   )}
                   {excerpt.status === "not_checkable" && <p>{NOT_CHECKABLE[excerpt.reason]}</p>}
+                  {i.details.length > 0 ? (
+                    <div className="rounded-lg bg-bad-tint px-3 py-2 text-ink">
+                      <p className="font-semibold text-bad">Details in the claim that the excerpt does not contain</p>
+                      <ul className="mt-1 list-disc space-y-1 pl-4">
+                        {i.details.map((d, n) => (
+                          <li key={n}>{d.message}</li>
+                        ))}
+                      </ul>
+                      <p className="mt-1 text-ink-soft">Change the claim to match the excerpt, quote the passage that states it, or mark the claim as your own inference.</p>
+                    </div>
+                  ) : (
+                    claim.excerpt.trim() && <p>Every number and negation in the claim also appears in the excerpt.</p>
+                  )}
                 </>
               )}
             </Check5>

@@ -7,14 +7,20 @@
  * any code having to remember to do so.
  */
 import { hashText } from "./text";
-import type { Claim, Evidence, Project } from "./types";
+import { DEFAULT_RULES, type Claim, type Evidence, type Project } from "./types";
 
-type PlanBits = Pick<Project, "question" | "plan">;
+type PlanBits = Pick<Project, "question" | "plan"> & { rules?: Project["rules"] };
 type EvidenceBits = PlanBits & Pick<Project, "evidence" | "evidenceSet">;
+
+function rulesChanged(rules: Project["rules"] | undefined): boolean {
+  return rules !== undefined && JSON.stringify(rules) !== JSON.stringify(DEFAULT_RULES);
+}
 
 export function planFingerprint(p: PlanBits): string {
   return hashText(
-    JSON.stringify([p.question.trim(), p.plan.terms, p.plan.yearFrom, p.plan.yearTo, p.plan.scopeNote.trim()]),
+    // Rules are part of what the student approves: changing them asks for the plan to be approved again.
+    // Default rules add nothing, so approvals made before rules existed still hold.
+    JSON.stringify([p.question.trim(), p.plan.terms, p.plan.yearFrom, p.plan.yearTo, p.plan.scopeNote.trim(), ...(rulesChanged(p.rules) ? [p.rules] : [])]),
   );
 }
 

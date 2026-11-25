@@ -153,7 +153,8 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<DraftReport | null>(null);
   const setOk = isEvidenceSetApproved(project);
-  const aiOn = status?.ai.configured ?? false;
+  const aiAllowed = project.rules.aiDrafting !== "off";
+  const aiOn = (status?.ai.configured ?? false) && aiAllowed;
   const canSample = sampleAvailable(project);
 
   function accept(raw: unknown, origin: "live_ai" | "sample", model: string | null) {
@@ -186,7 +187,7 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
     const outcome = await callApi<DraftResult>("/api/draft", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: project.question, evidence: evidenceInputs(project) }),
+      body: JSON.stringify({ question: project.question, evidence: evidenceInputs(project), aiDrafting: project.rules.aiDrafting }),
     });
     setBusy(false);
     if (!outcome.ok) {
@@ -206,14 +207,16 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
     <section>
       <SectionTitle>Draft claims</SectionTitle>
       <p className="-mt-2 mb-4 max-w-prose text-sm leading-relaxed text-ink-soft">
-        {!setOk
+        {!aiAllowed
+          ? "AI drafting is switched off in this project's rules (Plan step). Write your claims yourself and link each one to a passage."
+          : !setOk
           ? "Approve the evidence set above to draft from it. You can write a claim yourself at any time."
           : aiOn
             ? "One request, at most five short claims. The model sees only the approved passages, may cite only them, and cannot write references."
             : "Live AI is not configured on this server. You can still write claims yourself and link them to passages."}
       </p>
       <div className="flex flex-wrap gap-2">
-        <Button variant="primary" icon={Bot} disabled={!setOk || !aiOn || busy} title={!aiOn ? "Live AI is not configured on this server" : !setOk ? "Approve the evidence set first" : undefined} onClick={() => void draftLive()}>
+        <Button variant="primary" icon={Bot} disabled={!setOk || !aiOn || busy} title={!aiAllowed ? "AI drafting is switched off in the rules" : !aiOn ? "Live AI is not configured on this server" : !setOk ? "Approve the evidence set first" : undefined} onClick={() => void draftLive()}>
           {busy ? "Drafting…" : "Draft with AI"}
         </Button>
         <Button icon={PenLine} onClick={writeOwn}>
@@ -268,6 +271,7 @@ function worstIssueBadge(i: ClaimInspection) {
   if (codes.includes("evidence_missing")) return { tone: "bad" as const, icon: X, label: "Passage missing" };
   if (codes.includes("identity_mismatch") && i.identity) return IDENTITY[i.identity.status];
   if (codes.includes("quote_mismatch") || codes.includes("quote_not_checkable")) return excerptBadge(i.excerpt);
+  if (codes.includes("claim_detail_unsupported")) return { tone: "bad" as const, icon: X, label: "Claim detail not in excerpt" };
   if (codes.includes("evidence_unapproved")) return { tone: "warn" as const, icon: RotateCcw, label: "Passage not in evidence set" };
   if (codes.includes("claim_empty")) return { tone: "warn" as const, icon: PenLine, label: "No text yet" };
   if (i.claim.kind === "inference") return { tone: "neutral" as const, icon: PenLine, label: "Inference, no source passage" };
