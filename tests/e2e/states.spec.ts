@@ -25,67 +25,90 @@ test("search: a timeout is 'could not check', an empty result is an empty result
   await expect(page.getByText("not evidence that nothing has been published")).toBeVisible();
 });
 
-test("add by DOI: not found, could not check, duplicate, and a citation whose details disagree", async ({ page }) => {
+test("check by DOI is read-only: duplicate, not found, could not check, wrong details, then an explicit corrected add", async ({ page }) => {
   await approvedDemoOnDiscover(page);
+  const panel = page.getByRole("tabpanel");
   const doi = page.getByLabel("DOI", { exact: true });
+  const check = page.getByRole("button", { name: "Check DOI" });
+  const libraryCount = (n: number) => expect(stepButton(page, /Library and evidence/)).toContainText(`${n} sources`);
+  await libraryCount(7);
 
-  // Duplicate of a saved source: nothing is added, and no request is needed to know it.
+  // A DOI already saved: the comparison is shown, nothing is saved again, the saved record is untouched.
+  // TEST FIXTURE: the synthetic record from helpers.ts, given the DOI of a demo source.
+  await page.route("**/api/doi**", (r) => r.fulfill(reply.ok({ ...TEST_WORK, doi: "10.1126/science.1152408" })));
   await doi.fill("https://doi.org/10.1126/SCIENCE.1152408");
-  await page.getByRole("button", { name: "Look up and save" }).click();
-  await expect(page.getByText("Already in your library")).toBeVisible();
+  await check.click();
+  await expect(panel.getByText("In your library")).toBeVisible();
+  await expect(panel.getByText("Your saved record was not changed.")).toBeVisible();
+  await expect(panel.getByRole("button", { name: /add/i })).toHaveCount(0);
 
   // Not a DOI at all.
   await doi.fill("not a doi");
-  await page.getByRole("button", { name: "Look up and save" }).click();
+  await check.click();
   await expect(page.getByText("That does not look like a DOI.")).toBeVisible();
 
-  // Unknown to the registry: not the same as fake.
+  // Unknown to the registry: not the same as fake, and nothing to add.
+  await page.unroute("**/api/doi**");
   await page.route("**/api/doi**", (r) => r.fulfill(reply.fail(404, "not_found", "Crossref has no record for this DOI.")));
-  await doi.fill("10.5555/unknown.to.crossref");
-  await page.getByRole("button", { name: "Look up and save" }).click();
+  await doi.fill("10.1234/trace-smoke-test-no-such-doi");
+  await check.click();
   await expect(page.getByText("Not found in Crossref. This does not show the paper is fake")).toBeVisible();
-  await page.getByRole("button", { name: "Save it anyway, marked as not confirmed" }).click();
-  await expect(page.getByText("Saved without a registry record.")).toBeVisible();
+  await expect(panel.getByRole("button", { name: /add|save/i })).toHaveCount(0);
 
-  // The registry did not answer: "could not check", never "not found".
+  // The registry did not answer: "could not check", never "not found", and no evidence either way.
   await page.unroute("**/api/doi**");
   await page.route("**/api/doi**", (r) => r.fulfill(reply.fail(429, "rate_limited", "The provider is rate limiting requests. Wait a moment and try again.")));
   await doi.fill("10.5555/another.one");
-  await page.getByRole("button", { name: "Look up and save" }).click();
+  await check.click();
   await expect(page.getByText("Could not check. The provider is rate limiting requests.")).toBeVisible();
-  await expect(page.getByRole("tabpanel").getByText("Not found in Crossref")).toHaveCount(0);
+  await expect(page.getByText("A timeout or usage limit is no evidence that the paper does not exist.")).toBeVisible();
+  await expect(panel.getByText("Not found in Crossref")).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: "Try again" })).toBeVisible();
 
-  // A citation someone supplied, with the wrong year: saved as given, disagreement shown.
+  // A citation with the wrong year: a mismatch, no trusted add, the library unchanged.
   await page.unroute("**/api/doi**");
   await page.route("**/api/doi**", (r) => r.fulfill(reply.ok(TEST_WORK)));
   await doi.fill(TEST_WORK.doi);
   await page.getByLabel("Title as given").fill(TEST_WORK.record.title);
   await page.getByLabel("First author's surname").fill("Okafor");
-  await page.getByLabel("Year", { exact: true }).fill("2009");
-  await page.getByRole("button", { name: "Look up and compare" }).click();
-  await expect(page.getByText("1 cited detail(s) disagree with the Crossref record")).toBeVisible();
-  await expect(page.getByText("Details disagree with Crossref")).toBeVisible();
+  await page.getByLabel("Year", { exact: true }).fill("2025");
+  await check.click();
+  await expect(panel.getByText("Details disagree with Crossref", { exact: true })).toBeVisible();
+  await expect(panel.getByRole("status").getByText("First author's surname", { exact: true })).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Add to library" })).toHaveCount(0);
+  await libraryCount(7);
 
-  // Both appear in the Library with honest labels.
+  // Editing the input hides the stale result until it is checked again.
+  await page.getByLabel("Year", { exact: true }).fill("2024");
+  await expect(panel.getByText("Details disagree with Crossref", { exact: true })).toHaveCount(0);
+  await page.getByLabel("Year", { exact: true }).fill("2025");
+  await check.click();
+
+  // Only an explicit corrected selection adds it, with Crossref's details.
+  await panel.getByRole("button", { name: "Use Crossref’s details and add" }).click();
+  await expect(panel.getByText("with Crossref’s details")).toBeVisible();
+  await libraryCount(8);
   await stepButton(page, /Library and evidence/).click();
-  await expect(page.getByText("9 of 9 sources shown")).toBeVisible();
-  await expect(page.getByText("Not found in Crossref", { exact: true })).toBeVisible();
-  await expect(page.getByText("Details disagree with Crossref", { exact: true })).toBeVisible();
+  await expect(page.getByText("8 of 8 sources shown")).toBeVisible();
+  await page.getByRole("button", { name: new RegExp(`^${TEST_WORK.record.title.slice(0, 20)}`) }).click();
+  await expect(page.getByText("Details match Crossref", { exact: true }).filter({ visible: true }).last()).toBeVisible();
 });
 
-test("a hand-entered reference stays labelled as not checked, and a source without text is not summarised", async ({ page }) => {
+test("a hand-entered reference stays labelled Not yet verified, and a source without text is not summarised", async ({ page }) => {
   await approvedDemoOnDiscover(page);
   await page.getByRole("tab", { name: "By hand" }).click();
   await page.getByLabel("Title", { exact: true }).fill("Study tips for first-year students");
   await page.getByLabel("Authors").fill("Example Learning Centre");
   await page.getByLabel("Journal, site or publisher").fill("Example University");
   await page.getByLabel("Web address").fill("https://example.org/study-tips");
-  await page.getByRole("button", { name: "Save as entered" }).click();
-  await expect(page.getByText("It will stay labelled as not checked.")).toBeVisible();
+  await page.getByRole("button", { name: "Add as Not yet verified" }).click();
+  await expect(page.getByText("It stays labelled Not yet verified.")).toBeVisible();
 
   await stepButton(page, /Library and evidence/).click();
   await page.getByRole("button", { name: /^Study tips for first-year students/ }).click();
-  await expect(page.getByText("Entered by hand, not checked").first()).toBeVisible();
+  await expect(page.getByText("Not yet verified", { exact: true }).first()).toBeVisible();
+  // It is left out of the APA 7 reference list, and the exclusion is counted.
+  await expect(page.getByText("1 excluded: 1 not yet verified")).toBeVisible();
   await expect(page.getByText("Entered by hand. Not checked against any registry.")).toBeVisible();
   await expect(page.getByText("This reference is missing: year.")).toBeVisible();
   await expect(page.getByText("TRACE will not summarise it or let a claim quote it")).toBeVisible();

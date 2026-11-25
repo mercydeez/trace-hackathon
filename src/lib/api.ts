@@ -28,6 +28,8 @@ export interface AbstractResult {
 export interface DraftResult {
   raw: unknown;
   model: string;
+  /** Items the server's validator already rejected, with reasons. They are not in `raw`. */
+  rejected?: { reason: string; preview: string }[];
 }
 
 export interface CitableInput {

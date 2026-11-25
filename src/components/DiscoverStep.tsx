@@ -1,20 +1,21 @@
 "use client";
 
 import { BookmarkPlus, Check, ExternalLink, FileText, FileX2, ListChecks, Search, WifiOff } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { callApi, type SearchResult, type WorkRecord } from "@/lib/api";
 import { isPlanApproved } from "@/lib/approvals";
 import { parseAuthors, SOURCE_TYPES } from "@/lib/csl";
 import { doiUrl, normaliseDoi } from "@/lib/doi";
 import { sourceIdentity } from "@/lib/identity";
 import type { FieldCheck } from "@/lib/identity";
-import { judgeReference, citedFromParsed, type ListVerdict } from "@/lib/refCheck";
+import { judgeReference, type ListVerdict } from "@/lib/refCheck";
 import { MAX_REFERENCES, parseReference, splitReferences, type ParsedReference } from "@/lib/refList";
 import { addSource, findDuplicate, manualSource, sourceFromWork } from "@/lib/mutations";
 import { planQuery } from "@/lib/plan";
 import { formatAuthorsShort } from "@/lib/text";
-import type { Lookup, Outcome, Source } from "@/lib/types";
-import { IDENTITY, RETRACTED, StatusChip } from "./status";
+import type { Outcome, Source } from "@/lib/types";
+import { IdentityPanel } from "./IdentityPanel";
+import { FOUND, IDENTITY, RETRACTED, StatusChip, TrustLegend } from "./status";
 import { useProject, useStore } from "./store";
 import { Button, Chip, cx, Empty, Field, Notice, SectionTitle, Select, TextArea, TextInput } from "./ui";
 
@@ -46,6 +47,8 @@ function ResultRow({ work }: { work: WorkRecord }) {
             {r.container && <span>, {r.container}</span>}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-ink-soft">
+            <StatusChip badge={FOUND} />
+            {r.retraction && <StatusChip badge={RETRACTED} />}
             {work.abstract ? (
               <Chip tone="ok" icon={FileText}>
                 Abstract available
@@ -110,7 +113,8 @@ function SearchPanel({ goToPlan }: { goToPlan: () => void }) {
   return (
     <section>
       <SectionTitle>Find sources</SectionTitle>
-      <p className="-mt-2 mb-4 text-sm text-ink-soft">Live search of Crossref, a registry of scholarly publications.</p>
+      <p className="-mt-2 mb-2 text-sm text-ink-soft">Live search of Crossref, a registry of scholarly publications. Searching and checking never change your library: only an Add or Save button does.</p>
+      <TrustLegend className="mb-4" />
       {!planOk && (
         <Notice tone="warn" className="mb-4">
           Approve your search plan before searching, so the search follows the question and scope you chose.{" "}
@@ -167,10 +171,26 @@ function SearchPanel({ goToPlan }: { goToPlan: () => void }) {
   );
 }
 
-interface AddResult {
-  tone: "ok" | "warn" | "neutral" | "bad";
-  text: string;
-  source?: Source;
+/** The result of a DOI check, tied to the exact input it was made for. Nothing here is saved. */
+type DoiCheck =
+  | { key: string; kind: "invalid" }
+  | { key: string; kind: "failed"; failure: Failure }
+  | { key: string; kind: "found"; work: WorkRecord };
+
+/** The unsaved source a check would add, with the details the student typed, so it can be compared. */
+function previewOf(work: WorkRecord, given: { title: string; author: string; year: string }): Source {
+  const { source } = sourceFromWork(work, "citation_check", work.retrievedAt);
+  const y = Number(given.year);
+  const family = given.author.trim();
+  return {
+    ...source,
+    cited: {
+      ...source.cited,
+      title: given.title.trim() || source.cited.title,
+      year: given.year.trim() && Number.isInteger(y) ? y : source.cited.year,
+      authors: family && family.toLowerCase() !== (source.cited.authors[0]?.family ?? "").toLowerCase() ? [{ family }] : source.cited.authors,
+    },
+  };
 }
 
 function ByDoi() {
@@ -181,69 +201,43 @@ function ByDoi() {
   const [author, setAuthor] = useState("");
   const [year, setYear] = useState("");
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<AddResult | null>(null);
-  const [unchecked, setUnchecked] = useState<{ doi: string; lookup: Lookup } | null>(null);
+  const [check, setCheck] = useState<DoiCheck | null>(null);
+  const [added, setAdded] = useState<string | null>(null);
+  // Only the answer to the latest request is shown; an older one that arrives late is dropped.
+  const latest = useRef(0);
   const hasGiven = Boolean(title.trim() || author.trim() || year.trim());
+  const key = JSON.stringify([doi.trim(), title.trim(), author.trim(), year.trim()]);
+  // A result for different input is stale: editing any field hides it until the student checks again.
+  const current = check && check.key === key ? check : null;
 
   async function submit() {
-    setResult(null);
-    setUnchecked(null);
+    setAdded(null);
     const clean = normaliseDoi(doi);
-    if (!clean) return setResult({ tone: "bad", text: "That does not look like a DOI. A DOI starts with 10. and contains a slash, for example 10.1126/science.1152408." });
-    const existing = project.sources.find((s) => s.doi === clean);
-    if (existing) return setResult({ tone: "neutral", text: `Already in your library: “${existing.cited.title}”. Nothing was added.` });
-
+    if (!clean) return setCheck({ key, kind: "invalid" });
+    const request = ++latest.current;
     setBusy(true);
     const outcome = await callApi<WorkRecord>(`/api/doi?doi=${encodeURIComponent(clean)}`);
+    if (request !== latest.current) return;
     setBusy(false);
-    const now = new Date().toISOString();
+    setCheck(outcome.ok ? { key, kind: "found", work: outcome.data } : { key, kind: "failed", failure: outcome });
+  }
 
-    if (!outcome.ok) {
-      const f = failureText(outcome);
-      if (outcome.kind !== "bad_request") {
-        setUnchecked({ doi: clean, lookup: { status: outcome.kind === "not_found" ? "not_found" : "could_not_check", checkedAt: now, detail: outcome.message } });
-      }
-      return setResult({ tone: f.tone, text: f.text });
-    }
-
-    const work = outcome.data;
-    if (project.sources.some((s) => s.doi === work.doi)) return setResult({ tone: "neutral", text: "That record is already in your library. Nothing was added." });
-    const { source, evidence } = sourceFromWork(work, hasGiven ? "citation_check" : "doi_lookup", now);
-    if (hasGiven) {
-      // Keep what the student was given, so the comparison with the registry is visible. Nothing is repaired.
-      const y = Number(year);
-      const givenFamily = author.trim();
-      source.cited = {
-        ...source.cited,
-        title: title.trim() || source.cited.title,
-        year: year.trim() && Number.isInteger(y) ? y : source.cited.year,
-        authors: givenFamily && givenFamily.toLowerCase() !== (source.cited.authors[0]?.family ?? "").toLowerCase() ? [{ family: givenFamily }] : source.cited.authors,
-      };
-    }
-    update((p) => addSource(p, source, evidence), `Added “${source.cited.title}” by DOI${hasGiven ? " and compared the details given with Crossref" : ""}.`);
-    const identity = sourceIdentity(source);
-    setResult({
-      tone: identity.status === "mismatch" ? "bad" : "ok",
-      text: `${work.note ? `${work.note} ` : ""}Saved to your library. ${identity.summary}${evidence ? "" : " Crossref has no abstract for it, so there is no source text yet."}`,
-      source,
-    });
+  function add(work: WorkRecord) {
+    // The library keeps Crossref's record. The details typed for the comparison are never saved over it.
+    const { source, evidence } = sourceFromWork(work, hasGiven ? "citation_check" : "doi_lookup", new Date().toISOString());
+    update((p) => addSource(p, source, evidence), `Added “${source.cited.title}” by DOI, with Crossref's details.`);
+    setAdded(source.cited.title);
+    setCheck(null);
     setDoi("");
     setTitle("");
     setAuthor("");
     setYear("");
   }
 
-  function saveUnchecked() {
-    if (!unchecked) return;
-    const y = Number(year);
-    const src: Source = {
-      ...manualSource({ title: title.trim() || "Title not entered", authors: author.trim() ? [{ family: author.trim() }] : [], year: year.trim() && Number.isInteger(y) ? y : null, type: "article-journal" }, unchecked.doi, new Date().toISOString()),
-      lookup: unchecked.lookup,
-    };
-    update((p) => addSource(p, src, null), `Saved DOI ${unchecked.doi} without a registry record (${unchecked.lookup.status === "not_found" ? "not found in Crossref" : "could not check"}).`);
-    setResult({ tone: "neutral", text: `Saved without a registry record. It is labelled “${IDENTITY[sourceIdentity(src).status].label}” and can be edited in the Library.` });
-    setUnchecked(null);
-  }
+  const preview = current?.kind === "found" ? previewOf(current.work, { title, author, year }) : null;
+  const identity = preview ? sourceIdentity(preview) : null;
+  const saved = current?.kind === "found" ? findDuplicate(project, { doi: current.work.doi, cited: current.work.record }) : undefined;
+  const clean = identity && (!hasGiven || (identity.status === "matched" && !identity.partial));
 
   return (
     <form
@@ -253,7 +247,7 @@ function ByDoi() {
         void submit();
       }}
     >
-      <Field label="DOI" hint="Paste a DOI or a doi.org link. TRACE looks it up in Crossref.">
+      <Field label="DOI" hint="Paste a DOI or a doi.org link. Checking only reads Crossref: nothing is added until you choose to add it.">
         {(id) => <TextInput id={id} required value={doi} maxLength={300} placeholder="10.1126/science.1152408" onChange={(e) => setDoi(e.target.value)} />}
       </Field>
       <fieldset className="rounded-lg bg-s2 p-4">
@@ -263,28 +257,75 @@ function ByDoi() {
           <Field label="First author's surname">{(id) => <TextInput id={id} value={author} maxLength={80} onChange={(e) => setAuthor(e.target.value)} />}</Field>
           <Field label="Year">{(id) => <TextInput id={id} inputMode="numeric" value={year} maxLength={4} onChange={(e) => setYear(e.target.value)} />}</Field>
         </div>
-        <p className="mt-3 text-sm text-ink-soft">TRACE saves the details as you give them and shows where they disagree with Crossref. It does not correct them for you.</p>
+        <p className="mt-3 text-sm text-ink-soft">TRACE compares these details with Crossref and shows where they disagree. It does not correct them for you.</p>
       </fieldset>
-      <Button type="submit" variant="primary" disabled={busy || !doi.trim()}>
-        {busy ? "Looking up…" : hasGiven ? "Look up and compare" : "Look up and save"}
+      <Button type="submit" variant="primary" icon={ListChecks} disabled={busy || !doi.trim()}>
+        {busy ? "Checking…" : "Check DOI"}
       </Button>
-      <div aria-live="polite">
-        {result && (
-          <Notice tone={result.tone} role="status">
-            {result.text}
-            {result.source && (
-              <span className="mt-1.5 flex flex-wrap gap-1.5">
-                <StatusChip badge={IDENTITY[sourceIdentity(result.source).status]} />
+      <div aria-live="polite" className="space-y-3">
+        {added && (
+          <Notice tone="ok" role="status">
+            Added “{added}” to your library, with Crossref&rsquo;s details.
+          </Notice>
+        )}
+        {current?.kind === "invalid" && (
+          <Notice tone="bad" role="status">
+            That does not look like a DOI. A DOI starts with 10. and contains a slash, for example 10.1126/science.1152408.
+          </Notice>
+        )}
+        {current?.kind === "failed" && (
+          <Notice tone={failureText(current.failure).tone} role="status">
+            {current.failure.kind !== "bad_request" && (
+              <span className="mb-1.5 flex flex-wrap gap-1.5">
+                <StatusChip badge={IDENTITY[current.failure.kind === "not_found" ? "not_found" : "could_not_check"]} />
               </span>
             )}
-            {unchecked && (
+            {current.failure.kind === "not_found"
+              ? failureText(current.failure).text
+              : current.failure.kind === "bad_request"
+                ? current.failure.message
+                : `Could not check. ${current.failure.message} A timeout or usage limit is no evidence that the paper does not exist.`}{" "}
+            Nothing was added.
+            {current.failure.kind !== "not_found" && current.failure.kind !== "bad_request" && (
               <span className="mt-2 block">
-                <Button size="sm" onClick={saveUnchecked}>
-                  Save it anyway, marked as not confirmed
+                <Button size="sm" onClick={() => void submit()}>
+                  Try again
                 </Button>
               </span>
             )}
           </Notice>
+        )}
+        {current?.kind === "found" && preview && identity && (
+          <div className="space-y-3 rounded-lg border border-line p-4" role="status">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusChip badge={FOUND} />
+              {current.work.abstract ? <Chip tone="neutral" icon={FileText}>Abstract available</Chip> : <Chip tone="warn" icon={FileX2}>No abstract in Crossref</Chip>}
+            </div>
+            <p className="text-sm text-ink">
+              Crossref record: <span className="font-semibold">{current.work.record.title}</span> ({formatAuthorsShort(current.work.record.authors, current.work.record.year)})
+            </p>
+            {current.work.note && <p className="text-sm text-ink-soft">{current.work.note}</p>}
+            {hasGiven ? <IdentityPanel source={preview} compact readOnly /> : <p className="text-sm text-ink-soft">No details were given, so there is nothing to compare. Adding saves Crossref&rsquo;s details.</p>}
+            {saved ? (
+              <p className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
+                <Chip tone="neutral" icon={Check}>
+                  In your library
+                </Chip>
+                Your saved record was not changed.
+              </p>
+            ) : clean ? (
+              <Button size="sm" variant="primary" icon={BookmarkPlus} onClick={() => add(current.work)}>
+                Add to library
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-ink-soft">The details you gave {identity.status === "mismatch" ? "disagree with" : "only partly match"} Crossref. To add this paper, take Crossref&rsquo;s details instead. Nothing you typed is saved.</p>
+                <Button size="sm" icon={BookmarkPlus} onClick={() => add(current.work)}>
+                  Use Crossref&rsquo;s details and add
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </form>
@@ -332,7 +373,7 @@ function ByHand() {
         submit();
       }}
     >
-      <Notice tone="neutral">A reference you type in is saved exactly as entered and labelled “Entered by hand, not checked”. TRACE does not look it up or vouch for it.</Notice>
+      <Notice tone="neutral">A reference you type in is saved exactly as entered and labelled “Not yet verified”. TRACE does not look it up or vouch for it, and keeps it out of reviewed exports and the APA 7 list.</Notice>
       <div className="grid gap-3 @lg:grid-cols-[12rem_1fr]">
         <Field label="Type">
           {(id) => (
@@ -358,11 +399,11 @@ function ByHand() {
         <Field label="Web address">{(id) => <TextInput id={id} type="url" value={url} maxLength={500} placeholder="https://" onChange={(e) => setUrl(e.target.value)} />}</Field>
       </div>
       <Button type="submit" variant="primary" disabled={!title.trim()}>
-        Save as entered
+        Add as Not yet verified
       </Button>
       {saved && (
         <Notice tone="neutral" role="status">
-          Saved “{saved}” as entered by hand. It will stay labelled as not checked.
+          Added “{saved}” as entered by hand. It stays labelled Not yet verified.
         </Notice>
       )}
     </form>
@@ -409,20 +450,27 @@ function CheckList() {
   const project = useProject();
   const { update } = useStore();
   const [text, setText] = useState("");
-  const [rows, setRows] = useState<ListRow[]>([]);
+  // Results belong to the text they were checked for: editing the list hides them, and a newer run drops an older one.
+  const [checked, setChecked] = useState<{ text: string; rows: ListRow[] }>({ text: "", rows: [] });
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const latest = useRef(0);
   const refs = splitReferences(text);
   const capped = refs.slice(0, MAX_REFERENCES);
+  const rows = checked.text === text ? checked.rows : [];
 
   async function run() {
+    const ticket = ++latest.current;
+    const snapshot = text;
     const parsed = capped.map(parseReference);
-    setRows([]);
+    setChecked({ text: snapshot, rows: [] });
     setProgress({ done: 0, total: parsed.length });
     const out: ListRow[] = [];
     // One at a time: the server queues Crossref calls anyway, and results appear as they arrive.
     for (const p of parsed) {
-      out.push(await checkOne(p));
-      setRows([...out]);
+      const row = await checkOne(p);
+      if (ticket !== latest.current) return;
+      out.push(row);
+      setChecked({ text: snapshot, rows: [...out] });
       setProgress({ done: out.length, total: parsed.length });
     }
     setProgress(null);
@@ -430,16 +478,18 @@ function CheckList() {
 
   function add(row: ListRow) {
     if (!row.work) return;
+    // The library keeps Crossref's record. The reference as pasted is only compared, never saved over it.
     const { source, evidence } = sourceFromWork(row.work, "citation_check", new Date().toISOString());
-    // Keep the details as the reference gave them, so the comparison with Crossref stays visible.
-    const given = citedFromParsed(row.parsed);
-    source.cited = {
-      ...source.cited,
-      title: given.title || source.cited.title,
-      year: given.year ?? source.cited.year,
-      authors: given.authors[0] && given.authors[0].family.toLowerCase() !== (source.cited.authors[0]?.family ?? "").toLowerCase() ? given.authors : source.cited.authors,
-    };
-    update((p) => addSource(p, source, evidence), `Added “${source.cited.title}” from a checked reference list.`);
+    update((p) => addSource(p, source, evidence), `Added “${source.cited.title}” from a checked reference list, with Crossref's details.`);
+  }
+
+  /** What, if anything, may be added for a verdict. Unrelated, missing and failed checks offer nothing. */
+  function addLabel(row: ListRow): string | null {
+    const partial = row.fields.some((f) => f.verdict === "note");
+    if (row.verdict === "match" || row.verdict === "doi_only") return partial ? "Use Crossref’s details and add" : "Add to library";
+    if (row.verdict === "possible") return "This is the paper: add Crossref’s record";
+    if (row.verdict === "mismatch") return "Use Crossref’s details and add";
+    return null;
   }
 
   return (
@@ -457,9 +507,11 @@ function CheckList() {
       {rows.length > 0 && (
         <ol className="divide-y divide-line rounded-lg border border-line" aria-live="polite" aria-label="Checked references">
           {rows.map((row, n) => {
-            const v = VERDICT[row.verdict];
-            const disagree = row.fields.filter((f) => f.verdict === "mismatch");
+            const partial = row.verdict === "match" && row.fields.some((f) => f.verdict === "note");
+            const v = partial ? { tone: "warn" as const, label: "Partial match: check details" } : VERDICT[row.verdict];
+            const disagree = row.fields.filter((f) => f.verdict !== "match");
             const saved = row.work ? findDuplicate(project, { doi: row.work.doi, cited: row.work.record }) : undefined;
+            const label = addLabel(row);
             return (
               <li key={n} className="p-4">
                 <p className="line-clamp-2 text-sm text-ink">{row.parsed.raw}</p>
@@ -473,25 +525,32 @@ function CheckList() {
                   <ul className="mt-2 space-y-1 text-sm">
                     {disagree.map((f) => (
                       <li key={f.field}>
-                        <span className="font-semibold">{f.field === "first_author" ? "First author" : f.field === "title" ? "Title" : "Year"}:</span> given “{f.cited}”, Crossref has “{f.registry}”.
+                        <span className="font-semibold">{f.field === "first_author" ? "First author's surname" : f.field === "title" ? "Title" : "Year"}:</span> given “{f.cited}”, Crossref has “{f.registry}”{f.verdict === "note" ? " (close, check it)" : ""}.
                       </li>
                     ))}
                   </ul>
                 )}
-                {row.work && row.verdict !== "match" && <p className="mt-2 text-sm text-ink-soft">Crossref record: {row.work.record.title} ({row.work.record.year ?? "n.d."})</p>}
+                {row.work && row.verdict !== "match" && (
+                  <p className="mt-2 text-sm text-ink-soft">
+                    {row.verdict === "no_close_match" ? "Closest Crossref record, which does not match: " : "Crossref record: "}
+                    {row.work.record.title} ({row.work.record.year ?? "n.d."})
+                  </p>
+                )}
                 {row.note && <p className="mt-1 text-sm text-ink-soft">{row.note}</p>}
-                {row.work && (
+                {row.work && saved ? (
                   <div className="mt-3">
-                    {saved ? (
-                      <Chip tone="neutral" icon={Check}>
-                        In your library
-                      </Chip>
-                    ) : (
-                      <Button size="sm" icon={BookmarkPlus} onClick={() => add(row)}>
-                        Add to library
-                      </Button>
-                    )}
+                    <Chip tone="neutral" icon={Check}>
+                      In your library
+                    </Chip>
                   </div>
+                ) : row.work && label ? (
+                  <div className="mt-3">
+                    <Button size="sm" icon={BookmarkPlus} onClick={() => add(row)}>
+                      {label}
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-ink-soft">Nothing can be added from this result. Add the source by its DOI once you have one, or enter it by hand as Not yet verified.</p>
                 )}
               </li>
             );

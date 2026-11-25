@@ -99,3 +99,20 @@ export function validateDraft(raw: unknown, approved: Pick<Evidence, "id">[]): D
 
   return { fatal: null, accepted, rejected };
 }
+
+export type ScreenedDraft =
+  | { ok: true; raw: { claims: unknown[] }; rejected: { reason: string; preview: string }[] }
+  | { ok: false; fatal: string };
+
+/**
+ * Server-side screening of a provider answer, with the same validator the browser uses. Items it
+ * rejects are dropped and their reasons returned, so nothing invalid leaves the server. The browser
+ * still validates what remains against the evidence set as it is when the answer arrives.
+ */
+export function screenDraft(raw: unknown, approved: Pick<Evidence, "id">[]): ScreenedDraft {
+  const v = validateDraft(raw, approved);
+  if (v.fatal) return { ok: false, fatal: v.fatal };
+  const claims = (typeof raw === "string" ? JSON.parse(raw) : raw) as { claims: unknown[] };
+  const dropped = new Set(v.rejected.map((r) => r.index));
+  return { ok: true, raw: { claims: claims.claims.filter((_, i) => !dropped.has(i)) }, rejected: v.rejected.map(({ reason, preview }) => ({ reason, preview })) };
+}

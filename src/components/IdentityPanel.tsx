@@ -7,11 +7,13 @@ import { authorsToText, parseAuthors } from "@/lib/csl";
 import { sourceIdentity, type FieldCheck } from "@/lib/identity";
 import { setRegistry, takeRegistryValue, updateCited } from "@/lib/mutations";
 import type { Source } from "@/lib/types";
-import { IDENTITY, StatusChip } from "./status";
+import { StatusChip, trustBadge } from "./status";
 import { useStore } from "./store";
 import { Button, Chip, Field, Notice, TextArea, TextInput } from "./ui";
 
 const FIELD_LABEL: Record<FieldCheck["field"], string> = { title: "Title", first_author: "First author", year: "Year", venue: "Journal" };
+/** Shown beside each compared row: only the first author's surname is compared, never given names or co-authors. */
+const ROW_LABEL: Record<FieldCheck["field"], string> = { ...FIELD_LABEL, first_author: "First author's surname" };
 
 const VERDICT = {
   match: { tone: "ok", icon: Check, label: "Agrees" },
@@ -21,9 +23,9 @@ const VERDICT = {
 
 /**
  * Reference identity for one source: what is cited, what Crossref records, and where they differ.
- * Used in the Library and in the Claim Inspector, so both always show the same comparison.
+ * Used in the Library, the Claim Inspector and (read-only) for a lookup not yet saved, so all show the same comparison.
  */
-export function IdentityPanel({ source, compact }: { source: Source; compact?: boolean }) {
+export function IdentityPanel({ source, compact, readOnly }: { source: Source; compact?: boolean; readOnly?: boolean }) {
   const { update } = useStore();
   const [busy, setBusy] = useState(false);
   const identity = sourceIdentity(source);
@@ -49,8 +51,8 @@ export function IdentityPanel({ source, compact }: { source: Source; compact?: b
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <StatusChip badge={IDENTITY[identity.status]} />
-        {source.doi && (
+        <StatusChip badge={trustBadge(identity)} />
+        {source.doi && !readOnly && (
           <Button size="sm" variant="ghost" icon={RefreshCw} disabled={busy} onClick={() => void recheck()}>
             {busy ? "Checking…" : "Check against Crossref again"}
           </Button>
@@ -76,13 +78,13 @@ export function IdentityPanel({ source, compact }: { source: Source; compact?: b
       {compact && (
         <ul className="space-y-2">
           {identity.fields
-            .filter((f) => f.verdict !== "match")
+            .filter((f) => readOnly || f.verdict !== "match")
             .map((f) => {
               const v = VERDICT[f.verdict];
               return (
                 <li key={f.field} className="rounded-lg border border-line bg-canvas/60 p-2.5 text-sm">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-ink">{FIELD_LABEL[f.field]}</span>
+                    <span className="font-semibold text-ink">{ROW_LABEL[f.field]}</span>
                     <Chip tone={v.tone} icon={v.icon}>
                       {v.label}
                     </Chip>
@@ -91,9 +93,11 @@ export function IdentityPanel({ source, compact }: { source: Source; compact?: b
                     You cite <span className="font-medium text-ink">{f.cited}</span>. Crossref records <span className="font-medium text-ink">{f.registry}</span>.
                   </p>
                   <p className="mt-1 text-sm">{f.message}</p>
+                  {!readOnly && f.verdict !== "match" && (
                   <Button size="sm" className="mt-2" onClick={() => update((p) => takeRegistryValue(p, source.id, f.field), `Replaced the cited ${FIELD_LABEL[f.field].toLowerCase()} of “${source.cited.title}” with Crossref's value.`)}>
                     Use Crossref&rsquo;s {FIELD_LABEL[f.field].toLowerCase()}
                   </Button>
+                  )}
                 </li>
               );
             })}
@@ -117,7 +121,7 @@ export function IdentityPanel({ source, compact }: { source: Source; compact?: b
                 return (
                   <tr key={f.field} className="border-b border-line align-top last:border-b-0">
                     <th scope="row" className="py-2 pr-3 text-left font-medium whitespace-nowrap">
-                      {FIELD_LABEL[f.field]}
+                      {ROW_LABEL[f.field]}
                     </th>
                     <td className="py-2 pr-3 break-words">{f.cited}</td>
                     <td className="py-2 pr-3 break-words text-ink-soft">{f.registry}</td>
@@ -142,7 +146,7 @@ export function IdentityPanel({ source, compact }: { source: Source; compact?: b
         </div>
       )}
 
-      {!compact && (
+      {!compact && !readOnly && (
         <details className="text-sm">
           <summary className="font-medium text-ink-soft">Edit the details you cite</summary>
           <div className="mt-2 grid gap-3 sm:grid-cols-[1fr_6rem]" key={`${source.id}-${source.cited.title}-${source.cited.year}-${source.cited.authors.length}-${source.cited.container}`}>

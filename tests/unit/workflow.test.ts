@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { claimDecision, isEvidenceSetApproved, isPlanApproved, selectedEvidence } from "@/lib/approvals";
 import { buildDemoProject, sampleAvailable, SAMPLE_RAW } from "@/lib/demo";
 import { checkExcerpt } from "@/lib/excerpt";
+import { buildBrief } from "@/lib/exportMarkdown";
 import { evaluateExport, inspectClaim } from "@/lib/exportPolicy";
 import { sourceIdentity } from "@/lib/identity";
 import {
@@ -168,7 +169,7 @@ describe("approvals are invalidated by changes", () => {
 });
 
 describe("manual work without AI", () => {
-  it("supports a hand-written claim linked to a pasted passage, labelled as unchecked", () => {
+  it("supports a hand-written claim on a pasted passage, but keeps its Not yet verified reference out of a reviewed export", () => {
     let p = emptyProject("Mine", "Does sleep help memory?", NOW);
     const src = manualSource({ title: "A hand-entered web page", authors: [{ family: "Example Org" }], year: 2024, type: "webpage", url: "https://example.org/x" }, null, NOW);
     p = addSource(p, src, null);
@@ -183,7 +184,11 @@ describe("manual work without AI", () => {
     p = updateClaim(p, c.id, { text: "Sleep after study helped recall.", evidenceId: ev.id, excerpt: "followed by better recall" });
     p = decideClaim(p, c.id, "approved");
     const e = evaluateExport(p);
-    expect(e.eligible).toBe(true);
+    // Everything else is in order: the only blocker is the unverified reference.
+    expect(e.eligible).toBe(false);
+    expect(e.blockers.map((b) => b.code)).toEqual(["identity_unverified"]);
+    // A draft export still works.
+    expect(buildBrief(p, null, "draft", NOW).ok).toBe(true);
     const i = e.inspections[0]!;
     expect(i.identity?.status).toBe("user_entered");
     expect(i.access).toBe("user_pasted");

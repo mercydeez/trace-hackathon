@@ -71,7 +71,7 @@ test("main journey: plan, discover, save, organise, reload, approve evidence, br
   await expect(page.getByRole("button", { name: "Draft with AI" })).toBeDisabled();
   await page.getByRole("button", { name: "Load sample brief (not live AI)" }).click();
   await expect(page.getByText("5 claims added from the sample brief")).toBeVisible();
-  await expect(page.getByText("Sample, not live AI")).toHaveCount(5);
+  await expect(page.getByText("Sample, not live AI", { exact: true })).toHaveCount(5);
 
   // Inspect a claim against its passage.
   await page.getByRole("button", { name: "Inspect claim 1" }).click();
@@ -214,7 +214,7 @@ test("live AI path (provider mocked): bad output is rejected in view, and a fail
   await expect(page.getByText("which is not in the approved evidence set")).toBeVisible();
   await expect(page.getByText("fields the model may not supply: doi")).toBeVisible();
   await expect(page.getByRole("button", { name: /^Inspect claim/ })).toHaveCount(1);
-  await expect(page.getByText("AI draft", { exact: true })).toBeVisible();
+  await expect(page.getByText("AI suggestion", { exact: true }).filter({ visible: true }).first()).toBeVisible();
   await shot(page, "09-ai-output-rejected");
 
   // The provider now fails. Nothing is added, nothing is substituted, and the student chooses what to do.
@@ -225,5 +225,5 @@ test("live AI path (provider mocked): bad output is rejected in view, and a fail
   await expect(page.getByText("Nothing was added to your brief.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Try the AI draft again" })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Inspect claim/ })).toHaveCount(1);
-  await expect(page.getByText("Sample, not live AI")).toHaveCount(0);
+  await expect(page.getByText("Sample, not live AI", { exact: true })).toHaveCount(0);
 });

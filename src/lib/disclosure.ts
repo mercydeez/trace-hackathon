@@ -4,10 +4,63 @@
  * It is never a fixed paragraph.
  */
 import type { ExportEvaluation } from "./exportPolicy";
-import type { Project } from "./types";
+import type { Claim, Project } from "./types";
 
 function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
+}
+
+/**
+ * How many approved passages were sent in the runs that produced these claims, or null when that
+ * is not recorded (claims saved before runs were linked). Never read from an unrelated, larger run.
+ */
+export function passagesSentFor(project: Project, claims: Claim[]): number | null {
+  if (claims.some((c) => !c.runId)) return null;
+  const runs = project.aiRuns.filter((r) => claims.some((c) => c.runId === r.id));
+  if (runs.length === 0) return null;
+  return new Set(runs.flatMap((r) => r.evidenceIds)).size;
+}
+
+const modelsOf = (claims: Claim[]) => [...new Set(claims.map((c) => c.model).filter(Boolean))].join(", ") || "model not recorded";
+
+/**
+ * A short, paste-ready AI-use statement for the student's own submission. It states only what TRACE
+ * recorded: who drafted each included claim, what was sent for live drafting, edits, and the student's
+ * decisions. The fuller disclosure stays in the exported brief.
+ */
+export function aiUseStatement(project: Project, evaluation: ExportEvaluation): string {
+  const included = evaluation.inspections.filter((i) => i.claim.decision !== "rejected");
+  const claims = included.map((i) => i.claim);
+  const live = claims.filter((c) => c.origin === "live_ai");
+  const sample = claims.filter((c) => c.origin === "sample");
+  const manual = claims.filter((c) => c.origin === "manual");
+  const out: string[] = [];
+
+  if (claims.length === 0) out.push("This work contains no claims drafted or recorded in TRACE.");
+  if (live.length) {
+    const passages = passagesSentFor(project, live);
+    const edited = live.filter((c) => c.edited).length;
+    out.push(
+      `I used TRACE with a generative AI model (${modelsOf(live)}) to draft ${plural(live.length, "claim")}` +
+        (passages === null ? ", from passages I had approved." : `, from ${plural(passages, "source passage")} I had approved; nothing else was sent to the model.`) +
+        (edited ? ` I edited ${edited === live.length ? (live.length === 1 ? "it" : "all of them") : `${edited} of them`}.` : ""),
+    );
+  }
+  if (sample.length) out.push(`${plural(sample.length, "claim")} ${sample.length === 1 ? "comes" : "come"} from TRACE's labelled SAMPLE brief, written during the tool's development; ${sample.length === 1 ? "it is" : "they are"} not the result of a live AI call.`);
+  if (manual.length) out.push(`I wrote ${plural(manual.length, "claim")} myself, without AI drafting.`);
+  if (claims.length && !live.length && !sample.length) out.push("No generative AI drafted any claim.");
+  if (project.writing.trim()) out.push("I wrote the main text myself; TRACE did not generate it.");
+  out.push(`References were formatted from registry records by Citation.js, not written by AI.`);
+
+  const approved = included.filter((i) => i.decision === "approved").length;
+  if (claims.length) {
+    out.push(
+      approved === claims.length
+        ? `I reviewed and approved ${claims.length === 1 ? "the claim" : `all ${claims.length} claims`} against the stored source text and remain responsible for the work.`
+        : `I have approved ${approved} of ${plural(claims.length, "claim")} so far; the rest are not yet reviewed. I remain responsible for the work.`,
+    );
+  }
+  return out.join(" ");
 }
 
 export function buildDisclosure(project: Project, evaluation: ExportEvaluation, { reviewed = evaluation.eligible, referencesFormatted = true } = {}): string[] {
@@ -18,13 +71,11 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation, 
   const lines: string[] = [];
 
   if (live.length) {
-    const models = [...new Set(live.map((c) => c.model).filter(Boolean))].join(", ") || "model not recorded";
-    const liveRuns = project.aiRuns.filter((r) => r.mode === "live");
-    const passages = Math.max(0, ...liveRuns.map((r) => r.evidenceIds.length));
+    const passages = passagesSentFor(project, live);
     const edited = live.filter((c) => c.edited).length;
     lines.push(
-      `${plural(live.length, "claim")} in this brief ${live.length === 1 ? "was" : "were"} drafted by a generative AI model (${models}) ` +
-        `through TRACE. The model was sent the research question and ${plural(passages, "passage")} that the student had approved, ` +
+      `${plural(live.length, "claim")} in this brief ${live.length === 1 ? "was" : "were"} drafted by a generative AI model (${modelsOf(live)}) ` +
+        `through TRACE. The model was sent the research question and ${passages === null ? "passages" : plural(passages, "passage")} that the student had approved, ` +
         `and nothing else. ${edited ? `${plural(edited, "of these claims was", "of these claims were")} then edited by the student.` : "The student did not change their wording."}`,
     );
   }

@@ -1,10 +1,11 @@
 "use client";
 
-import { ArrowDown, Bot, Check, Download, Eye, FlaskConical, PenLine, Quote, RotateCcw, ScanSearch, TriangleAlert, X } from "lucide-react";
+import { ArrowDown, Bot, Check, ClipboardCopy, Download, Eye, FlaskConical, PenLine, Quote, RotateCcw, ScanSearch, TriangleAlert, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { callApi, type DraftResult } from "@/lib/api";
 import { evidenceSetFingerprint, isEvidenceSetApproved, isPlanApproved, selectedEvidence } from "@/lib/approvals";
 import { SAMPLE_RAW, sampleAvailable } from "@/lib/demo";
+import { aiUseStatement } from "@/lib/disclosure";
 import { buildBrief, citedSources, STYLE_LABEL } from "@/lib/exportMarkdown";
 import { evaluateExport, textCitations, type ClaimInspection, type ExportEvaluation } from "@/lib/exportPolicy";
 import { sourceIdentity } from "@/lib/identity";
@@ -14,9 +15,9 @@ import { buildDraftPayload, LIMITS, type DraftEvidenceInput } from "@/lib/prompt
 import { formatAuthorsShort, inTextShort, newId } from "@/lib/text";
 import type { Project, Source } from "@/lib/types";
 import { validateDraft } from "@/lib/validateDraft";
-import { DECISION, excerptBadge, IDENTITY, RETRACTED, originBadge, StatusChip } from "./status";
+import { DECISION, excerptBadge, INFERENCE, RETRACTED, originBadge, StatusChip, trustBadge, TrustLegend } from "./status";
 import { useProject, useReferences, useStore, type References } from "./store";
-import { Button, cx, downloadText, Empty, Field, Notice, ReferenceText, SectionTitle, Select, shortDate, TextArea } from "./ui";
+import { Button, copyText, CopyFallback, cx, downloadText, Empty, Field, Notice, ReferenceText, SectionTitle, Select, shortDate, TextArea } from "./ui";
 
 function evidenceInputs(project: Project): DraftEvidenceInput[] {
   return selectedEvidence(project).map((e) => {
@@ -167,9 +168,11 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
   }, [project]);
   useEffect(() => () => pendingRequest.current?.abort(), []);
 
-  function accept(raw: unknown, origin: "live_ai" | "sample", model: string | null) {
+  function accept(raw: unknown, origin: "live_ai" | "sample", model: string | null, serverRejected: { reason: string; preview: string }[] = []) {
     const approved = selectedEvidence(latest.current);
-    const v = validateDraft(raw, approved);
+    const checked = validateDraft(raw, approved);
+    // Items the server already rejected are reported here too, so the student sees every rejection.
+    const v = { ...checked, rejected: [...serverRejected, ...checked.rejected] };
     const now = new Date().toISOString();
     if (v.fatal) {
       setReport({ tone: "bad", title: `${v.fatal} Nothing was added to your brief.`, rejected: [], offerChoices: origin === "live_ai" });
@@ -216,7 +219,7 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
       setReport({ tone: "bad", title: `The AI draft did not happen. ${outcome.message} Nothing was added to your brief.`, rejected: [], offerChoices: true });
       return;
     }
-    accept(outcome.data.raw, "live_ai", outcome.data.model);
+    accept(outcome.data.raw, "live_ai", outcome.data.model, outcome.data.rejected);
   }
 
   function writeOwn() {
@@ -293,14 +296,32 @@ function worstIssueBadge(i: ClaimInspection) {
   if (codes.includes("evidence_missing")) return { tone: "bad" as const, icon: X, label: "Passage missing" };
   if (codes.includes("source_missing")) return { tone: "bad" as const, icon: X, label: "Source missing" };
   if (codes.includes("source_retracted")) return RETRACTED;
-  if (codes.includes("identity_mismatch") && i.identity) return IDENTITY[i.identity.status];
+  if ((codes.includes("identity_mismatch") || codes.includes("identity_unverified")) && i.identity) return trustBadge(i.identity);
   if (codes.includes("identity_unconfirmed")) return { tone: "warn" as const, icon: TriangleAlert, label: "DOI unconfirmed" };
   if (codes.includes("quote_mismatch") || codes.includes("quote_not_checkable")) return excerptBadge(i.excerpt);
   if (codes.includes("claim_detail_unsupported")) return { tone: "bad" as const, icon: X, label: "Claim detail not in excerpt" };
   if (codes.includes("evidence_unapproved")) return { tone: "warn" as const, icon: RotateCcw, label: "Passage not in evidence set" };
   if (codes.includes("claim_empty")) return { tone: "warn" as const, icon: PenLine, label: "No text yet" };
-  if (i.claim.kind === "inference") return { tone: "neutral" as const, icon: PenLine, label: "Inference, no source passage" };
+  if (i.claim.kind === "inference") return INFERENCE;
   return excerptBadge(i.excerpt);
+}
+
+/**
+ * Independent labels for one claim: who wrote it, the reference's trust label (or Inference), the excerpt
+ * check, the most important other open point, and the student's decision. Each is evidence about one check.
+ */
+function claimChips(i: ClaimInspection) {
+  const chips = [originBadge(i.claim)];
+  if (i.claim.kind === "inference") chips.push(INFERENCE);
+  else {
+    if (i.identity) chips.push(trustBadge(i.identity));
+    if (i.identity?.retraction) chips.push(RETRACTED);
+    chips.push(excerptBadge(i.excerpt));
+  }
+  const worst = worstIssueBadge(i);
+  if (!chips.some((c) => c.label === worst.label)) chips.push(worst);
+  chips.push(DECISION[i.decision]);
+  return chips;
 }
 
 function ClaimRow({ i, refs, active, onInspect }: { i: ClaimInspection; refs: References; active: boolean; onInspect: () => void }) {
@@ -334,9 +355,9 @@ function ClaimRow({ i, refs, active, onInspect }: { i: ClaimInspection; refs: Re
         {claim.testCorruption && <p className="mt-3 hidden rounded-lg bg-bad-tint px-3 py-2 text-sm text-ink sm:block">{claim.testCorruption}</p>}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <StatusChip badge={originBadge(claim)} title={claim.origin === "live_ai" ? `Drafted by ${claim.model ?? "an AI model"}` : undefined} />
-          <StatusChip badge={worstIssueBadge(i)} />
-          <StatusChip badge={DECISION[i.decision]} />
+          {claimChips(i).map((b) => (
+            <StatusChip key={b.label} badge={b} title={b.label.startsWith("AI suggestion") ? `Drafted by ${claim.model ?? "an AI model"}` : undefined} />
+          ))}
         </div>
         {blocking.length > 0 && !rejected && <p className="mt-2 text-sm text-bad">{blocking[0]?.message.replace(/^Claim \d+: /, "Needs attention: ")}</p>}
 
@@ -457,8 +478,8 @@ function WritingPanel({ refs }: { refs: References }) {
                 ? { tone: "bad" as const, icon: TriangleAlert, label: "Matches more than one source: add the letter" }
                 : !c.sourceId
                   ? { tone: "bad" as const, icon: X, label: "Not a source in this project" }
-                  : id?.status === "mismatch"
-                    ? IDENTITY.mismatch
+                  : id && (id.status !== "matched" || id.partial)
+                    ? trustBadge(id)
                     : id?.retraction
                       ? RETRACTED
                       : expected !== c.suffix
@@ -481,6 +502,37 @@ function WritingPanel({ refs }: { refs: References }) {
   );
 }
 // --- 4. Review and export -------------------------------------------------------------------
+
+/** A short AI-use statement to paste into a submission, built from what TRACE recorded. */
+function AiStatementPanel({ evaluation }: { evaluation: ExportEvaluation }) {
+  const project = useProject();
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  const statement = aiUseStatement(project, evaluation);
+  return (
+    <div className="mt-6" aria-labelledby="ai-statement-title">
+      <h3 id="ai-statement-title" className="mb-2 text-base font-bold">
+        AI-use statement
+      </h3>
+      <p className="max-w-[68ch] rounded-lg bg-s2 p-4 text-base leading-relaxed text-ink" data-testid="ai-use-statement">
+        {statement}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <Button
+          icon={ClipboardCopy}
+          onClick={async () => {
+            const ok = await copyText(statement);
+            setState(ok ? "copied" : "failed");
+            if (ok) setTimeout(() => setState("idle"), 1800);
+          }}
+        >
+          {state === "copied" ? "Copied" : "Copy AI-use statement"}
+        </Button>
+        <span className="text-sm text-ink-soft">Built from the recorded origin and your decision on each claim. The exported brief has the full disclosure.</span>
+      </div>
+      {state === "failed" && <CopyFallback text={statement} label="AI-use statement to copy" />}
+    </div>
+  );
+}
 
 function ExportPanel({ evaluation, refs, retryReferences, onInspect, goToPlan }: { evaluation: ExportEvaluation; refs: References; retryReferences: () => void; onInspect: (id: string) => void; goToPlan: () => void }) {
   const project = useProject();
@@ -559,14 +611,26 @@ function ExportPanel({ evaluation, refs, retryReferences, onInspect, goToPlan }:
             )}
             {refs.state === "loading" && <p role="status" className="text-sm text-ink-soft">Formatting references…</p>}
             <ul className="max-w-[68ch] space-y-3 text-base leading-relaxed">
-              {ordered?.map((r) => (
-                <li key={r.id} className="pl-6 -indent-6 break-words">
-                  <ReferenceText parts={r.parts} />
-                </li>
-              ))}
+              {ordered?.map((r) => {
+                const source = cited.find((s) => s.id === r.id);
+                const identity = source ? sourceIdentity(source) : null;
+                return (
+                  <li key={r.id} className="pl-6 -indent-6 break-words">
+                    <ReferenceText parts={r.parts} />
+                    {identity && (
+                      <span className="mt-1.5 flex flex-wrap gap-1.5 indent-0">
+                        <StatusChip badge={trustBadge(identity)} />
+                        {identity.retraction && <StatusChip badge={RETRACTED} />}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
+
+        <AiStatementPanel evaluation={evaluation} />
 
         <p className="mt-6 max-w-prose text-sm leading-relaxed text-ink-soft">
           Both files are Markdown with your text, your claims, the references, source links, where each excerpt came from, limitations, and a disclosure of how AI was used. You remain responsible for what you submit. TRACE does not detect plagiarism and does not certify the work.
@@ -634,6 +698,7 @@ export function BriefStep({ inspectingId, onInspect, goToLibrary, goToPlan }: { 
     <section key="claims" className="!p-0">
       <div className="px-4 pt-5 sm:px-6">
         <SectionTitle aside={project.claims.length ? `${evaluation.counts.needsReview} of ${evaluation.counts.total} to review` : undefined}>Claims</SectionTitle>
+        <TrustLegend className="-mt-2 mb-4" />
       </div>
       {project.claims.length === 0 ? (
         <div className="px-4 pb-6 sm:px-6">

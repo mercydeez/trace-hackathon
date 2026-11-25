@@ -32,7 +32,8 @@ export type IssueCode =
   | "claim_pending"
   | "claim_stale"
   | "identity_mismatch"
-  | "identity_unconfirmed";
+  | "identity_unconfirmed"
+  | "identity_unverified";
 
 export interface Issue {
   code: IssueCode;
@@ -111,6 +112,12 @@ export function inspectClaim(project: Project, claim: Claim): ClaimInspection {
               : "its DOI has not been confirmed with Crossref yet (the registry may have been unreachable). Use \"Check against Crossref again\" in the Library or the Claim Inspector.",
             source.id,
           );
+        } else if (source && !source.doi) {
+          add(
+            "identity_unverified",
+            "its reference is Not yet verified (entered by hand, with no DOI to check). A reviewed export uses verified references only: link the claim to a source added from Crossref, or reject it.",
+            source.id,
+          );
         }
       }
     }
@@ -176,6 +183,8 @@ function textIssues(project: Project, cites: CitationMatch[]): Issue[] {
       issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", whose reference details disagree with Crossref.`, sourceId: c.sourceId });
     } else if (source?.doi && id?.status !== "matched") {
       issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", whose DOI ${source.lookup.status === "not_found" ? "Crossref has no record of (that does not make it fake)" : "could not be checked against Crossref"}. Recheck it in the Library, or remove the citation.`, sourceId: c.sourceId });
+    } else if (source && !source.doi) {
+      issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", a reference that is Not yet verified (entered by hand). A reviewed export uses verified references only.`, sourceId: c.sourceId });
     } else if (id?.retraction && project.rules.blockRetracted) {
       issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", which has a ${id.retraction.kind} notice in Crossref.`, sourceId: c.sourceId });
     } else if (source && minYear !== null && (source.cited.year === null || source.cited.year < minYear)) {

@@ -25,6 +25,11 @@ export interface Identity {
   fields: FieldCheck[];
   summary: string;
   registryRetrievedAt: string | null;
+  /**
+   * Matched, but the title, first author or year is only a near match (wording, author count, an
+   * alternative year). Shown as "partial" rather than a verified match; the export gate is unaffected.
+   */
+  partial: boolean;
 }
 
 function norm(s: string): string {
@@ -121,6 +126,7 @@ export function sourceIdentity(source: Source): Identity {
   if (!source.doi) {
     return {
       status: "user_entered",
+      partial: false,
       fields: [],
       summary: "Entered by hand. Not checked against any registry.",
       registryRetrievedAt: null,
@@ -135,6 +141,7 @@ export function sourceIdentity(source: Source): Identity {
     const date = source.registry.retrievedAt.slice(0, 10);
     return {
       status: mismatches ? "mismatch" : "matched",
+      partial: !mismatches && fields.some((f) => f.verdict === "note" && f.field !== "venue"),
       fields,
       summary: mismatches
         ? `${mismatches} cited detail(s) disagree with the Crossref record retrieved ${date}.${stale}`
@@ -146,6 +153,7 @@ export function sourceIdentity(source: Source): Identity {
   if (source.lookup.status === "not_found") {
     return {
       status: "not_found",
+      partial: false,
       fields: [],
       summary:
         "Not found in Crossref. That does not show the paper is fake: it may be registered elsewhere, or the DOI may be mistyped.",
@@ -156,6 +164,7 @@ export function sourceIdentity(source: Source): Identity {
   if (source.lookup.status === "could_not_check") {
     return {
       status: "could_not_check",
+      partial: false,
       fields: [],
       summary: `Could not check: ${source.lookup.detail ?? "the registry did not answer"}. Try again later.`,
       registryRetrievedAt: null,
@@ -164,6 +173,7 @@ export function sourceIdentity(source: Source): Identity {
   }
   return {
     status: "user_entered",
+      partial: false,
     fields: [],
     summary: "A DOI is recorded but has not been checked against the registry yet.",
     registryRetrievedAt: null,

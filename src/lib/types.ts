@@ -110,6 +110,8 @@ export const ClaimSchema = z.object({
   limitations: z.string(),
   origin: z.enum(["live_ai", "sample", "manual"]),
   model: z.string().optional(),
+  /** The drafting run that produced this claim (AI or sample), so a disclosure counts that run's passages only. */
+  runId: z.string().optional(),
   /** True once the student changes wording, excerpt or evidence after creation. */
   edited: z.boolean(),
   decision: z.enum(["pending", "approved", "rejected"]),

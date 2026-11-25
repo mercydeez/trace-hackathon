@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Check, FlaskConical, LayoutGrid, ScanSearch, ShieldAlert, TriangleAlert, X } from "lucide-react";
+import { ArrowRight, Check, FlaskConical, LayoutGrid, ScanSearch, SearchCheck, ShieldAlert, TriangleAlert, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { isEvidenceSetApproved, isPlanApproved } from "@/lib/approvals";
 import { buildDemoProject, demoSourcesAndEvidence, FIXTURES_FETCHED_AT } from "@/lib/demo";
@@ -99,6 +99,12 @@ function TrapPreview() {
   );
 }
 
+/**
+ * A step to open the next project at, set by a welcome-screen shortcut and used once.
+ * ponytail: module-level one-shot flag, enough for one entry point; a router would replace it.
+ */
+let openAt: StepId | null = null;
+
 function Welcome({ onOpenTools }: { onOpenTools: () => void }) {
   const { addProject } = useStore();
   const [question, setQuestion] = useState("");
@@ -124,6 +130,15 @@ function Welcome({ onOpenTools }: { onOpenTools: () => void }) {
                 Open the demo project
               </Button>
               <Button icon={ShieldAlert} onClick={() => addProject(buildTrapProject(now()))}>Run the citation trap</Button>
+              <Button
+                icon={SearchCheck}
+                onClick={() => {
+                  openAt = "discover";
+                  addProject(buildDemoProject(now()));
+                }}
+              >
+                Check a reference
+              </Button>
             </div>
             <p className="mt-3 text-sm text-ink-soft">Demo sources saved from Crossref · {shortDate(FIXTURES_FETCHED_AT)}</p>
           </div>
@@ -231,8 +246,13 @@ function StepNav({ steps, step, compact, onSelect }: { steps: StepState[]; step:
 
 function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: () => void }) {
   const { deleteProject, status } = useStore();
-  const [step, setStep] = useState<StepId>(() => (!isPlanApproved(project) ? "plan" : project.claims.length > 0 ? "brief" : "library"));
+  const [step, setStep] = useState<StepId>(() => openAt ?? (!isPlanApproved(project) ? "plan" : project.claims.length > 0 ? "brief" : "library"));
   const [inspecting, setInspecting] = useState<string | null>(null);
+  // "Check a reference" on the welcome screen opens the demo straight at Discover, where checking a DOI is read-only.
+  // Read in the initial step above (safe if React calls the initialiser twice), then cleared so it applies once.
+  useEffect(() => {
+    openAt = null;
+  }, []);
   // A new step starts at its top, not wherever the last one was scrolled to.
   useEffect(() => {
     window.scrollTo({ top: 0 });

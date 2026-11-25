@@ -2,6 +2,7 @@ import { z } from "zod";
 import { buildDraftPayload, checkPayloadInputs, LIMITS, type PayloadProblem } from "@/lib/prompt";
 import { aiConfig, draftWithGemini } from "@/lib/server/gemini";
 import { clientKey, rateLimiter, respond } from "@/lib/server/http";
+import { screenDraft } from "@/lib/validateDraft";
 
 export const maxDuration = 60;
 
@@ -55,6 +56,11 @@ export async function POST(req: Request) {
     return respond({ ok: false, kind: "rate_limited", message: "This site has used its drafting allowance for today. Write claims yourself, or try again tomorrow." });
   }
 
-  // The answer is returned as-is. The browser validates it against the student's approved evidence set.
-  return respond(await draftWithGemini(buildDraftPayload(question, evidence)));
+  const result = await draftWithGemini(buildDraftPayload(question, evidence));
+  if (!result.ok) return respond(result);
+  // Screened here with the same validator, so a fabricated field or an unapproved evidence ID never leaves
+  // the server. The browser validates again against the evidence set as it is when the answer arrives.
+  const screened = screenDraft(result.data.raw, evidence);
+  if (!screened.ok) return respond({ ok: false, kind: "malformed", message: `The AI provider's answer could not be used. ${screened.fatal}` });
+  return respond({ ok: true, data: { raw: screened.raw, model: result.data.model, rejected: screened.rejected } });
 }

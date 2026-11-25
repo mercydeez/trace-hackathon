@@ -276,7 +276,8 @@ export function manualClaim(now: string): Claim {
 }
 
 export function addClaims(p: Project, claims: Claim[], run?: AiRun): Project {
-  return { ...p, claims: [...p.claims, ...claims], aiRuns: run ? [...p.aiRuns, run] : p.aiRuns };
+  const stamped = run ? claims.map((c) => ({ ...c, runId: run.id })) : claims;
+  return { ...p, claims: [...p.claims, ...stamped], aiRuns: run ? [...p.aiRuns, run] : p.aiRuns };
 }
 
 export function updateClaim(p: Project, id: string, patch: Partial<Pick<Claim, "text" | "excerpt" | "evidenceId" | "kind" | "limitations">>): Project {

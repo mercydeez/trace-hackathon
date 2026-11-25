@@ -1,17 +1,18 @@
 "use client";
 
-import { ClipboardCopy, ExternalLink, ListChecks, Search, Trash2, X } from "lucide-react";
+import { ClipboardCopy, Download, ExternalLink, ListChecks, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { callApi, type AbstractResult, type FormattedReference } from "@/lib/api";
 import { missingForApa, sourceLink } from "@/lib/csl";
 import { sourceIdentity } from "@/lib/identity";
 import { abstractEvidence, addEvidence, pastedEvidence, removeEvidence, removeSource, setNote, setTags, toggleEvidence } from "@/lib/mutations";
+import { referenceListEligibility } from "@/lib/referenceList";
 import { formatAuthorsShort } from "@/lib/text";
 import type { Evidence, Source } from "@/lib/types";
 import { IdentityPanel } from "./IdentityPanel";
-import { ACCESS, IDENTITY, RETRACTED, StatusChip } from "./status";
+import { ACCESS, RETRACTED, StatusChip, trustBadge, TrustLegend } from "./status";
 import { useProject, useReferences, useStore, type References } from "./store";
-import { Button, Chip, ConfirmDialog, cx, Empty, Field, Notice, ReferenceText, SectionTitle, Select, shortDate, TextArea, TextInput, useMediaQuery } from "./ui";
+import { Button, Chip, ConfirmDialog, copyText, CopyFallback, cx, downloadText, Empty, Field, Notice, ReferenceText, SectionTitle, Select, shortDate, TextArea, TextInput, useMediaQuery } from "./ui";
 
 const PROVIDER = { crossref: "Crossref", openalex: "OpenAlex", user: "you" } as const;
 
@@ -149,7 +150,7 @@ function SourceRow({ source, selected, onSelect }: { source: Source; selected: b
         {source.cited.container && `, ${source.cited.container}`}
       </span>
       <span className="flex flex-wrap gap-1">
-        <StatusChip badge={IDENTITY[identity.status]} />
+        <StatusChip badge={trustBadge(identity)} />
         {identity.retraction && <StatusChip badge={RETRACTED} />}
         <StatusChip badge={ACCESS[evidenceAccess(project, source.id)]} />
         {inSet && (
@@ -178,7 +179,7 @@ function SourceDetail({ source, reference, refs }: { source: Source; reference: 
   const project = useProject();
   const { update } = useStore();
   const [confirm, setConfirm] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"idle" | "copied" | "failed">("idle");
   const [tag, setTag] = useState("");
   const evidence = project.evidence.filter((e) => e.sourceId === source.id);
   const missing = missingForApa(source.cited, source.doi);
@@ -226,18 +227,18 @@ function SourceDetail({ source, reference, refs }: { source: Source; reference: 
             size="sm"
             icon={ClipboardCopy}
             disabled={!reference}
-            onClick={() => {
+            onClick={async () => {
               if (!reference) return;
-              void navigator.clipboard?.writeText(reference.text).then(() => {
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1800);
-              });
+              const ok = await copyText(reference.text);
+              setCopied(ok ? "copied" : "failed");
+              if (ok) setTimeout(() => setCopied("idle"), 1800);
             }}
           >
-            {copied ? "Copied" : "Copy reference"}
+            {copied === "copied" ? "Copied" : "Copy reference"}
           </Button>
           <span className="text-sm text-ink-soft">Built from the stored details by Citation.js, not written by AI.</span>
         </div>
+        {copied === "failed" && reference && <CopyFallback text={reference.text} label="Reference to copy" />}
         {missing.length > 0 && (
           <Notice tone="warn" className="mt-4">
             This reference is missing: {missing.join(", ")}. TRACE does not guess missing details. Add them under “Edit the details you cite”.
@@ -293,6 +294,76 @@ function SourceDetail({ source, reference, refs }: { source: Source; reference: 
         “{source.cited.title}” and its stored text will be removed from this project. Claims that cite it stay in the brief and will be flagged for your attention.
       </ConfirmDialog>
     </div>
+  );
+}
+
+/** The whole library as one APA 7 reference list, from verified records only. Works before any claim exists. */
+function ReferenceListPanel() {
+  const project = useProject();
+  const [attempt, setAttempt] = useState(0);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const { eligible, summary } = referenceListEligibility(project.sources);
+  // Whole-list mode, APA 7 always: a/b letters and alphabetical order come from Citation.js, not from this code.
+  const refs = useReferences(eligible, "list", "apa", attempt);
+  const ready = eligible.length > 0 && refs.state === "ok" && refs.ordered.length === eligible.length;
+  const text = ready ? refs.ordered.map((r) => r.text).join("\n\n") : "";
+
+  return (
+    <section className="card mt-6 p-6" aria-labelledby="apa-list-title">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="apa-list-title" className="text-xl font-bold tracking-[-0.02em]">
+          Reference list (APA 7)
+        </h2>
+        <span className="text-sm text-ink-soft">
+          {eligible.length} verified reference{eligible.length === 1 ? "" : "s"}
+          {summary && ` · ${summary}`}
+        </span>
+      </div>
+      <p className="mb-4 max-w-prose text-sm text-ink-soft">
+        Every saved reference whose details match Crossref, formatted by Citation.js from the stored record. References that are not yet verified, disagree with Crossref, could not be checked or are retracted are left out and counted above.
+      </p>
+      {eligible.length === 0 ? (
+        <Notice tone="neutral">No verified references yet. Add sources from Crossref search or by DOI.</Notice>
+      ) : refs.state === "error" || (refs.state === "ok" && !ready) ? (
+        <Notice tone="bad" role="alert">
+          The reference list could not be formatted. {refs.message}
+          <Button size="sm" icon={RotateCcw} className="mt-3 flex" onClick={() => setAttempt((a) => a + 1)}>
+            Retry formatting
+          </Button>
+        </Notice>
+      ) : !ready ? (
+        <p role="status" className="text-sm text-ink-soft">
+          Formatting the reference list…
+        </p>
+      ) : (
+        <>
+          <ul aria-label="APA 7 reference list" className="max-w-[68ch] space-y-3 text-base leading-relaxed">
+            {refs.ordered.map((r) => (
+              <li key={r.id} className="pl-6 -indent-6 break-words">
+                <ReferenceText parts={r.parts} />
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Button
+              variant="primary"
+              icon={ClipboardCopy}
+              onClick={async () => {
+                const ok = await copyText(text);
+                setCopyState(ok ? "copied" : "failed");
+                if (ok) setTimeout(() => setCopyState("idle"), 1800);
+              }}
+            >
+              {copyState === "copied" ? "Copied" : "Copy APA 7 reference list"}
+            </Button>
+            <Button icon={Download} onClick={() => downloadText(`references-apa7-${new Date().toISOString().slice(0, 10)}.txt`, `${text}\n`, "text/plain")}>
+              Download APA 7 reference list
+            </Button>
+          </div>
+          {copyState === "failed" && <CopyFallback text={text} label="APA 7 reference list to copy" />}
+        </>
+      )}
+    </section>
   );
 }
 
@@ -391,6 +462,9 @@ export function LibraryStep({ goToDiscover, goToBrief }: { goToDiscover: () => v
           </div>
         )}
       </div>
+
+      <TrustLegend className="card mt-6 px-6 py-4" />
+      <ReferenceListPanel />
 
       <div className="float sticky bottom-4 z-10 mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl px-6 py-4">
         <p className="text-sm text-ink-soft">

@@ -245,6 +245,45 @@ export function downloadText(filename: string, text: string, type = "text/markdo
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/**
+ * Copy text to the clipboard. Returns false when the browser refuses (no permission, insecure page,
+ * embedded frame), so the caller can show the text to select and copy by hand instead.
+ */
+export async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* fall through to the older route */
+  }
+  try {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    area.remove();
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Shown when copying failed: the same text, selected, ready to copy by hand. */
+export function CopyFallback({ text, label }: { text: string; label: string }) {
+  return (
+    <div className="mt-3">
+      <p className="mb-1.5 text-sm text-ink-soft">Your browser blocked copying. Select the text below and copy it, or download it instead.</p>
+      <textarea readOnly aria-label={label} className="h-40 w-full rounded-lg border border-line bg-s2 p-3 text-sm" value={text} onFocus={(e) => e.currentTarget.select()} ref={(el) => el?.select()} />
+    </div>
+  );
+}
+
 export function shortDate(iso: string | null | undefined): string {
   if (!iso) return "unknown date";
   const d = new Date(iso);
