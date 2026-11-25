@@ -1,0 +1,17 @@
+# Keeps secrets, private documents and test output out of what is uploaded to the host.
+# The app needs only package*.json, next.config.ts, tsconfig.json, postcss/eslint configs, and src/.
+.env
+.env.*
+!.env.example
+.git
+.next
+node_modules
+test-results
+playwright-report
+inputs
+*.pdf
+*.pptx
+submissions
+tests
+docs
+scripts

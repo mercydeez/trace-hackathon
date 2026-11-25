@@ -188,6 +188,8 @@ export const AppStateSchema = z.object({
   version: z.literal(SCHEMA_VERSION),
   projects: z.array(ProjectSchema),
   activeProjectId: z.string().nullable(),
+  /** Ids of projects deleted in this browser, so a second open tab cannot bring them back (see mergeStates). */
+  deletedIds: z.array(z.string()).optional(),
 });
 export type AppState = z.infer<typeof AppStateSchema>;
 

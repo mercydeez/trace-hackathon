@@ -21,7 +21,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
  */
 const BUTTON_VARIANT = {
   primary:
-    "bg-brand text-white border-brand shadow-[0_4px_12px_rgb(75_54_83/0.18)] enabled:hover:bg-brand-deep enabled:hover:border-brand-deep disabled:bg-s3 disabled:border-s3 disabled:text-ink-faint disabled:shadow-none",
+    "bg-brand text-white border-brand shadow-[0_2px_5px_rgb(71_52_113/0.18)] enabled:hover:bg-brand-deep enabled:hover:border-brand-deep disabled:bg-s3 disabled:border-s3 disabled:text-ink-faint disabled:shadow-none",
   secondary: "bg-surface text-ink border-line-strong enabled:hover:bg-s2 disabled:text-ink-faint disabled:bg-surface",
   ghost: "bg-transparent text-ink-soft border-transparent enabled:hover:bg-s2 enabled:hover:text-ink disabled:text-ink-faint/70",
   danger: "bg-surface text-bad border-bad/30 enabled:hover:bg-bad-tint disabled:text-ink-faint",
@@ -32,7 +32,7 @@ export function Button({ variant = "secondary", size = "md", icon: Icon, classNa
     <button
       type={type}
       className={cx(
-        "inline-flex max-w-full shrink-0 items-center justify-center gap-2 rounded-full border text-center text-sm font-semibold transition-colors duration-150 ease-out",
+        "inline-flex max-w-full shrink-0 items-center justify-center gap-2 rounded-lg border text-center text-sm font-semibold transition-[background-color,border-color,color,transform] duration-150 ease-out enabled:active:scale-[0.98]",
         "disabled:cursor-not-allowed",
         size === "sm" ? "min-h-8 px-3" : "min-h-10 px-4",
         BUTTON_VARIANT[variant],
@@ -70,7 +70,7 @@ export function Chip({ tone = "neutral", icon: Icon, children, title }: { tone?:
 // --- Form fields ---------------------------------------------------------------------------
 
 const INPUT =
-  "w-full rounded-lg border border-line-strong bg-surface px-3 text-base text-ink transition-[border-color,box-shadow] duration-150 placeholder:text-ink-faint/70 hover:border-ink-faint/40 focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_rgb(201_85_159/0.16)] focus-visible:outline-none disabled:bg-s2 disabled:text-ink-faint";
+  "w-full rounded-lg border border-line-strong bg-surface px-3 text-base text-ink transition-[border-color,box-shadow] duration-150 placeholder:text-ink-faint hover:border-ink-faint/60 focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_rgb(112_82_160/0.20)] focus-visible:outline-none disabled:bg-s2 disabled:text-ink-faint";
 
 export function Field({ label, hint, children, className }: { label: string; hint?: string; children: (id: string) => React.ReactNode; className?: string }) {
   const id = useId();

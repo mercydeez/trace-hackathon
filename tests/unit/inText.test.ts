@@ -70,6 +70,21 @@ describe("finding in-text citations in the student's text", () => {
     expect(authors("(U.S. Dept. of Ed., 2020)")).toEqual([["U.S. Dept. of Ed.", 2020, ""]]);
   });
 
+  it("reads lowercase and 'in press' authors in brackets, so they are checked rather than skipped", () => {
+    const authors = (text: string) => findCitations(text).map((c) => [c.firstAuthor, c.year]);
+    expect(authors("(al-Rashid, 2020)")).toEqual([["al-Rashid", 2020]]);
+    expect(authors("(d’Fake, 2020)")).toEqual([["d’Fake", 2020]]);
+    expect(authors("(ibn Fake 2020)")).toEqual([["ibn Fake", 2020]]);
+    expect(authors("(fake, 2020)")).toEqual([["fake", 2020]]);
+    expect(authors("(Fake, in press)")).toEqual([["Fake", null]]);
+    expect(authors("Recent work (Smith, 2020; bogus, 2019)")).toEqual([
+      ["Smith", 2020],
+      ["bogus", 2019],
+    ]);
+    // Ordinary brackets with a year are still not citations.
+    expect(findCitations("Rates rose (around 2020) and fell (data from 2019) again (vol. 3, 2019).")).toEqual([]);
+  });
+
   it("reads the first author of a narrative citation, not the sentence word before it", () => {
     const authors = (text: string) => findCitations(text).map((c) => c.firstAuthor);
     expect(authors("Smith's (2020) study")).toEqual(["Smith"]);

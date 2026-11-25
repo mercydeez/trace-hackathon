@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { buildDraftPayload, checkPayloadInputs, LIMITS, type PayloadProblem } from "@/lib/prompt";
-import { draftWithGemini } from "@/lib/server/gemini";
+import { aiConfig, draftWithGemini } from "@/lib/server/gemini";
 import { clientKey, rateLimiter, respond } from "@/lib/server/http";
 
 export const maxDuration = 60;
@@ -29,9 +29,6 @@ export async function POST(req: Request) {
   if (!allow(clientKey(req))) {
     return respond({ ok: false, kind: "rate_limited", message: "Too many drafting requests in a short time. Wait a minute and try again." });
   }
-  if (!allowAll("all")) {
-    return respond({ ok: false, kind: "rate_limited", message: "This site has used its drafting allowance for today. Write claims yourself, or try again tomorrow." });
-  }
   let json: unknown;
   try {
     json = await req.json();
@@ -48,6 +45,15 @@ export async function POST(req: Request) {
   }
   const problem = checkPayloadInputs(question, evidence);
   if (problem) return respond({ ok: false, kind: "bad_request", message: PROBLEMS[problem] });
+
+  // Only a request that would really reach Gemini uses up the shared allowance: a missing key,
+  // a switched-off rule or an invalid body must not burn the quota other visitors depend on.
+  if (!aiConfig().configured) {
+    return respond({ ok: false, kind: "no_key", message: "Live AI is not configured on this server (no GEMINI_API_KEY)." });
+  }
+  if (!allowAll("all")) {
+    return respond({ ok: false, kind: "rate_limited", message: "This site has used its drafting allowance for today. Write claims yourself, or try again tomorrow." });
+  }
 
   // The answer is returned as-is. The browser validates it against the student's approved evidence set.
   return respond(await draftWithGemini(buildDraftPayload(question, evidence)));

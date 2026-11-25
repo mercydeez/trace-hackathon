@@ -37,14 +37,19 @@ export function parseStored(raw: string | null): { state: AppState; problem: Sto
 }
 
 type KV = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+const browserStorage: KV = {
+  getItem: (key) => window.localStorage.getItem(key),
+  setItem: (key, value) => window.localStorage.setItem(key, value),
+  removeItem: (key) => window.localStorage.removeItem(key),
+};
 
 /** Unreadable data is moved aside under a quarantine key rather than deleted, so it can still be recovered by hand. */
-export function loadState(storage: KV): { state: AppState; problem: StorageProblem } {
+export function loadState(storage = browserStorage): { state: AppState; problem: StorageProblem; writeBlocked?: true } {
   let raw: string | null = null;
   try {
     raw = storage.getItem(STORAGE_KEY);
   } catch {
-    return { state: emptyState(), problem: null };
+    return { state: emptyState(), problem: null, writeBlocked: true };
   }
   const result = parseStored(raw);
   if (result.problem && raw) {
@@ -52,13 +57,14 @@ export function loadState(storage: KV): { state: AppState; problem: StorageProbl
       storage.setItem(`${QUARANTINE_PREFIX}${Date.now()}`, raw);
       storage.removeItem(STORAGE_KEY);
     } catch {
-      /* storage full or blocked: nothing more can be done here */
+      // Leave the original in place when there was no room to preserve it separately.
+      return { ...result, writeBlocked: true };
     }
   }
   return result;
 }
 
-export function saveState(storage: KV, state: AppState): boolean {
+export function saveState(state: AppState, storage = browserStorage): boolean {
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify(state));
     return true;

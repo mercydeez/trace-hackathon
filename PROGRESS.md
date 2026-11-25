@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 2026-11-25 14:35 (+04:00)
+Last updated: 25 November 2026, Dubai time
 
 ## Status
 
@@ -35,7 +35,11 @@ Last updated: 2026-11-25 14:35 (+04:00)
 - 25 Nov 2026, ~12:20: three-pane workbench + claim-details check, project rules, retraction flag, reference-list check. 141/141 unit, 14/14 journeys, 8/8 live smoke checks, design detector clean. Pre-workbench version tagged `pre-workbench`.
 - 25 Nov 2026, ~11:40: after the ReproSense-style redesign, typecheck, lint, 94/94 unit and 11/11 browser journeys passed. The pre-redesign version is tagged `pre-redesign`.
 
+- 25 Nov 2026, 16:50–17:10: release verification of the full working tree in Claude Code. npm ci, lint, typecheck, 182/182 unit, build and 16/16 journeys passed; manual desktop (invalid key) and mobile (no key) runs passed; 5 defects fixed (see docs/qa-report.md).
+
 Details: `docs/qa-report.md`.
+
+The submission audit pass tightened the export gate, improved the citation-trap presentation, and updated the Phase 1 deck. The production suite passed all 15 journeys, with 173 unit tests passing. The live smoke passed all eight checks after a Crossref search timeout on the first attempt. Remaining findings and the Claude Code follow-up are in [the audit](docs/submission-audit.md).
 
 ## Waiting on the user
 

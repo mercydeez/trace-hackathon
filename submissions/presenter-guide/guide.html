@@ -37,7 +37,8 @@
   .ok { color: var(--ok); font-weight: 700; }
   .bad { color: var(--bad); font-weight: 700; }
   .small { font-size: 9pt; color: var(--soft); }
-  .qa h3 { color: var(--brand); }
+  .qa h3 { color: var(--brand); margin-block: 8px 3px; }
+  .qa p { margin-bottom: 4px; line-height: 1.4; }
   .link { font-weight: 700; font-size: 12pt; color: var(--accent-text); }
   .toc { padding-left: 26px; }
   .toc li { margin-bottom: 5px; }
@@ -92,7 +93,7 @@
   </div>
   <h3>Why judges should care</h3>
   <ul>
-    <li>Every check is real code, tested automatically: <b>166 unit tests and 15 full browser journeys</b>, all passing.</li>
+    <li>The checks are tested automatically. <b>173 unit tests and 15 production browser journeys</b> passed.</li>
     <li>The “citation trap” in the demo is not scripted. It is a copy of the project with two planted mistakes, and the same checks catch them live.</li>
     <li>It is honest about its limits: it reads abstracts, not full papers, and says so everywhere.</li>
   </ul>
@@ -160,7 +161,7 @@
 
 <section>
   <img class="shot" src="../../docs/screenshots/14-writing-space.png" alt="Writing space">
-  <p class="cap"><b>Your text (writing space).</b> The student writes their own paragraph. “Insert citation” adds a correctly formatted citation. Every citation in the text is checked as you type: one that matches no source in the project, for example “(Smith &amp; Jones, 2020)”, is flagged and blocks the reviewed export.</p>
+  <p class="cap"><b>Your text (writing space).</b> A recognised author–date citation with no matching source, such as “(Smith &amp; Jones, 2020)”, is flagged and blocks reviewed export.</p>
   <img class="shot" src="../../docs/screenshots/07-trap-quote-mismatch.png" alt="Citation trap">
   <p class="cap"><b>The citation trap.</b> A labelled test copy with planted errors. Claim 1 quotes “1 month”; the real abstract says “1 week”. The paper is real, but the claim is not supported, and the export is blocked until it is fixed.</p>
 </section>
@@ -207,7 +208,7 @@
   <h2>The eight guardrails</h2>
   <table>
     <tr><th>What could go wrong</th><th>What TRACE does</th></tr>
-    <tr><td>An invented reference</td><td>References are built only from registry data by Citation.js. The AI has no way to write one.</td></tr>
+    <tr><td>An invented reference</td><td>Citation.js formats stored source records. TRACE rejects model-supplied reference fields and labels hand-entered records.</td></tr>
     <tr><td>Citing a source the student never approved</td><td>The AI may only return IDs from the approved evidence set. Anything else is rejected and shown.</td></tr>
     <tr><td>A quote that is not in the source</td><td>Exact text match against the stored text. Curly quotes, spacing and capitals are tolerated; numbers, “not” and punctuation are not.</td></tr>
     <tr><td>A claim that says more than its quote</td><td>Every number and negation in the claim must also be in its quote, or export is blocked.</td></tr>
@@ -227,24 +228,19 @@
   <p class="small">Suggested split: <b>Maitrayee</b> opens and walks the journey; <b>Shirley</b> runs the trap and the checks; <b>Atharva</b> drives the laptop and covers the day-of change and technical questions. Swap freely; just make sure each person speaks. Rehearse twice with a stopwatch.</p>
   <table>
     <tr><th>Time</th><th>Who</th><th>Do</th><th>Say (in your own words)</th></tr>
-    <tr><td class="t">0:00</td><td class="who">Maitrayee</td><td>Welcome screen.</td><td class="say">“AI can give a real author the wrong paper, or quote a sentence that isn’t in the source. Most checkers stop at ‘does this DOI exist?’. Our point is one sentence: a real DOI does not make a claim supported. TRACE checks them separately, and the student signs off.”</td></tr>
-    <tr><td class="t">0:45</td><td class="who">Maitrayee</td><td>Open the demo project. Point at the four steps in the sidebar.</td><td class="say">“Four steps. The status under each one is computed live, not decoration.”</td></tr>
-    <tr><td class="t">1:00</td><td class="who">Maitrayee</td><td>Plan: show the terms, press Approve plan.</td><td class="say">“First checkpoint. Search is locked until I approve. If I change the question later, everything after it needs approval again.”</td></tr>
-    <tr><td class="t">1:15</td><td class="who">Maitrayee</td><td>Discover: Search Crossref. Point at “Abstract available”.</td><td class="say">“A live search of the official registry. We show whether there is any text to work from, because no text means no AI summary.”</td></tr>
-    <tr><td class="t">2:15</td><td class="who">Maitrayee</td><td>Library: open “Test-Enhanced Learning”. Show the reference and the identity table. Tick Use in the evidence set on three or four abstracts.</td><td class="say">“References are built from registry data by a formatter, never by AI. Each source shows whether its details match Crossref and what text we actually hold.”</td></tr>
-    <tr><td class="t">3:00</td><td class="who">Maitrayee</td><td>Review evidence set → Show exactly what would be sent → Approve.</td><td class="say">“Second checkpoint. This is the complete request to the AI. Nothing else is sent.”</td></tr>
-    <tr><td class="t">3:15</td><td class="who">Shirley</td><td>Draft with AI (or Load sample brief if AI is off).</td><td class="say">“One AI call, at most five claims, each tied to an approved passage.” If sample: “This is our labelled sample; it goes through the same checks.”</td></tr>
-    <tr><td class="t">3:40</td><td class="who">Shirley</td><td>Inspect evidence on claim 1. Point at the highlight and the five checks.</td><td class="say">“The exact words in the abstract. Five separate questions, no single ‘verified’ badge.”</td></tr>
-    <tr><td class="t">4:15</td><td class="who">Shirley</td><td>Approve claims. Download reviewed brief; open it.</td><td class="say">“The export has the brief, references, where each quote came from, limitations, and an AI-use statement generated from what actually happened.”</td></tr>
-    <tr><td class="t">5:00</td><td class="who">Shirley</td><td>Edit an approved claim (change one word).</td><td class="say">“The approval is now stale, and the reviewed export is closed again.”</td></tr>
-    <tr><td class="t">5:15</td><td class="who">Shirley</td><td>Projects and tools → Run the citation trap. Read the red banner.</td><td class="say">“A labelled test copy with two planted errors. Nothing is hard-coded: the same checks run on it.”</td></tr>
-    <tr><td class="t">5:40</td><td class="who">Shirley</td><td>Inspect claim 1: “1 month” in the quote, “1 week” in the abstract.</td><td class="say"><b>“The paper is real. That does not make this claim supported.”</b></td></tr>
-    <tr><td class="t">6:10</td><td class="who">Shirley</td><td>Select the real sentence → Use selected text as the excerpt; fix the claim wording; approve.</td><td class="say">“Fixed from the real passage. One blocker gone.”</td></tr>
-    <tr><td class="t">6:30</td><td class="who">Shirley</td><td>Claim 2: identity table. Use Crossref’s year (still blocked), then Use Crossref’s first author.</td><td class="say">“Real DOI, wrong details. TRACE shows it and never repairs it silently. Each issue clears only when it is actually fixed.”</td></tr>
-    <tr><td class="t">7:00</td><td class="who">Atharva</td><td>Reviewed export opens. If there was a day-of change, show it.</td><td class="say">“Now the gate opens.” (Day-of: “We were asked for ___; we changed ___ in one place.”)</td></tr>
-    <tr><td class="t">7:30</td><td class="who">Maitrayee</td><td>Close on limits.</td><td class="say">“What we don’t claim: we read abstracts, not full papers; a text match isn’t proof the paper is right; the AI’s rating can be wrong; this is not plagiarism detection. The student stays responsible, and the tool says so.”</td></tr>
+    <tr><td class="t">0:00</td><td class="who">Maitrayee</td><td>Point at the welcome comparison. Click Run the citation trap.</td><td class="say">“One changed word can make a citation misleading. This labelled test copy uses the same checks as a normal project.”</td></tr>
+    <tr><td class="t">0:30</td><td class="who">Shirley</td><td>Inspect claim 1. Fix the quote first, then the timing in the claim. Approve it.</td><td class="say">“TRACE found the corrected quote. I still had to fix the claim that said one month.”</td></tr>
+    <tr><td class="t">1:30</td><td class="who">Shirley</td><td>Inspect claim 2. Use Crossref’s year and first author. Download the reviewed test copy.</td><td class="say">“The DOI resolves. The cited details differ from the registry. Correcting both lets me download the reviewed test copy.”</td></tr>
+    <tr><td class="t">2:15</td><td class="who">Maitrayee</td><td>In Projects and tools, open the normal demo. Approve the plan, then search Crossref.</td><td class="say">“I choose the search terms. Results show whether there is text I can use.”</td></tr>
+    <tr><td class="t">3:15</td><td class="who">Maitrayee</td><td>In Library, show a reference, add a tag, and select four passages.</td><td class="say">“I can organise the library and see the record and passage behind a citation.”</td></tr>
+    <tr><td class="t">4:15</td><td class="who">Shirley</td><td>Preview the model request, approve the evidence set and draft.</td><td class="say">“I approve the passages. Both live Gemini and the labelled sample go through the same checks.”</td></tr>
+    <tr><td class="t">5:15</td><td class="who">Shirley</td><td>Inspect and approve claims. Show the brief’s provenance and disclosure.</td><td class="say">“The file shows what we kept, where it came from and what TRACE’s AI did.”</td></tr>
+    <tr><td class="t">6:20</td><td class="who">Shirley</td><td>If time allows, edit an approved claim and show stale approval.</td><td class="say">“An edit asks me to approve the claim again.”</td></tr>
+    <tr><td class="t">7:00</td><td class="who">Atharva</td><td>Show the day-of change if required.</td><td class="say">“We were asked for ___. Here’s where it changes the workflow.”</td></tr>
+    <tr><td class="t">7:30</td><td class="who">Maitrayee</td><td>Close on limits.</td><td class="say">“This demo uses abstracts. Text matching checks the stored words. The student interprets the evidence and approves the brief.”</td></tr>
   </table>
-  <p class="small"><b>Short on time?</b> Skip 5:00. Never skip 5:15–7:00: the trap is the point. <b>Extra 30-second beats</b> if a judge asks: paste a reference list in Discover → Check a list; add the retracted DOI 10.1016/S0140-6736(97)11096-0; type “(Smith &amp; Jones, 2020)” in Your text; switch AI drafting off in Rules in force.</p>
+  <p class="small"><b>Short on time?</b> Skip the stale-approval example and show the reviewed test copy you downloaded at 1:30. If search is slow, use the preloaded library.</p>
+  <p class="small"><b>Sample passages:</b> Test-Enhanced Learning, The Critical Importance of Retrieval for Learning, Rethinking the Use of Tests, and Improving Students’ Learning With Effective Learning Techniques.</p>
 </section>
 
 <section class="qa">
@@ -271,9 +267,9 @@
   <h3>“Is the history tamper-proof?”</h3>
   <p>No. It is a local convenience history, and we say so.</p>
   <h3>“Who built what?”</h3>
-  <p>Answer truthfully. Atharva built the application with Claude Code, an AI coding assistant; every prompt is in the prompt log we submitted. Maitrayee and Shirley studied the product, prepared and rehearsed the demo, and present it. Do not claim to have written code you did not write; judges value honesty here, and it matches what the product stands for.</p>
+  <p>Atharva built the application with Claude Code and Codex. The main prompts are in the prompt log. Each presenter should describe the code, testing, rehearsal or presentation work they actually did.</p>
   <h3>“How did you test it?”</h3>
-  <p>166 automated unit tests for every check, and 15 browser tests that click through the whole journey, including the trap and a broken AI answer. A separate test calls the real Crossref, OpenAlex and Gemini services.</p>
+  <p>173 unit tests and 15 production browser tests passed, including the trap and an invalid model answer. A separate smoke test checked live Crossref, OpenAlex and Gemini.</p>
 </section>
 
 <section>
@@ -290,16 +286,16 @@
   </div>
   <h3>Before you walk up</h3>
   <ol>
-    <li>Open the live site. In <b>Projects and tools</b>, choose <b>Erase all TRACE data here</b> so the welcome screen shows.</li>
-    <li>Check the sidebar: “Live AI drafting on” means the live AI works; otherwise use the labelled sample and say so.</li>
-    <li>Open a second tab of the same site as a backup.</li>
+    <li>Open the submitted URL in a fresh browser profile so the welcome screen shows.</li>
+    <li>Run the live smoke test before presenting. Use the labelled sample if live drafting is unavailable.</li>
+    <li>Prepare a local production server on the presentation laptop as a backup.</li>
     <li>Laptop charged, charger, browser zoom at 100%, notifications off. Formal dress.</li>
   </ol>
   <h3>If something breaks</h3>
   <ul>
-    <li><b>Internet down:</b> everything except live search and live AI still works: the demo project, the sample, the trap, the checks and the export are all in the browser.</li>
+    <li><b>Internet down:</b> use the running local server for the demo sources, sample brief, citation trap and export.</li>
     <li><b>AI says it is busy or out of allowance:</b> press Load sample brief and say “this is our labelled sample”.</li>
-    <li><b>Page looks wrong:</b> switch to the backup tab, or Erase all TRACE data and reopen the demo.</li>
+    <li><b>Page looks wrong:</b> switch to the local demo or open the submitted link in a fresh browser profile.</li>
     <li><b>Lost your place:</b> click the step in the sidebar; each step starts at its top.</li>
   </ul>
   <h3>If the organisers announce a new requirement on the day</h3>

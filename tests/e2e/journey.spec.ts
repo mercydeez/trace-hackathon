@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
-import { expect, test } from "@playwright/test";
-import { demoWithApprovedEvidence, mockSearch, mockStatus, openDemo, shot, stepButton, tickEvidenceOf, openTools } from "./helpers";
+import { expect, test, type Route } from "@playwright/test";
+import { demoWithApprovedEvidence, mockSearch, mockStatus, openDemo, reply, shot, stepButton, tickEvidenceOf, openTools } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await mockStatus(page, false);
@@ -101,6 +101,17 @@ test("main journey: plan, discover, save, organise, reload, approve evidence, br
   expect(md).toContain("## AI-use disclosure");
   expect(md).toContain("not the result of a live AI call");
   expect(md).toContain("abstract only, from Crossref");
+
+  const failListFormatting = (route: Route) => route.request().postDataJSON().mode === "list"
+    ? route.fulfill(reply.fail(502, "unavailable", "Test formatter failure."))
+    : route.continue();
+  await page.route("**/api/cite", failListFormatting);
+  await page.getByLabel("Reference style").selectOption("harvard1");
+  await expect(page.getByText("Reference formatting failed", { exact: true })).toBeVisible();
+  await expect(reviewed).toBeDisabled();
+  await page.unroute("**/api/cite", failListFormatting);
+  await page.getByRole("button", { name: "Retry reference formatting" }).click();
+  await expect(reviewed).toBeEnabled();
 
   // Editing an approved claim makes the approval stale and closes the gate again.
   await inspector.getByText("Edit this claim").click();

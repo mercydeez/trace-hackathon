@@ -1,9 +1,9 @@
 "use client";
 
-import { Bot, Check, Download, Eye, FlaskConical, PenLine, Quote, RotateCcw, ScanSearch, TriangleAlert, X } from "lucide-react";
+import { ArrowDown, Bot, Check, Download, Eye, FlaskConical, PenLine, Quote, RotateCcw, ScanSearch, TriangleAlert, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { callApi, type DraftResult } from "@/lib/api";
-import { isEvidenceSetApproved, isPlanApproved, selectedEvidence } from "@/lib/approvals";
+import { evidenceSetFingerprint, isEvidenceSetApproved, isPlanApproved, selectedEvidence } from "@/lib/approvals";
 import { SAMPLE_RAW, sampleAvailable } from "@/lib/demo";
 import { buildBrief, citedSources, STYLE_LABEL } from "@/lib/exportMarkdown";
 import { evaluateExport, textCitations, type ClaimInspection, type ExportEvaluation } from "@/lib/exportPolicy";
@@ -161,9 +161,11 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
   // The live call takes seconds. Validate against the evidence set as it is when the answer arrives,
   // so a passage removed meanwhile makes the claims that cite it rejected, not added.
   const latest = useRef(project);
+  const pendingRequest = useRef<AbortController | null>(null);
   useEffect(() => {
     latest.current = project;
   }, [project]);
+  useEffect(() => () => pendingRequest.current?.abort(), []);
 
   function accept(raw: unknown, origin: "live_ai" | "sample", model: string | null) {
     const approved = selectedEvidence(latest.current);
@@ -190,14 +192,26 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
   }
 
   async function draftLive() {
+    if (pendingRequest.current) return;
+    const request = new AbortController();
+    pendingRequest.current = request;
+    const fingerprint = evidenceSetFingerprint(project);
+    const evidence = evidenceInputs(project).map((passage) => ({ ...passage, text: passage.text.slice(0, LIMITS.maxCharsPerEvidence) }));
     setBusy(true);
     setReport(null);
     const outcome = await callApi<DraftResult>("/api/draft", {
       method: "POST",
+      signal: request.signal,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: project.question, evidence: evidenceInputs(project), aiDrafting: project.rules.aiDrafting }),
+      body: JSON.stringify({ question: project.question, evidence, aiDrafting: project.rules.aiDrafting }),
     });
+    pendingRequest.current = null;
+    if (request.signal.aborted) return;
     setBusy(false);
+    if (!isEvidenceSetApproved(latest.current) || evidenceSetFingerprint(latest.current) !== fingerprint) {
+      setReport({ tone: "warn", title: "The plan or evidence changed while the draft was running. Review the current evidence set and draft again.", rejected: [] });
+      return;
+    }
     if (!outcome.ok) {
       setReport({ tone: "bad", title: `The AI draft did not happen. ${outcome.message} Nothing was added to your brief.`, rejected: [], offerChoices: true });
       return;
@@ -277,8 +291,10 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
 function worstIssueBadge(i: ClaimInspection) {
   const codes = i.issues.map((x) => x.code);
   if (codes.includes("evidence_missing")) return { tone: "bad" as const, icon: X, label: "Passage missing" };
+  if (codes.includes("source_missing")) return { tone: "bad" as const, icon: X, label: "Source missing" };
   if (codes.includes("source_retracted")) return RETRACTED;
   if (codes.includes("identity_mismatch") && i.identity) return IDENTITY[i.identity.status];
+  if (codes.includes("identity_unconfirmed")) return { tone: "warn" as const, icon: TriangleAlert, label: "DOI unconfirmed" };
   if (codes.includes("quote_mismatch") || codes.includes("quote_not_checkable")) return excerptBadge(i.excerpt);
   if (codes.includes("claim_detail_unsupported")) return { tone: "bad" as const, icon: X, label: "Claim detail not in excerpt" };
   if (codes.includes("evidence_unapproved")) return { tone: "warn" as const, icon: RotateCcw, label: "Passage not in evidence set" };
@@ -295,12 +311,12 @@ function ClaimRow({ i, refs, active, onInspect }: { i: ClaimInspection; refs: Re
   const inText = source ? (refs.byId.get(source.id)?.inText ?? inTextShort(source.cited.authors, source.cited.year)) : null;
 
   return (
-    <li className={cx("grid grid-cols-[2rem_minmax(0,1fr)] gap-x-4 px-4 py-6 transition-colors sm:px-6", active && "bg-brand-tint/60", rejected && "opacity-60")}>
+    <li className={cx("grid grid-cols-[1.75rem_minmax(0,1fr)] gap-x-3 px-4 py-4 transition-colors sm:grid-cols-[2rem_minmax(0,1fr)] sm:gap-x-4 sm:px-6", active && "bg-brand-tint/70")}>
       <span aria-hidden className="num grid size-8 place-items-center rounded-full bg-s2 text-sm font-bold text-ink-soft">
         {i.number}
       </span>
       <div className="min-w-0 max-w-[68ch]">
-        <p className={cx("text-lg leading-relaxed text-ink", rejected && "line-through decoration-ink-faint")}>
+        <p className={cx("break-words text-base leading-relaxed text-ink sm:text-lg", rejected && "text-ink-soft line-through decoration-ink-faint")}>
           {claim.text || <span className="text-ink-faint">No text yet. Open the claim to write it.</span>}{" "}
           {claim.kind === "evidence" && inText && (
             <button type="button" className="text-base font-semibold text-accent-text underline decoration-accent/30 underline-offset-2 hover:decoration-accent" onClick={onInspect}>
@@ -315,7 +331,7 @@ function ClaimRow({ i, refs, active, onInspect }: { i: ClaimInspection; refs: Re
             <span aria-hidden className="font-bold text-accent">”</span>
           </p>
         )}
-        {claim.testCorruption && <p className="mt-3 rounded-lg bg-bad-tint px-3 py-2 text-sm text-ink">{claim.testCorruption}</p>}
+        {claim.testCorruption && <p className="mt-3 hidden rounded-lg bg-bad-tint px-3 py-2 text-sm text-ink sm:block">{claim.testCorruption}</p>}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <StatusChip badge={originBadge(claim)} title={claim.origin === "live_ai" ? `Drafted by ${claim.model ?? "an AI model"}` : undefined} />
@@ -466,15 +482,16 @@ function WritingPanel({ refs }: { refs: References }) {
 }
 // --- 4. Review and export -------------------------------------------------------------------
 
-function ExportPanel({ evaluation, refs, onInspect, goToPlan }: { evaluation: ExportEvaluation; refs: References; onInspect: (id: string) => void; goToPlan: () => void }) {
+function ExportPanel({ evaluation, refs, retryReferences, onInspect, goToPlan }: { evaluation: ExportEvaluation; refs: References; retryReferences: () => void; onInspect: (id: string) => void; goToPlan: () => void }) {
   const project = useProject();
   const { update } = useStore();
   const [preview, setPreview] = useState(false);
   const [refused, setRefused] = useState<string[] | null>(null);
   const cited = citedSources(project);
-  const refsReady = cited.length === 0 || refs.state === "ok";
+  const refsReady = cited.length === 0 || (refs.state === "ok" && cited.every((s) => refs.byId.has(s.id)));
+  const refsFailed = refs.state === "error" || (refs.state === "ok" && !refsReady);
   const canReview = evaluation.eligible && refsReady;
-  const ordered = refs.state === "ok" ? refs.ordered : null;
+  const ordered = refsReady ? refs.ordered : null;
 
   function download(mode: "reviewed" | "draft") {
     const now = new Date().toISOString();
@@ -491,13 +508,13 @@ function ExportPanel({ evaluation, refs, onInspect, goToPlan }: { evaluation: Ex
 
   return (
     <>
-      <section>
+      <section id="export-review" className="scroll-mt-36 lg:scroll-mt-5">
         <SectionTitle>Review and export</SectionTitle>
-        {evaluation.eligible ? (
+        {canReview ? (
           <Notice tone="ok" icon={Check} role="status">
-            Every claim that is left has your approval, its excerpt is in the stored text, and no reference disagrees with Crossref. That is what a reviewed brief means here. It does not mean the sources are correct, or that each claim follows from its excerpt.
+            Your approvals and TRACE’s checks are complete. The file includes source provenance and an AI-use disclosure.
           </Notice>
-        ) : (
+        ) : !evaluation.eligible ? (
           <div className="rounded-xl border border-warn/25 bg-warn-tint px-4 py-3">
             <p className="text-sm font-semibold text-ink">
               {blockers} point{blockers === 1 ? "" : "s"} to resolve before this can be exported as reviewed
@@ -520,7 +537,7 @@ function ExportPanel({ evaluation, refs, onInspect, goToPlan }: { evaluation: Ex
               ))}
             </ul>
           </div>
-        )}
+        ) : null}
 
         {cited.length > 0 && (
           <div className="mt-6">
@@ -534,14 +551,15 @@ function ExportPanel({ evaluation, refs, onInspect, goToPlan }: { evaluation: Ex
                 </Select>
               </label>
             </div>
-            {refs.state === "error" && (
+            {refsFailed && (
               <Notice tone="bad" role="alert">
                 The references could not be formatted. {refs.message} A reviewed brief needs formatted references; a draft can still be downloaded.
+                <Button size="sm" icon={RotateCcw} className="mt-3 flex" onClick={retryReferences}>Retry reference formatting</Button>
               </Notice>
             )}
-            {refs.state !== "error" && refs.ordered.length === 0 && <p className="text-sm text-ink-soft">Formatting…</p>}
+            {refs.state === "loading" && <p role="status" className="text-sm text-ink-soft">Formatting references…</p>}
             <ul className="max-w-[68ch] space-y-3 text-base leading-relaxed">
-              {refs.ordered.map((r) => (
+              {ordered?.map((r) => (
                 <li key={r.id} className="pl-6 -indent-6 break-words">
                   <ReferenceText parts={r.parts} />
                 </li>
@@ -569,23 +587,25 @@ function ExportPanel({ evaluation, refs, onInspect, goToPlan }: { evaluation: Ex
         )}
       </section>
 
-      <div className="float sticky bottom-4 z-10 rounded-xl px-6 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <p className="min-w-0 flex-1 basis-56 text-sm" role="status">
-            {evaluation.eligible ? (
+      <div className="float sticky bottom-2 z-10 rounded-xl px-3 py-3 sm:bottom-4 sm:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <p className="flex min-w-0 flex-1 basis-36 items-center gap-2 text-sm" role="status">
+            {canReview ? (
               <span className="font-semibold text-ok">Ready to export as reviewed.</span>
+            ) : evaluation.eligible ? (
+              <a href="#export-review" className="font-semibold text-ink-soft underline-offset-4 hover:underline">{refsFailed ? "Reference formatting failed" : "Formatting references…"}</a>
             ) : (
-              <span className="text-ink-soft">
-                <span className="font-semibold text-warn">{blockers} to resolve</span> before a reviewed export. {evaluation.counts.total ? evaluation.summary + "." : ""}
-              </span>
+              <a href="#export-review" className="inline-flex items-center gap-1.5 font-semibold text-warn underline-offset-4 hover:underline">
+                {blockers} to resolve <ArrowDown aria-hidden className="size-3.5" />
+              </a>
             )}
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button icon={Download} disabled={project.claims.length === 0} onClick={() => download("draft")}>
-              Download draft, marked as not reviewed
+            <Button icon={Download} disabled={project.claims.length === 0} aria-label="Download draft, marked as not reviewed" onClick={() => download("draft")}>
+              <span className="sm:hidden">Draft</span><span className="hidden sm:inline">Download draft</span>
             </Button>
-            <Button variant="primary" icon={Download} disabled={!canReview} title={!evaluation.eligible ? "Resolve the points listed above first" : !refsReady ? "Waiting for the references to be formatted" : undefined} onClick={() => download("reviewed")}>
-              Download reviewed brief
+            <Button variant="primary" icon={Download} aria-label="Download reviewed brief" disabled={!canReview} title={!evaluation.eligible ? "Resolve the points listed above first" : refsFailed ? "Retry reference formatting" : !refsReady ? "Waiting for the references to be formatted" : undefined} onClick={() => download("reviewed")}>
+              <span className="sm:hidden">Reviewed brief</span><span className="hidden sm:inline">Download reviewed brief</span>
             </Button>
           </div>
         </div>
@@ -607,30 +627,34 @@ function ExportPanel({ evaluation, refs, onInspect, goToPlan }: { evaluation: Ex
 export function BriefStep({ inspectingId, onInspect, goToLibrary, goToPlan }: { inspectingId: string | null; onInspect: (id: string) => void; goToLibrary: () => void; goToPlan: () => void }) {
   const project = useProject();
   const evaluation = evaluateExport(project);
-  const refs = useReferences(citedSources(project), "list", project.citationStyle);
+  const [referenceAttempt, setReferenceAttempt] = useState(0);
+  const refs = useReferences(citedSources(project), "list", project.citationStyle, referenceAttempt);
 
-  return (
-    <div className="step-body max-w-5xl space-y-6">
-      <EvidenceSetPanel goToLibrary={goToLibrary} goToPlan={goToPlan} />
-      <DraftPanel onInspect={onInspect} />
-      <section className="!p-0">
-        <div className="px-4 pt-6 sm:px-6">
-          <SectionTitle aside={project.claims.length ? evaluation.summary : undefined}>Claims</SectionTitle>
+  const claims = (
+    <section key="claims" className="!p-0">
+      <div className="px-4 pt-5 sm:px-6">
+        <SectionTitle aside={project.claims.length ? `${evaluation.counts.needsReview} of ${evaluation.counts.total} to review` : undefined}>Claims</SectionTitle>
+      </div>
+      {project.claims.length === 0 ? (
+        <div className="px-4 pb-6 sm:px-6">
+          <Empty title="No claims yet">Draft from the approved evidence set, or write a claim yourself. Each claim is a short card you can inspect, edit, approve or reject.</Empty>
         </div>
-        {project.claims.length === 0 ? (
-          <div className="px-4 pb-6 sm:px-6">
-            <Empty title="No claims yet">Draft from the approved evidence set, or write a claim yourself. Each claim is a short card you can inspect, edit, approve or reject.</Empty>
-          </div>
-        ) : (
-          <ol className="divide-y divide-line border-t border-line">
-            {evaluation.inspections.map((i) => (
-              <ClaimRow key={i.claim.id} i={i} refs={refs} active={inspectingId === i.claim.id} onInspect={() => onInspect(i.claim.id)} />
-            ))}
-          </ol>
-        )}
-      </section>
+      ) : (
+        <ol className="divide-y divide-line border-t border-line">
+          {evaluation.inspections.map((i) => (
+            <ClaimRow key={i.claim.id} i={i} refs={refs} active={inspectingId === i.claim.id} onInspect={() => onInspect(i.claim.id)} />
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+  const evidence = <EvidenceSetPanel key="evidence" goToLibrary={goToLibrary} goToPlan={goToPlan} />;
+  const draft = <DraftPanel key="draft" onInspect={onInspect} />;
+  return (
+    <div className="step-body flex max-w-5xl flex-col gap-5">
+      {project.claims.length ? [claims, evidence, draft] : [evidence, draft, claims]}
       <WritingPanel refs={refs} />
-      <ExportPanel evaluation={evaluation} refs={refs} onInspect={onInspect} goToPlan={goToPlan} />
+      <ExportPanel evaluation={evaluation} refs={refs} retryReferences={() => setReferenceAttempt((attempt) => attempt + 1)} onInspect={onInspect} goToPlan={goToPlan} />
     </div>
   );
 }

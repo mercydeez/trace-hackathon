@@ -18,6 +18,7 @@ export type IssueCode =
   | "no_claims"
   | "claim_empty"
   | "evidence_missing"
+  | "source_missing"
   | "evidence_unapproved"
   | "quote_mismatch"
   | "quote_not_checkable"
@@ -30,7 +31,8 @@ export type IssueCode =
   | "rule_min_year"
   | "claim_pending"
   | "claim_stale"
-  | "identity_mismatch";
+  | "identity_mismatch"
+  | "identity_unconfirmed";
 
 export interface Issue {
   code: IssueCode;
@@ -91,6 +93,7 @@ export function inspectClaim(project: Project, claim: Claim): ClaimInspection {
       if (!evidence) {
         add("evidence_missing", "the evidence it cites is no longer in this project.");
       } else {
+        if (!source) add("source_missing", "the passage is missing its source record. Link the claim to another passage or reject it.");
         // Whether the set as a whole is approved is one project-level blocker, not one per claim.
         if (!inSet) add("evidence_unapproved", "it cites evidence that is not in the evidence set.");
         if (excerpt.status === "mismatch") add("quote_mismatch", "the excerpt is not in the stored source text.");
@@ -100,6 +103,14 @@ export function inspectClaim(project: Project, claim: Claim): ClaimInspection {
         for (const d of details) add("claim_detail_unsupported", d.message.replace(/^The claim/, "the claim"));
         if (identity?.status === "mismatch") {
           add("identity_mismatch", "the reference details disagree with Crossref.", source?.id);
+        } else if (source?.doi && identity?.status !== "matched") {
+          add(
+            "identity_unconfirmed",
+            source.lookup.status === "not_found"
+              ? "Crossref has no record of its DOI. That does not make the paper fake (it may be registered elsewhere, such as DataCite), but TRACE cannot compare its details. Check the DOI and recheck it in the Library, or link the claim to another source."
+              : "its DOI has not been confirmed with Crossref yet (the registry may have been unreachable). Use \"Check against Crossref again\" in the Library or the Claim Inspector.",
+            source.id,
+          );
         }
       }
     }
@@ -163,6 +174,8 @@ function textIssues(project: Project, cites: CitationMatch[]): Issue[] {
     const minYear = project.rules.minYear;
     if (id?.status === "mismatch") {
       issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", whose reference details disagree with Crossref.`, sourceId: c.sourceId });
+    } else if (source?.doi && id?.status !== "matched") {
+      issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", whose DOI ${source.lookup.status === "not_found" ? "Crossref has no record of (that does not make it fake)" : "could not be checked against Crossref"}. Recheck it in the Library, or remove the citation.`, sourceId: c.sourceId });
     } else if (id?.retraction && project.rules.blockRetracted) {
       issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", which has a ${id.retraction.kind} notice in Crossref.`, sourceId: c.sourceId });
     } else if (source && minYear !== null && (source.cited.year === null || source.cited.year < minYear)) {

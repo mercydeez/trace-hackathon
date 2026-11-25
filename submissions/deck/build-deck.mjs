@@ -6,7 +6,7 @@
 // ── STATUS ── rendered as the status line on slide 6. Replace at the final pass with real values.
 const STATUS = {
   // Values from the full run recorded in docs/qa-report.md. Update only from a real run.
-  unitTests: '166 of 166', // number of unit tests passing
+  unitTests: '173 of 173', // number of unit tests passing
   e2eTests: '15 of 15', // number of browser journey tests passing
   date: '25 Nov 2026', // date the tests were run
   liveAi: 'Yes, 25 Nov', // live AI call verified: yes / no
@@ -150,7 +150,7 @@ function frame(n, kickers, title, headline, o = {}) {
       ['Who it is for',
         'A student writing a short evidence-based assignment who wants the speed of AI but has to defend every citation.'],
       ['What they leave with',
-        'A brief in which every claim links to a stored source passage, APA 7 references built from registry metadata, and a disclosure of exactly what AI did.'],
+        'A brief with excerpts for sourced claims, clearly labelled inferences, APA 7 references and a disclosure of TRACE’s AI use.'],
     ],
     positionLabel: 'Our position',
     quote: 'A real DOI does not make a claim supported.',
@@ -225,7 +225,7 @@ function frame(n, kickers, title, headline, o = {}) {
         text: 'Select passages and see exactly what will be sent to the model. No source text means no AI summary.',
         checkpoint: ['Checkpoint 2', 'Approve the evidence set.'] },
       { name: 'Draft', who: [['AI — DRAFT', 'ai']],
-        text: 'One structured call returns at most 5 claim cards, each with an evidence ID and a verbatim excerpt. Without AI: write claims by hand, or load a clearly labelled sample.' },
+        text: 'One structured call returns up to 5 claims. Sourced claims carry an evidence ID and verbatim excerpt. A manual path and labelled sample are available.' },
       { name: 'Check and inspect', who: [['Code — CHECK', 'code'], ['then Student', 'student']],
         text: 'Code validates every claim. The student opens the Claim Inspector, edits or rejects.',
         checkpoint: ['Checkpoint 3', 'Approve each claim.'] },
@@ -316,7 +316,7 @@ function frame(n, kickers, title, headline, o = {}) {
     },
     providersLabel: 'Three providers',
     leaves: ['What leaves the browser',
-      'Search terms and DOIs go to Crossref and OpenAlex. The research question and the approved passages go to Gemini. Nothing else: no personal data, no analytics. Google’s free tier may use submitted content to improve its products, so the app says so and sends only public abstracts or text the student approved.'],
+      'Search terms and DOIs go to scholarly registries. The question and approved passages go to Gemini. The app previews this request and flags that Google’s free tier may use the content to improve its products. Use public material for the hackathon.'],
     change: ['Realistic to change in 90 minutes',
       'One file per provider, one pure function per check, one export gate. A new rule touches one function and its test.'],
     failureLabel: 'Failure is reported as what it is',
@@ -409,7 +409,7 @@ function frame(n, kickers, title, headline, o = {}) {
     head: ['#', 'What could go wrong', 'Mechanism in TRACE'],
     rows: [
       ['An invented reference',
-        'References are built only from stored registry metadata by a CSL formatter. The AI’s output schema has no title, author, year or DOI field; extra fields cause rejection.'],
+        'The formatter uses stored source records. Hand-entered sources without a DOI carry their own label. The output validator rejects model-supplied reference fields.'],
       ['Citing a source the student never approved',
         'ID allow-list: the model may return only evidence IDs from the approved set. Anything else is rejected and shown.'],
       ['A quote that is not in the source',
@@ -488,7 +488,7 @@ function frame(n, kickers, title, headline, o = {}) {
       ['Invented citations',
         'Sources enter only through Crossref search, DOI lookup, or as references clearly labelled “entered by hand, not checked”. AI never writes a reference.'],
       ['False or overstated claims',
-        'Each claim is tied to an excerpt that is text-matched; unsupported points are labelled inference; every claim carries a limitations line; “abstract only” is always shown.'],
+        'Sourced claims are checked against excerpts. Inferences are labelled. Evidence scope and claim limitations are visible during review.'],
       ['Plagiarism',
         'Excerpts are kept as quotations with their source, in the workspace and in the export. TRACE does not detect plagiarism and says so.'],
       ['Privacy',

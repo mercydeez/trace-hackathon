@@ -102,7 +102,7 @@ test("damaged browser storage is set aside and the app still opens", async ({ pa
   await page.goto("/");
   const notice = page.getByRole("alert").filter({ hasText: "The work saved in this browser" });
   await expect(notice).toContainText("was damaged and could not be opened");
-  await expect(notice).toContainText("set aside, not deleted");
+  await expect(notice).toContainText("kept a recovery copy");
   const keys = await page.evaluate(() => Object.keys(localStorage));
   expect(keys.some((k) => k.startsWith("trace.quarantine."))).toBe(true);
   await page.getByRole("button", { name: "Open the demo project" }).click();
@@ -133,9 +133,24 @@ test("erasing everything asks first, and backup then restore brings a project ba
   await expect(page.getByText("Demo: retrieval practice (imported)").first()).toBeVisible();
 });
 
-test("keyboard: the first action is reachable and works without a mouse", async ({ page }) => {
+test("a second tab's saved edit appears with a notice", async ({ page, context }) => {
+  await openDemo(page);
+  const other = await context.newPage();
+  await mockStatus(other, false);
+  await other.goto("/");
+  const changed = "Does retrieval practice improve recall after a week?";
+  await other.getByRole("textbox", { name: "Question", exact: true }).fill(changed);
+  await expect(page.getByRole("textbox", { name: "Question", exact: true })).toHaveValue(changed);
+  await expect(page.getByRole("status").filter({ hasText: "Another tab saved a newer version" })).toBeVisible();
+});
+
+test("keyboard: the demo is reachable and works without a mouse", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Research you can defend." })).toBeVisible();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Projects and tools" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Start a project" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Open the demo project" })).toBeFocused();
   await page.keyboard.press("Enter");
@@ -152,8 +167,7 @@ for (const size of [
 ]) {
   test(`responsive at ${size.name}: the trap and its inspector are usable`, async ({ page }) => {
     await page.setViewportSize({ width: size.width, height: size.height });
-    await openDemo(page);
-    await openTools(page);
+    await page.goto("/");
     await page.getByRole("button", { name: "Run the citation trap" }).click();
     await expect(page.getByText("Citation-trap test copy.")).toBeVisible();
     await shot(page, `10-${size.name}-brief`);

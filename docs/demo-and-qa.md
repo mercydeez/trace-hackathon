@@ -4,36 +4,28 @@ Eight minutes of demo, two minutes of questions, strictly timed (Rules p. 2). Pr
 
 ## Before you walk up
 
-1. Open the site. In the sidebar choose **Erase all TRACE data here**, so the welcome screen shows.
-2. Check the sidebar line "Live AI drafting": **On** means the live path is available; **Not configured** means use the labelled sample and say so.
-3. Have a second tab ready with the same site in case the first misbehaves.
-4. Network down? Everything except live search and live AI still works: the demo project, the sample brief, the trap, the checks and the export are all local.
+1. Open the submitted URL in a fresh browser profile so the welcome screen shows.
+2. Run the live smoke test before presenting. Use the labelled sample if live drafting is unavailable.
+3. Prepare a local production server on the presentation laptop. Its stored fixtures, citation formatting and export work without internet access while that server is running.
 
 ## The eight minutes
 
 | Time | Do | Say |
 |---|---|---|
-| 0:00 | Welcome screen. | "AI can give a real author the wrong paper, or quote a sentence that isn't in the source. Most checkers stop at 'does this DOI exist?'. Our point is one sentence: a real DOI does not make a claim supported. TRACE checks the two separately, and the student signs off." |
-| 0:45 | **Open the demo project.** Point at the question and the four numbered steps. | "One page, four steps, and the status under each step is computed, not decorative." |
-| 1:00 | Plan step. Show the terms; note "suggested by a simple rule, not by AI". Press **Approve plan**. | "First checkpoint. Search is locked until I approve the plan, and if I change the question later, everything downstream asks for approval again." |
-| 1:15 | Discover. Press **Search Crossref**. Point at "Abstract available" versus "No abstract in Crossref". Save one result. | "This is a live registry search. We show whether there is any text to work from, because no source text means no AI summary." |
-| 1:50 | Still in Discover: **Add a source you already have → By DOI**. Paste `10.1126/science.1152408`. | "Already in the library, so nothing is added: duplicates are blocked by DOI." (Optional: type a made-up DOI to show "Not found in Crossref. This does not show the paper is fake.") |
-| 2:15 | Library. Open "Test-Enhanced Learning". Show the APA reference, the identity table, add a tag, tick **Use in the evidence set**. Tick three more abstracts. | "References are built from registry metadata by a citation formatter, never written by AI. Each source shows whether its details match Crossref and what text we actually hold: here, the abstract only." |
-| 3:00 | **Review evidence set.** Open "Show exactly what would be sent". Press **Approve evidence set**. | "Second checkpoint. This is the complete request. My notes and the rest of my library are not sent." |
-| 3:15 | **Draft with AI** if live AI is on; otherwise **Load sample brief (not live AI)**. | Live: "One call, at most five claims, each tied to an ID from my approved set." Sample: "No key on this server, so this is our sample brief. It is labelled as a sample here, on every claim, and in the export, and it goes through the same checks." |
-| 3:40 | Click **Inspect evidence** on claim 1. Point at the marked passage, then the five checks. | "The inspector shows the exact words in the stored abstract. Five separate questions: is the reference what it says it is, what text do we hold, is the quote really there, what does the AI think, and what did I decide. No single 'verified' badge." |
-| 4:15 | Approve the claims. Scroll to Review and export. **Download reviewed brief** and open it. | "Third and fourth checkpoints. The export has the brief, APA 7 references, where each excerpt came from, limitations, and an AI-use disclosure generated from what actually happened." |
-| 5:00 | In the inspector, open **Edit this claim** and change a word. | "I edited an approved claim. The approval is now stale and the reviewed export is closed again. Only a file marked DRAFT can leave." |
-| 5:15 | Sidebar: **Run the citation trap.** Read the red banner aloud. | "This is a labelled test copy with two planted errors. Nothing is hard-coded: it is ordinary project data going through the same validators." |
-| 5:40 | Inspect claim 1. Point at "1 month" in the claim and the amber-marked "…or 1 week later" in the source. | "**The paper is real. That does not make this claim supported.** The quote says one month; the abstract says one week." |
-| 6:10 | Select the real sentence in the source text, press **Use selected text as the excerpt**, correct the claim wording, approve. | "I fix it from the real passage. One blocker gone, one left." |
-| 6:10b | (If time) Before approving claim 1, show that fixing only the quote is not enough: put the real "1 week" excerpt back but leave "one month" in the claim. | "The quote is now genuine, but the claim still says one month. The numbers check blocks it: every number in the claim must appear in the excerpt." |
-| 6:30 | Inspect claim 2. Show the identity table: year and first author disagree. Press **Use Crossref's year**; still blocked. Press **Use Crossref's first author**. | "Real DOI, wrong details. TRACE shows the disagreement and does not repair it silently. Fixing the year alone is not enough: each issue clears only when it is actually resolved." |
-| 7:00 | Reviewed export is enabled again. | "Now the gate opens." |
-| 7:00–7:30 | Day-of change (fill in on the day). | "This afternoon we were asked for ___. We changed ___, in one place, and the design from our deck is unchanged." |
-| 7:30 | Close on limits. | "What we don't claim: we read abstracts, not full papers; a text match is not proof the paper is right; the AI's support rating can be wrong; and this is not plagiarism detection. The student stays responsible, and the tool says so." |
+| 0:00 | Point at the welcome comparison and click **Run the citation trap**. | "One changed word can make a citation misleading. This labelled test copy uses the same checks as a normal project." |
+| 0:30 | Inspect claim 1. Replace the quote using the real passage. Show the claim still says “one month.” Correct the claim and approve it. | "TRACE found the corrected quote. The claim still has a timing error, so I need to correct and approve it too." |
+| 1:30 | Inspect claim 2. Use Crossref's year and first author, then download the reviewed test copy. | "The DOI resolves. The cited year and author differ from the registry. Now I've fixed both, and the reviewed test copy can be downloaded." |
+| 2:15 | In **Projects and tools**, open the normal demo. Approve the plan and search Crossref. Save a result if search is available. | "This is the normal student workflow. I choose the search terms and see whether each source has text I can use." |
+| 3:15 | In Library, show a reference, add a tag, and choose four passages. | "I can organise the library and see which record and passage support each citation." |
+| 4:15 | Open **Review evidence set**, preview the model request, approve the set and draft. | "I approve the passages before drafting. We can use live Gemini or the clearly labelled sample, and both go through the same checks." |
+| 5:15 | Inspect and approve the remaining claims. Open the reviewed file and show the provenance and AI-use disclosure. | "The file shows the words we kept, where they came from and what TRACE’s AI did." |
+| 6:20 | If time allows, edit an approved claim to make the approval stale. | "When I edit the claim, TRACE asks me to approve it again before I can export it as reviewed." |
+| 7:00 | Show the day-of change if required. | "We were asked for ___. Here's where it changes the workflow." |
+| 7:30 | Close on limits. | "This demo uses abstracts. Text matching checks the stored words. The student interprets the evidence and approves the brief." |
 
-If time is short, drop 1:50 and 5:00. Never drop 5:15–7:00.
+If time is short, skip the stale-approval example and open the test export you downloaded at 1:30.
+
+For the labelled sample, select **Test-Enhanced Learning**, **The Critical Importance of Retrieval for Learning**, **Rethinking the Use of Tests**, and **Improving Students’ Learning With Effective Learning Techniques**. Keep this list beside the demo laptop.
 
 ### Optional beats if a judge asks for more (about 30 seconds each)
 

@@ -127,7 +127,7 @@ export function sourceIdentity(source: Source): Identity {
       retraction: null,
     };
   }
-  if (source.registry) {
+  if (source.registry && source.lookup.status !== "not_found") {
     const fields = compareMetadata(source.cited, source.registry.record);
     const mismatches = fields.filter((f) => f.verdict === "mismatch").length;
     const notes = fields.filter((f) => f.verdict === "note").length;
@@ -149,8 +149,8 @@ export function sourceIdentity(source: Source): Identity {
       fields: [],
       summary:
         "Not found in Crossref. That does not show the paper is fake: it may be registered elsewhere, or the DOI may be mistyped.",
-      registryRetrievedAt: null,
-      retraction: null,
+      registryRetrievedAt: source.registry?.retrievedAt ?? null,
+      retraction: source.registry?.record.retraction ?? null,
     };
   }
   if (source.lookup.status === "could_not_check") {

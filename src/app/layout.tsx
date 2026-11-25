@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     "Find real sources, inspect the evidence, approve its use, and export a citation-backed brief with an honest AI-use disclosure.",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#f6f1f4" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#f8f7fa" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

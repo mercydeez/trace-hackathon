@@ -21,7 +21,7 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000 and choose **Open the demo project**. No configuration is needed.
+Open http://localhost:3000 and choose **Open the demo project** for the full workflow, or **Run the citation trap** to see a blocked reviewed export. No configuration is needed.
 
 For a production build on a laptop:
 
@@ -47,7 +47,7 @@ npm start
 | "Draft with AI" | disabled, and says why | one structured call over the approved passages |
 | "Load sample brief (not live AI)" | demo project only, labelled as a sample | same |
 
-Without a network, everything except live search and live AI still works, including the demo project, the sample brief, the citation trap and the export.
+With the local server running, the demo project, sample brief, citation trap and citation formatting work without internet access. Live lookups and AI drafting require a connection.
 
 ## Configuration
 
@@ -78,7 +78,7 @@ Automated tests use fixtures that are labelled as test fixtures and never call a
 
 ## The citation trap
 
-**Run the citation trap** in the sidebar opens a separate, labelled test copy of the demo project with two planted errors: a real DOI whose cited year and author order were altered, and a real source with a quotation changed from "1 week" to "1 month". Nothing is hard-coded: the copy is ordinary project data, and the normal validators catch both. The reviewed export is blocked until each is corrected, and fixing one clears only that one.
+**Run the citation trap** on the welcome screen or in **Projects and tools** opens a separate, labelled test copy with two planted errors: a real DOI whose cited year and author order were altered, and a real source with a quotation changed from "1 week" to "1 month". The normal validators catch both. The reviewed export is blocked until each is corrected, and fixing one clears only that one.
 
 ## Deploy
 
@@ -115,4 +115,4 @@ Start with [docs/architecture-and-governance.md](docs/architecture-and-governanc
 
 Built with Next.js, React, Tailwind CSS, zod, lucide-react, Citation.js (with citeproc-js), the Google Gen AI SDK, Vitest and Playwright. Font: Plus Jakarta Sans, self-hosted under the SIL Open Font License. Visual style modelled on ReproSense. Bibliographic data from Crossref and OpenAlex. Versions and licences: [docs/research-and-decisions.md](docs/research-and-decisions.md). Abstracts in the demo fixtures remain the copyright of their publishers.
 
-Code, tests, documentation and the deck were produced with Claude Code (Claude Fable 5.2) from the prompts in [docs/prompt-log.md](docs/prompt-log.md).
+Claude Code and Codex helped build and review the project. The main requests are recorded in [the prompt log](docs/prompt-log.md).

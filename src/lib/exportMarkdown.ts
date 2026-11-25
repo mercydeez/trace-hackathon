@@ -9,6 +9,7 @@ import type { FormattedReference } from "./api";
 import { sourceLink } from "./csl";
 import { buildDisclosure } from "./disclosure";
 import { evaluateExport, textCitations, type ClaimInspection } from "./exportPolicy";
+import { suffixOf } from "./inText";
 import { newId, formatAuthorsShort, inTextShort } from "./text";
 import { ProjectSchema, SCHEMA_VERSION, type Claim, type Project, type Source } from "./types";
 
@@ -77,7 +78,7 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
   const out: string[] = [];
 
   if (mode === "draft") {
-    out.push("> **DRAFT — NOT REVIEWED.** This file was exported before the review was complete. Do not submit or cite it as a reviewed brief.", "");
+    out.push("> **DRAFT — NOT REVIEWED.** Use this copy for revision. Download a reviewed brief when you are ready to submit.", "");
   }
   if (isTrap) {
     out.push("> **CITATION-TRAP TEST COPY.** This project contains content that was deliberately corrupted to test TRACE's checks. It is not a research brief.", "");
@@ -98,7 +99,19 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
   }
 
   if (project.writing.trim()) {
-    out.push("## Your text", "", project.writing.trim(), "");
+    let writing = project.writing;
+    // Edit the exported copy from the end, keeping every earlier citation offset valid.
+    for (const citation of textCitations(project).sort((a, b) => b.yearStart - a.yearStart)) {
+      const reference = citation.sourceId ? refById.get(citation.sourceId) : undefined;
+      if (!reference || citation.year === null) continue;
+      const suffix = suffixOf(reference.inText);
+      if (suffix === citation.suffix) continue;
+      const start = citation.yearStart + 4;
+      writing = writing.slice(0, start) + suffix + writing.slice(start + citation.suffix.length);
+    }
+    out.push("## Your text", "");
+    if (writing !== project.writing) out.push("> TRACE adjusted citation year letters in this copy to match the exported reference list.", "");
+    out.push(writing.trim(), "");
   }
 
   out.push(project.writing.trim() ? "## Claims and evidence" : "## Brief", "");
@@ -106,7 +119,7 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
     const c = i.claim;
     const ref = i.source ? refById.get(i.source.id) : undefined;
     const inText = c.kind === "inference" ? "" : ` ${ref?.inText ?? (i.source ? inTextShort(i.source.cited.authors, i.source.cited.year) : "(source missing)")}`;
-    out.push(`${i.number}. ${oneLine(c.text)}${inText}`);
+    out.push(`- **Claim ${i.number}.** ${oneLine(c.text)}${inText}`);
     if (c.kind === "inference") {
       out.push("   - **Inference.** No source passage states this. It is the writer's own reasoning.");
     } else {
@@ -132,10 +145,10 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
   for (const s of unformatted) {
     out.push(`- UNFORMATTED: ${formatAuthorsShort(s.cited.authors, s.cited.year)}. ${s.cited.title}. ${sourceLink(s.doi, s.cited) ?? ""}`);
   }
-  if (cited.length) {
+  if (ordered.length) {
     out.push(
       "",
-      "Formatted by Citation.js from stored metadata. Titles keep the capitalisation recorded in the registry; APA 7 asks for sentence case, so check titles before submitting.",
+      "Citation.js formatted the entries above. For APA 7, check that source titles use sentence case before submitting.",
       "",
     );
   }
@@ -161,7 +174,7 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
   out.push("");
 
   out.push("## AI-use disclosure", "");
-  for (const line of buildDisclosure(project, evaluation)) out.push(line, "");
+  for (const line of buildDisclosure(project, evaluation, { reviewed: mode === "reviewed", referencesFormatted: allFormatted })) out.push(line, "");
 
   const prefix = isTrap ? "trace-TEST-COPY" : "trace-brief";
   return { ok: true, markdown: out.join("\n").trimEnd() + "\n", filename: `${prefix}-${slug(project.question)}-${mode === "reviewed" ? "reviewed" : "DRAFT"}.md` };

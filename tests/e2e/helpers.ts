@@ -39,7 +39,7 @@ export async function mockSearch(page: Page) {
 }
 
 /** Screenshots wait for drawer animations to finish, so they show what a person sees, not a mid-transition frame. */
-export const shot = (page: Page, name: string) => page.screenshot({ path: `docs/screenshots/${name}.png`, animations: "disabled" });
+export const shot = (page: Page, name: string) => page.screenshot({ path: `${process.env.E2E_SCREENSHOT_DIR ?? "docs/screenshots"}/${name}.png`, animations: "disabled" });
 
 export const stepButton = (page: Page, name: RegExp) => page.getByRole("navigation", { name: "Steps" }).getByRole("button", { name });
 

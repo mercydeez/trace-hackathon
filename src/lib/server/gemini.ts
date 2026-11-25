@@ -26,18 +26,28 @@ export function aiConfig(): { configured: boolean; model: string } {
 
 type Failure = Extract<Outcome<never>, { ok: false }>;
 
-function classify(err: unknown): Failure & { retry: boolean } {
-  if (err instanceof ApiError) {
-    if (err.status === 429) {
+/** The HTTP status of any SDK error. The interactions API throws its own classes (e.g. BadRequestError), not ApiError. */
+function httpStatus(err: unknown): number | null {
+  if (err instanceof ApiError) return err.status;
+  const status = (err as { status?: unknown } | null)?.status;
+  return typeof status === "number" ? status : null;
+}
+
+export function classify(err: unknown): Failure & { retry: boolean } {
+  const status = httpStatus(err);
+  if (status !== null) {
+    if (status === 429) {
       return { ok: false, kind: "rate_limited", retry: false, message: "The AI provider's rate limit or free quota was reached. Wait and retry, or continue manually." };
     }
-    if (err.status === 408 || err.status >= 500) {
-      return { ok: false, kind: "unavailable", retry: true, message: `The AI provider reported an error (HTTP ${err.status}).` };
+    if (status === 408 || status >= 500) {
+      return { ok: false, kind: "unavailable", retry: true, message: `The AI provider reported an error (HTTP ${status}).` };
     }
-    if (err.status === 401 || err.status === 403) {
+    // Google answers an invalid key with 400 API_KEY_INVALID, not 401.
+    const body = JSON.stringify((err as { body?: unknown; error?: unknown }).body ?? (err as { error?: unknown }).error ?? "");
+    if (status === 401 || status === 403 || /API_KEY_INVALID|API key not valid/i.test(body)) {
       return { ok: false, kind: "no_key", retry: false, message: "The AI provider refused the configured key. Check GEMINI_API_KEY on the server." };
     }
-    return { ok: false, kind: "bad_request", retry: false, message: `The AI provider rejected the request (HTTP ${err.status}).` };
+    return { ok: false, kind: "bad_request", retry: false, message: `The AI provider rejected the request (HTTP ${status}).` };
   }
   const name = err instanceof Error ? err.name : "";
   if (/timeout|abort/i.test(name)) {

@@ -2,6 +2,55 @@
 
 Results of checks that were actually run. Each line is **passed**, **failed** or **not run**. Nothing is listed as passed without a run behind it.
 
+## Release verification in the working tree · 25 November 2026, 16:50–17:10 Dubai time
+
+Run by Claude Code (Claude Opus 5.5) on the full working tree, with the earlier Codex pass preserved.
+
+| Check | Result |
+| --- | --- |
+| `npm ci` (clean install) | **Passed**. `npm audit --omit=dev`: 0 vulnerabilities in production dependencies. |
+| Lint, TypeScript | **Passed** |
+| Unit suite | **Passed**, 182 of 182 in 13 files (179 before this run, plus 3 new regression tests) |
+| `npm run build` | **Passed** |
+| Browser suite (`npm run test:e2e`, production build, Edge) | **Passed**, 16 of 16, after the fixes below |
+| Manual, local production build, 1366×768, **invalid** Gemini key | Live Crossref search, save, evidence approval: passed. "Draft with AI" failed safely: "Nothing was added", with retry and manual options; nothing was substituted. Labelled sample brief, approval, reviewed export: passed, with SAMPLE provenance on each claim and in the disclosure. Citation trap: the quote was corrected and the numbers check still flagged "one month"; the claim was then corrected and approved; Crossref's first author and year were used; the reviewed test copy downloaded as `trace-TEST-COPY-…-reviewed.md` with its test-copy banner. |
+| Manual, local production build, 375×812, **no** Gemini key | `/api/status` reports not configured. "Draft with AI" is disabled with an explanation. The sample brief is labelled. The reviewed export downloaded, and the trap inspector opens as a full-width drawer. No horizontal overflow on welcome, plan or brief. |
+| Response headers | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy` are present. |
+
+Defects reproduced and fixed in this run, each with a regression test:
+
+1. **A rejected Gemini key was reported as "could not be reached" and retried.** The SDK's interactions API throws its own error classes (for example `BadRequestError`, HTTP 400 `API_KEY_INVALID`), not `ApiError`. A spent quota (429) took the same wrong path. `classify` in `src/lib/server/gemini.ts` now reads the HTTP status of any SDK error. Reproduced with a dummy key against the live API.
+2. **Invented in-text citations with a lowercase or "in press" author passed the reviewed export**, for example "(al-Rashid, 2020)", "(fake, 2020)" and "(Fake, in press)". The bracket parser now reads them, so they are checked. Ordinary brackets such as "(around 2020)" are still ignored.
+3. **A stale tab could leave storage holding its older copy.** This happened after a tab returned from the back-forward cache and saved only a project switch. Storage could bring back a deleted project or lose a new one. The receiving tab now writes its merged state back when storage holds less than it does. Pages restored from that cache now resync, and same-timestamp edits break ties deterministically, so two tabs cannot keep overwriting each other.
+4. **The deleted-project memory was capped at 100 ids**, so after more than 100 deletions a project could reappear from a stale tab. The cap is now 1000.
+5. **An unconfirmed DOI blocked the export with an unclear message.** The message now separates "Crossref has no record (not fake; maybe DataCite)" from "could not be checked yet", and says how to recheck.
+
+Known limits carried forward: AI-drafting and rate limits are per server instance. Concurrent edits to the same project in two tabs keep the newer whole project. Citation recognition covers author–date forms only.
+
+## Final release verification · 25 November 2026
+
+Claude Code audited an isolated copy of the application. Its accepted fixes were reviewed and applied to the workspace. Chrome automation for Claude was unavailable, so the production verification used the repository’s browser tests with the installed Google Chrome.
+
+| Check | Result |
+| --- | --- |
+| Clean installation, lint and TypeScript | **Passed** in an isolated copy without a local API key. |
+| Unit suite | **Passed** 179 of 179, including cross-tab merge and deletion. |
+| Production build and Chrome suite | **Passed** 16 of 16. The new two-tab test confirms one tab displays a newer saved edit and its notice. |
+| Production headers and missing Gemini key | **Passed**. The app reported AI as unconfigured, and the draft route returned `no_key`. |
+| Production dependency audit | **Passed**. npm reported zero known vulnerabilities. |
+| Hosted verification | **Pending** Vercel account sign-in. |
+
+## Submission audit run · 25 November 2026
+
+| Check | Result |
+| --- | --- |
+| Unit tests | **Passed** 173 of 173 via `npm test -- --pool=threads --maxWorkers=2`. This includes coauthor and year-suffix checks in both reference styles. The restricted Windows runner blocked forked workers. |
+| Production build and browser journeys | **Passed** 15 of 15 in Edge. The suite built the app and verified the full demo, citation trap, formatter retry, backup restore, keyboard navigation, and 1366×768 and 390×844 layouts. |
+| Development-mode storage recovery | **Passed** after making browser-state hydration idempotent. |
+| Lint and TypeScript | **Passed**. The production build ran TypeScript checks. |
+| Live smoke | **Passed** all eight checks on retry. Crossref keyword search timed out on the first run. DOI lookup, OpenAlex, citation formatting and live Gemini passed. |
+| Phase 1 deck | **Passed** PowerPoint rendered six slides and reported no overflowing text or out-of-bounds objects. |
+
 ## Full run: 24 November 2026, 23:15–23:21 (+04:00)
 
 Machine: Windows 11, Node 22.21.0, npm 10.8.2. Browser tests in Microsoft Edge (installed), driven by Playwright 1.65.1. Run from a clean install.

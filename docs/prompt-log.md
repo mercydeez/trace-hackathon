@@ -331,3 +331,28 @@ The assistant scored TRACE against the rubric as a judge would. It then built a 
 - **Model:** Claude Opus 5.5
 
 > I have to more active members, so what I will do is i will build the entire project, rules have changed as we have to complete everything before the hackathon and in the hackathon just prepare for the presentation, I will build everything and tell the other 2-3 members to present, yup thats my goal... me Atharva, Maitrayee  and Shirley and 3 members currently, i will handover them the deployed sit with ppt and a pdf which gives them understanding of the entire project... I will keep it building until it becomes the best,  Start Audit and build
+
+## 14 — Submission audit and presentation UI
+
+- **Date:** 25 November 2026, about 14:45 Dubai time
+- **Tool:** Codex
+
+> [http://localhost:3000/](http://localhost:3000/) This is a hakathon project which i have to submit tomorrow, audit, review entire project and find the missing gaps,bugs, findings as there atr 7-8 groups and we have to standout, fix the UI, make it professional Sasa like stripe and apple, with good effects but a simple and non cluttered view so that it can be presented properly, do everything and give me a prompt for claude code to fix this, i have attched the rules and problem statemtn here
+
+Codex checked TRACE against the organiser PDFs, brought the citation trap onto the welcome screen, moved active claims above drafting controls, and fixed defects in reviewed export, late draft handling and local recovery. The [audit](submission-audit.md) records the findings. The [Claude Code follow-up prompt](claude-code-final-pass.md) is ready to use.
+
+## 15 — Final audit and production deployment request
+
+- **Date:** 25 November 2026, about 16:40 Dubai time
+- **Tools:** Codex and Claude Code
+
+> give a prompt for claude to do a final audit, because once deployed i wont work on it and i will share this directly in the group, tell it to audit and do all the things fix bugs and make it a final deployable, use claude in chrome and deploy for me
+
+Codex updated the [final release prompt](claude-code-final-pass.md) and invoked Claude Code on an isolated copy of the current source. The audit copy excluded local credentials and private organiser files. Claude identified cross-tab storage issues, inconsistent reference style and avoidable drafting quota usage. Codex reviewed the patches and verified them with 179 unit tests and 16 Chrome browser tests. The hosted release is pending Vercel sign-in.
+
+## 16 — Final release run in Claude Code
+
+- **Date:** 25 November 2026, about 16:50 Dubai time
+- **Model:** Claude Opus 5.5 (Claude Code)
+
+The owner pasted the release prompt saved in [claude-code-final-pass.md](claude-code-final-pass.md) unchanged, and chose a Vercel GitHub import through Claude in Chrome, with the owner adding the Gemini key on the host. Claude Code verified the working tree from a clean install. A separate review agent audited the patch. Claude Code fixed the defects it could reproduce, ran the browser checks, and prepared the release. Results are in [the QA report](qa-report.md).

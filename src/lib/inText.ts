@@ -6,8 +6,8 @@
  *                  (World Health Organization, 2020) · (van der Berg, n.d.) · (Smith, Jones, & Brown, 2020)
  *                  (Roediger & Karpicke, 2006a, 2006b) · (see also Smith, 2020) · (as cited in Smith, 2020)
  *   narrative      Roediger and Karpicke (2006) · Adesope et al. (2017) · Smith's (2020) · Smith, Jones and Brown (2020)
- * A citation matches a source when the first author's surname and the year agree. When two sources share
- * the authors and year, the a/b letter decides; without it the citation is ambiguous.
+ * A citation matches the lead surname, any named coauthors and the year. When two sources share
+ * the authors and year, the a/b letter decides.
  *
  * Anything in brackets that has capitalised words before a year is treated as a citation. It is better to
  * flag "(Table 3, 2020)" as unknown than to let an invented "(Fabricated, n.d.)" pass unread.
@@ -18,9 +18,11 @@ import type { Source } from "./types";
 
 export interface FoundCitation {
   raw: string;
-  /** Offset of `raw` in the text. */
+  /** Start of the citation and exact position of its year token in the original text. */
   start: number;
+  yearStart: number;
   firstAuthor: string;
+  coauthors: string[];
   year: number | null;
   suffix: string;
 }
@@ -34,7 +36,7 @@ export interface CitationMatch extends FoundCitation {
 const PARTICLE = String.raw`(?:van|von|de|der|den|du|da|di|la|le|del|dos|ten|ter)`;
 const WORD = String.raw`\p{Lu}[\p{L}'’\-]*`;
 const NAME = String.raw`(?:${PARTICLE}\s+)*${WORD}`;
-const YEAR = String.raw`(?:(?:1[89]\d\d|20\d\d)[a-z]?(?![\p{L}\d])|n\.d\.)`;
+const YEAR = String.raw`(?:(?:1[89]\d\d|20\d\d)[a-z]?(?![\p{L}\d])|n\.d\.|in\s+press)`;
 const YEARS = String.raw`${YEAR}(?:\s*,\s*${YEAR})*`;
 const YEAR_G = new RegExp(YEAR, "gu");
 const YEAR_ONE = new RegExp(YEAR, "u");
@@ -43,7 +45,7 @@ const YEAR_ONE = new RegExp(YEAR, "u");
 const PREFIX = /^(?:e\.g\.,?|i\.e\.,?|cf\.,?|see(?:\s+also)?,?|as\s+cited\s+in|cited\s+in|for\s+(?:a\s+)?review,?\s+see|reviewed\s+in|quoted\s+in)\s+/iu;
 /** Capitalised words that start a bracket but are not authors. */
 const NOT_AUTHOR = new Set(
-  "january february march april may june july august september october november december spring summer autumn fall winter table figure fig phase study experiment chapter section appendix wave cohort n m sd p".split(" "),
+  "january february march april may june july august september october november december spring summer autumn fall winter table figure fig phase study experiment chapter section appendix wave cohort n m sd p pp vol no ed eds".split(" "),
 );
 /** Sentence words that can stand before a narrative citation: "However, Smith (2020)", "In Smith (2020)". */
 const SENTENCE_WORDS = new Set(
@@ -59,16 +61,22 @@ function norm(name: string): string {
 }
 
 function parseYear(y: string): { year: number | null; suffix: string } {
-  if (y === "n.d.") return { year: null, suffix: "" };
+  if (y === "n.d." || /^in\s+press$/i.test(y)) return { year: null, suffix: "" };
   return { year: Number(y.slice(0, 4)), suffix: y.slice(4) };
 }
 
-/** The first author named in an author list such as "Smith, Jones, & Brown", "Adesope et al." or "World Health Organization". */
-function leadAuthor(authors: string, narrative: boolean): string | null {
-  const names = authors
+function authorNames(authors: string): string[] {
+  return authors
+    .replace(/['’]s$/u, "")
     .split(/\s*(?:,|&|\band\b|\bet\s+al\.?)\s*/u)
     .map((n) => n.trim())
     .filter(Boolean);
+}
+
+/** The first author named in an author list such as "Smith, Jones, & Brown", "Adesope et al." or "World Health Organization". */
+/** `authorDate`: the bracket has the shape of a citation ("x, 2020", "x & y 2020", "x et al. 2020"), so even a lowercase lead is an author. */
+function leadAuthor(authors: string, narrative: boolean, authorDate = false): string | null {
+  const names = authorNames(authors);
   for (const name of names) {
     let words = name.split(/\s+/);
     // In running text, drop sentence words before the name: "However Smith" → "Smith".
@@ -79,22 +87,27 @@ function leadAuthor(authors: string, narrative: boolean): string | null {
     if (new RegExp(`^${NAME}(?:\\s+${NAME})*$`, "u").test(lead)) return lead;
     // In brackets, an author TRACE cannot read ("U.S. Dept. of Ed.") is still a citation: it is kept as
     // written, matches no source, and is flagged rather than silently skipped.
-    return !narrative && /^\p{Lu}/u.test(lead) ? lead : null;
+    if (narrative) return null;
+    if (/^\p{Lu}/u.test(lead)) return lead;
+    // Lowercase leads: "al-Rashid", "d’Fake", "ibn Fake", or anything written as "name, 2020". Unknown ones are flagged, not skipped.
+    const nameLike = authorDate || /^\p{Ll}{1,4}(?:[-’']|\s+)\p{Lu}/u.test(lead);
+    return nameLike && !SENTENCE_WORDS.has(words[0]!.toLowerCase()) ? lead : null;
   }
   return null;
 }
 
 /** One bracketed part such as "Roediger & Karpicke, 2006a, 2006b" or "see Adesope et al. 2017, p. 4". */
-function parsePart(part: string): { authors: string; firstAuthor: string; years: string[] } | null {
-  const text = part.trim().replace(PREFIX, "");
+function parsePart(part: string) {
+  const text = part.trimStart().replace(PREFIX, "");
   const at = text.search(YEAR_ONE);
   if (at <= 0) return null;
   const authors = text.slice(0, at).replace(/[\s,]+$/u, "");
-  const firstAuthor = leadAuthor(authors, false);
+  const authorDate = /,\s*$/u.test(text.slice(0, at)) || /&|\bet\s+al\b/u.test(authors);
+  const firstAuthor = leadAuthor(authors, false, authorDate);
   if (!firstAuthor) return null;
   // Years run until the first thing that is not a year: a page number, a colon, a note.
   const run = text.slice(at).match(new RegExp(`^${YEARS}`, "u"))?.[0] ?? "";
-  return { authors, firstAuthor, years: run.match(YEAR_G) ?? [] };
+  return { authors, firstAuthor, coauthors: authorNames(authors).slice(1), years: [...run.matchAll(YEAR_G)], yearOffset: part.length - text.length + at };
 }
 
 const PARENS = /\(([^()]{4,240})\)/g;
@@ -116,9 +129,10 @@ export function findCitations(text: string): FoundCitation[] {
       const parsed = parsePart(part);
       if (parsed) {
         const partStart = offset + (part.length - part.trimStart().length);
-        for (const y of parsed.years) {
-          const raw = parsed.years.length > 1 ? `${parsed.authors}, ${y}` : part.trim();
-          found.push({ raw, start: partStart, firstAuthor: parsed.firstAuthor, ...parseYear(y) });
+        for (const year of parsed.years) {
+          const [token] = year;
+          const raw = parsed.years.length > 1 ? `${parsed.authors}, ${token}` : part.trim();
+          found.push({ raw, start: partStart, yearStart: offset + parsed.yearOffset + year.index, firstAuthor: parsed.firstAuthor, coauthors: parsed.coauthors, ...parseYear(token) });
         }
         any = true;
       }
@@ -134,9 +148,10 @@ export function findCitations(text: string): FoundCitation[] {
     if (!firstAuthor) continue;
     // Start the citation at its first author, after any sentence words the pattern took in.
     const skip = Math.max(0, m[0].indexOf(firstAuthor));
-    const years = (m[2] ?? "").match(YEAR_G) ?? [];
-    for (const y of years) {
-      found.push({ raw: years.length > 1 ? `${firstAuthor} (${y})` : m[0].slice(skip), start: start + skip, firstAuthor, ...parseYear(y) });
+    const years = [...(m[2] ?? "").matchAll(YEAR_G)];
+    const coauthors = authorNames(m[1]?.slice(skip) ?? "").slice(1);
+    for (const year of years) {
+      found.push({ raw: years.length > 1 ? `${firstAuthor} (${year[0]})` : m[0].slice(skip), start: start + skip, yearStart: start + m[0].indexOf("(") + 1 + year.index, firstAuthor, coauthors, ...parseYear(year[0]) });
     }
   }
 
@@ -176,9 +191,14 @@ export function matchCitations(found: FoundCitation[], sources: Source[], letter
       const name = norm(words.slice(n).join(" "));
       candidates = sources.filter((s) => norm(s.cited.authors[0]?.family ?? "") === name && s.cited.year === f.year);
     }
-    if (candidates.length <= 1) return { ...f, sourceId: candidates[0]?.id ?? null, ambiguous: false };
-    const byLetter = f.suffix ? candidates.find((s) => letters.get(s.id) === f.suffix) : undefined;
-    return byLetter ? { ...f, sourceId: byLetter.id, ambiguous: false } : { ...f, sourceId: null, ambiguous: true };
+    if (f.coauthors.length) {
+      candidates = candidates.filter((s) => f.coauthors.every((coauthor, index) => norm(coauthor) === norm(s.cited.authors[index + 1]?.family ?? "")));
+    }
+    if (f.suffix) {
+      const matching = candidates.filter((s) => letters.get(s.id) === f.suffix);
+      return { ...f, sourceId: matching.length === 1 ? matching[0]!.id : null, ambiguous: matching.length > 1 };
+    }
+    return { ...f, sourceId: candidates.length === 1 ? candidates[0]!.id : null, ambiguous: candidates.length > 1 };
   });
 }
 

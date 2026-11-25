@@ -121,6 +121,27 @@ describe("export", () => {
     expect(buildBrief(p, fakeRefs(p).slice(1), "reviewed", NOW).ok).toBe(false);
   });
 
+  it("blocks an orphaned passage and a DOI with no registry confirmation", () => {
+    const p = reviewedDemo();
+    const source = p.sources[0]!;
+    const missing = { ...p, sources: p.sources.filter((s) => s.id !== source.id) };
+    expect(evaluateExport(missing).blockers.map((b) => b.code)).toContain("source_missing");
+    expect(buildBrief(missing, fakeRefs(missing), "reviewed", NOW).ok).toBe(false);
+
+    const unchecked: Project = { ...p, sources: [{ ...source, lookup: { status: "not_found", checkedAt: NOW } }, ...p.sources.slice(1)] };
+    expect(evaluateExport(unchecked).blockers.map((b) => b.code)).toContain("identity_unconfirmed");
+    expect(buildBrief(unchecked, fakeRefs(unchecked), "reviewed", NOW).ok).toBe(false);
+  });
+
+  it("keeps claim numbers aligned with provenance and identifies a voluntary draft as draft", () => {
+    const base = reviewedDemo();
+    const p = decideClaim(base, base.claims[1]!.id, "rejected");
+    const r = buildBrief(p, fakeRefs(p), "draft", NOW);
+    expect(r.ok && r.markdown).toContain("- **Claim 3.**");
+    expect(r.ok && r.markdown).toContain("- Claim 3 →");
+    expect(r.ok && r.markdown).toContain("This is a DRAFT export.");
+  });
+
   it("marks a draft as a draft in its first line, its filename and its list of open points", () => {
     const base = reviewedDemo();
     const stale = updateClaim(base, base.claims[0]!.id, { text: "Changed." });
@@ -131,6 +152,7 @@ describe("export", () => {
     expect(r.filename).toMatch(/-DRAFT\.md$/);
     expect(r.markdown).toContain("## Unresolved before this can be a reviewed brief");
     expect(r.markdown).toContain("UNFORMATTED:");
+    expect(r.markdown).toContain("This draft contains some unformatted references.");
   });
 
   it("carries sample provenance into the export and the disclosure", () => {
@@ -176,7 +198,7 @@ describe("export", () => {
     const mine = manualClaim(NOW);
     p = addClaims(p, [mine]);
     p = decideClaim(updateClaim(p, mine.id, { kind: "inference", text: "Mine." }), mine.id, "approved");
-    expect(buildDisclosure(p, evaluateExport(p))[1]).toBe("No generative AI system drafted any text in this brief.");
+    expect(buildDisclosure(p, evaluateExport(p))[1]).toBe("TRACE did not use generative AI to draft any included claims.");
   });
 
   it("labels a citation-trap export as a test copy and never as reviewed while the trap is unresolved", () => {
@@ -223,7 +245,7 @@ describe("browser storage", () => {
   it("survives a reload", () => {
     const s = memoryStorage();
     const p = reviewedDemo();
-    expect(saveState(s, { version: 1, projects: [p], activeProjectId: p.id })).toBe(true);
+    expect(saveState({ version: 1, projects: [p], activeProjectId: p.id }, s)).toBe(true);
     const loaded = loadState(s);
     expect(loaded.problem).toBeNull();
     expect(loaded.state.projects[0]).toEqual(p);
@@ -248,6 +270,13 @@ describe("browser storage", () => {
     expect([...s.data.keys()].some((k) => k.startsWith(QUARANTINE_PREFIX))).toBe(true);
   });
 
+  it("preserves the original if there is no room for a recovery copy", () => {
+    const s = memoryStorage({ [STORAGE_KEY]: "{damaged" });
+    const full = { ...s, setItem: () => { throw new Error("QuotaExceededError"); } };
+    expect(loadState(full)).toMatchObject({ problem: "corrupt", writeBlocked: true });
+    expect(s.getItem(STORAGE_KEY)).toBe("{damaged");
+  });
+
   it("repairs a dangling active-project pointer", () => {
     const p = reviewedDemo();
     const { state } = parseStored(JSON.stringify({ version: 1, projects: [p], activeProjectId: "gone" }));
@@ -256,6 +285,6 @@ describe("browser storage", () => {
 
   it("reports a failed save instead of throwing", () => {
     const full = { getItem: () => null, removeItem: () => undefined, setItem: () => { throw new Error("QuotaExceededError"); } };
-    expect(saveState(full, emptyState())).toBe(false);
+    expect(saveState(emptyState(), full)).toBe(false);
   });
 });

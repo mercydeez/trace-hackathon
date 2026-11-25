@@ -10,7 +10,7 @@ function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-export function buildDisclosure(project: Project, evaluation: ExportEvaluation): string[] {
+export function buildDisclosure(project: Project, evaluation: ExportEvaluation, { reviewed = evaluation.eligible, referencesFormatted = true } = {}): string[] {
   const included = evaluation.inspections.filter((i) => i.claim.decision !== "rejected").map((i) => i.claim);
   const live = included.filter((c) => c.origin === "live_ai");
   const sample = included.filter((c) => c.origin === "sample");
@@ -42,11 +42,11 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation):
       "The section \"Your text\" was typed or pasted by the student in TRACE's writing space. TRACE did not generate any of it, and it cannot tell whether pasted text came from elsewhere. " +
         (evaluation.blockers.some((b) => b.code.startsWith("text_citation"))
           ? "Some in-text citations in it do not match a source in this project, or match a source with a problem; see the export checks."
-          : "Every in-text citation in it was matched to a source in this project."),
+          : "TRACE matched the author–date citations it recognised to sources in this project."),
     );
   }
   if (!live.length && !sample.length) {
-    lines.push("No generative AI system drafted any text in this brief.");
+    lines.push("TRACE did not use generative AI to draft any included claims.");
   }
 
   const failedRuns = project.aiRuns.reduce((n, r) => n + r.rejected.length, 0);
@@ -55,12 +55,14 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation):
   }
 
   lines.push(
-    "Sources were found through Crossref, and the search terms came from a rule-based suggestion that the student edited and approved. " +
-      `References were formatted from stored metadata by Citation.js (${project.citationStyle === "harvard1" ? "Harvard" : "APA 7th edition"} style), not written by an AI model.`,
+    "The student chose the search terms and sources. References come from the project's stored source records. " +
+      (referencesFormatted
+        ? `Citation.js formatted the references in ${project.citationStyle === "harvard1" ? "Harvard" : "APA 7th edition"} style.`
+        : "This draft contains some unformatted references."),
   );
   lines.push(
     "TRACE checked three things automatically: that each quoted excerpt appears, by text matching, in the stored source passage; that the numbers " +
-      "and negations stated in each claim also appear in its excerpt; and that cited details agree with the Crossref record for the DOI. These checks do not establish that a source is correct, that a claim follows from " +
+    "and negations stated in each claim also appear in its excerpt; and that cited details agree with the Crossref record for sources with a DOI. Sources without a DOI may be entered manually. These checks do not establish that a source is correct, that a claim follows from " +
       "its excerpt, or that the work is free of plagiarism. Any support rating shown beside a claim was suggested by the AI model or the sample and can be wrong.",
   );
   const r = project.rules;
@@ -70,9 +72,9 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation):
       `retracted sources ${r.blockRetracted ? "blocked" : "allowed, with a warning"}.`,
   );
   lines.push(
-    evaluation.eligible
+    reviewed
       ? "The student reviewed and approved each claim individually and remains responsible for the content of this brief."
-      : "This is a DRAFT: not every claim has been reviewed and approved by the student, and not every check has passed. The student remains responsible for the content.",
+      : "This is a DRAFT export. The student remains responsible for the content.",
   );
   return lines;
 }

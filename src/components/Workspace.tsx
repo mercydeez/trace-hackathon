@@ -1,12 +1,13 @@
 "use client";
 
-import { Check, FlaskConical, LayoutGrid, ShieldAlert, TriangleAlert, X } from "lucide-react";
+import { ArrowRight, Check, FlaskConical, LayoutGrid, ScanSearch, ShieldAlert, TriangleAlert, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { isEvidenceSetApproved, isPlanApproved } from "@/lib/approvals";
 import { buildDemoProject, demoSourcesAndEvidence, FIXTURES_FETCHED_AT } from "@/lib/demo";
 import { checkExcerpt } from "@/lib/excerpt";
 import { evaluateExport } from "@/lib/exportPolicy";
 import { emptyProject } from "@/lib/mutations";
+import { buildTrapProject } from "@/lib/trap";
 import type { Project } from "@/lib/types";
 import { BriefStep } from "./BriefStep";
 import { ClaimInspector } from "./ClaimInspector";
@@ -57,7 +58,7 @@ function stepStates(project: Project): StepState[] {
 function Brand({ compact }: { compact?: boolean }) {
   return (
     <span className="flex flex-none items-center gap-2">
-      <span aria-hidden className="orb size-6 rounded-full" />
+      <span aria-hidden className="trace-mark grid size-7 place-items-center rounded-lg text-white"><ScanSearch className="size-4" /></span>
       <span className={cx("text-base font-bold tracking-[-0.02em] text-ink", compact && "lg:sr-only")}>TRACE</span>
     </span>
   );
@@ -74,56 +75,62 @@ function TrapPreview() {
     return { ok: checkExcerpt(real, ev?.text).status === "matched", bad: checkExcerpt(altered, ev?.text).status === "mismatch" };
   }, []);
   return (
-    <figure className="float rounded-xl p-6">
-      <figcaption className="text-sm text-ink-soft">Roediger &amp; Karpicke (2006), abstract as stored from Crossref</figcaption>
-      <ul className="mt-4 space-y-3">
-        <li className="rounded-lg bg-ok-tint/70 p-4">
-          <p className="text-base leading-relaxed text-ink">&ldquo;Students then took a final retention test 5 min, 2 days, or 1 week later.&rdquo;</p>
-          <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-ok">
+    <figure className="evidence-preview overflow-hidden rounded-2xl bg-surface">
+      <figcaption className="flex items-center gap-3 border-b border-line px-5 py-4 sm:px-6">
+        <ScanSearch aria-hidden className="size-5 shrink-0 text-brand" />
+        <span><span className="block text-sm font-bold">Excerpt check</span><span className="block text-xs text-ink-soft">Roediger &amp; Karpicke (2006) · Crossref abstract</span></span>
+      </figcaption>
+      <ul className="divide-y divide-line px-5 sm:px-6">
+        <li className="py-4 sm:py-5">
+          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ok">
             <Check aria-hidden className="size-4" /> {result.ok ? "Found in the stored abstract" : "Check unavailable"}
           </p>
+          <p className="text-base leading-relaxed text-ink">&ldquo;Students then took a final retention test 5 min, 2 days, or 1 <strong className="rounded bg-ok-tint px-1 font-semibold">week</strong> later.&rdquo;</p>
         </li>
-        <li className="rounded-lg bg-bad-tint/70 p-4">
-          <p className="text-base leading-relaxed text-ink">
-            &ldquo;Students then took a final retention test 5 min, 2 days, or 1 <span className="rounded bg-bad/15 px-0.5 font-semibold">month</span> later.&rdquo;
-          </p>
-          <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-bad">
+        <li className="py-4 sm:py-5">
+          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-bad">
             <X aria-hidden className="size-4" /> {result.bad ? "Not in the stored abstract" : "Check unavailable"}
           </p>
+          <p className="text-base leading-relaxed text-ink">&ldquo;Students then took a final retention test 5 min, 2 days, or 1 <strong className="rounded bg-bad-tint px-1 font-semibold">month</strong> later.&rdquo;</p>
         </li>
       </ul>
-      <p className="mt-4 text-sm leading-relaxed text-ink-soft">The paper is real. One changed word makes the quotation false, and TRACE blocks the brief until it is fixed. Checked just now, in your browser, by the same code the workspace uses.</p>
+      <p className="border-t border-line bg-s2/50 px-5 py-3 text-sm leading-relaxed text-ink-soft sm:px-6">One changed word blocks reviewed export. TRACE runs this check against the stored text.</p>
     </figure>
   );
 }
 
-function Welcome() {
+function Welcome({ onOpenTools }: { onOpenTools: () => void }) {
   const { addProject } = useStore();
   const [question, setQuestion] = useState("");
   const now = () => new Date().toISOString();
   return (
-    <div className="min-h-dvh">
-      <header className="mx-auto flex h-16 max-w-6xl items-center px-4 sm:px-6">
+    <div className="welcome min-h-dvh">
+      <header className="mx-auto flex h-[4.5rem] max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
         <Brand />
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <Button size="sm" variant="ghost" icon={LayoutGrid} onClick={onOpenTools}>Projects and tools</Button>
+          <a href="#new-project" className="hidden text-sm font-semibold text-ink-soft transition-colors hover:text-brand sm:inline">Start a project <ArrowRight aria-hidden className="ml-1 inline size-3.5" /></a>
+        </div>
       </header>
-      <main className="animate-page-enter mx-auto max-w-6xl px-4 pb-16 sm:px-6">
-        <section className="grid items-center gap-12 pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:pt-16">
+      <main className="mx-auto max-w-6xl px-5 pb-12 sm:px-8">
+        <section className="grid items-center gap-8 pt-8 sm:pt-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,29rem)] lg:gap-14 lg:pt-16">
           <div>
-            <h1 className="text-4xl leading-[1.05] font-bold tracking-[-0.035em] text-balance sm:text-6xl">Research you can defend.</h1>
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-soft">
-              A real DOI does not make a claim supported. TRACE finds real sources, keeps the passage behind every claim, checks the two separately, and leaves every decision to you.
+            <h1 className="max-w-[12ch] text-[2.75rem] leading-[1.04] font-bold tracking-[-0.04em] text-balance sm:text-6xl lg:text-[4.5rem]">Research you can defend.</h1>
+            <p className="mt-5 max-w-[42ch] text-base leading-relaxed text-ink-soft sm:text-lg">
+              Find real sources, check each claim against its passage, and export a research brief you’ve reviewed yourself.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="mt-7 flex flex-wrap items-center gap-2.5">
               <Button variant="primary" icon={FlaskConical} onClick={() => addProject(buildDemoProject(now()))}>
                 Open the demo project
               </Button>
-              <span className="text-sm text-ink-soft">Seven real papers, saved from Crossref on {shortDate(FIXTURES_FETCHED_AT)}</span>
+              <Button icon={ShieldAlert} onClick={() => addProject(buildTrapProject(now()))}>Run the citation trap</Button>
             </div>
+            <p className="mt-3 text-sm text-ink-soft">Demo sources saved from Crossref · {shortDate(FIXTURES_FETCHED_AT)}</p>
           </div>
           <TrapPreview />
         </section>
 
-        <section className="mt-24 grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+        <section className="mt-14 grid gap-8 border-t border-line pt-8 lg:mt-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-12">
           <div>
             <h2 className="text-2xl font-bold tracking-[-0.02em]">How it works</h2>
             <ol className="mt-6 grid gap-x-8 gap-y-6 sm:grid-cols-2">
@@ -146,7 +153,8 @@ function Welcome() {
             </ol>
           </div>
           <form
-            className="card p-6"
+            id="new-project"
+            className="card scroll-mt-6 p-5 sm:p-6"
             onSubmit={(e) => {
               e.preventDefault();
               const q = question.trim();
@@ -164,7 +172,7 @@ function Welcome() {
           </form>
         </section>
 
-        <p className="mt-24 border-t border-line pt-6 text-sm leading-relaxed text-ink-soft">
+        <p className="mt-14 border-t border-line pt-6 text-sm leading-relaxed text-ink-soft">
           Your work is saved in this browser only, with no account. It is not a cloud backup. TRACE does not detect plagiarism, judge whether a source is correct, or replace your institution&rsquo;s academic-integrity rules.
         </p>
       </main>
@@ -190,14 +198,14 @@ function StepNav({ steps, step, compact, onSelect }: { steps: StepState[]; step:
                   "relative flex w-full items-center gap-3 rounded-lg text-left transition-colors duration-150",
                   "max-lg:flex-col max-lg:gap-1 max-lg:px-1 max-lg:py-2",
                   compact ? "lg:justify-center lg:p-2" : "lg:px-3 lg:py-2",
-                  active ? "bg-brand text-white" : "text-ink hover:bg-s2",
+                  active ? "bg-brand-tint text-brand" : "text-ink hover:bg-s2",
                 )}
               >
                 <span
                   aria-hidden
                   className={cx(
                     "grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold",
-                    active ? "bg-white/20 text-white" : s.done ? "bg-ok-tint text-ok" : "bg-s3 text-ink-soft",
+                    active ? "bg-brand text-white" : s.done ? "bg-ok-tint text-ok" : "bg-s3 text-ink-soft",
                   )}
                 >
                   {s.done ? <Check className="size-3.5" strokeWidth={3} /> : n + 1}
@@ -207,7 +215,7 @@ function StepNav({ steps, step, compact, onSelect }: { steps: StepState[]; step:
                 </span>
                 <span className={cx("min-w-0 max-lg:sr-only", compact && "lg:sr-only")}>
                   <span className="block text-sm font-semibold">{s.label}</span>
-                  <span className={cx("line-clamp-2 block text-xs leading-snug", active ? "text-white/75" : "text-ink-soft")}>
+                  <span className="line-clamp-2 block text-xs leading-snug text-ink-soft">
                     <span className="sr-only">: </span>
                     {s.state}
                   </span>
@@ -240,6 +248,10 @@ function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: 
     setStep("brief");
     setInspecting(id);
   };
+  function navigate(id: StepId) {
+    setStep(id);
+    if (id !== "brief") setInspecting(null);
+  }
 
   return (
     <div
@@ -269,7 +281,7 @@ function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: 
             </div>
           )}
 
-          <StepNav steps={steps} step={step} compact={compactRail} onSelect={setStep} />
+          <StepNav steps={steps} step={step} compact={compactRail} onSelect={navigate} />
 
           {!compactRail && (
             <div className="mt-auto hidden border-t border-line pt-4 text-xs leading-relaxed text-ink-soft lg:block">
@@ -285,7 +297,7 @@ function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: 
       </aside>
 
       <main className="min-w-0">
-        <header className="border-b border-line bg-surface px-4 py-4 sm:px-8 lg:py-6">
+        <header className="border-b border-line bg-surface px-4 py-4 sm:px-8 lg:py-5">
           <p className="text-sm text-ink-soft">
             Step {position} of 4 <span aria-hidden>·</span> <span className="font-semibold text-ink">{current.label}</span> <span aria-hidden>·</span> {current.state}
           </p>
@@ -293,8 +305,8 @@ function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: 
             {project.question.trim() || <span className="text-ink-faint">No question yet. Write one in the Plan step.</span>}
           </h1>
           {project.kind === "trap" && (
-            <Notice tone="bad" icon={ShieldAlert} className="mt-4" role="note">
-              <strong className="font-semibold">Citation-trap test copy.</strong> One reference&rsquo;s details and one quotation were deliberately corrupted to show the checks working. They are test cases, not research findings.{" "}
+            <Notice tone="bad" icon={ShieldAlert} className="mt-3" role="note">
+              <strong className="font-semibold">Citation-trap test copy.</strong> Two deliberate errors: an altered quote and incorrect citation details.{" "}
               <button type="button" className="font-semibold underline underline-offset-2" onClick={() => deleteProject(project.id)}>
                 Delete this test copy
               </button>
@@ -308,11 +320,11 @@ function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: 
           )}
         </header>
 
-        <div key={step} className="animate-page-enter px-4 py-6 sm:px-8 sm:py-8">
+        <div key={step} className="px-4 py-5 sm:px-8 sm:py-6">
           {step === "plan" && <PlanStep onApproved={() => setStep(project.sources.length ? "library" : "discover")} />}
           {step === "discover" && <DiscoverStep goToPlan={() => setStep("plan")} />}
           {step === "library" && <LibraryStep goToDiscover={() => setStep("discover")} goToBrief={() => setStep("brief")} />}
-          {step === "brief" && <BriefStep inspectingId={inspecting} onInspect={inspect} goToLibrary={() => setStep("library")} goToPlan={() => setStep("plan")} />}
+          {step === "brief" && <BriefStep inspectingId={inspecting} onInspect={inspect} goToLibrary={() => navigate("library")} goToPlan={() => navigate("plan")} />}
         </div>
       </main>
 
@@ -331,7 +343,7 @@ function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: 
 }
 
 function Shell() {
-  const { ready, project, state, storageProblem, dismissStorageProblem } = useStore();
+  const { ready, project, storageProblem, saveFailed, dismissStorageProblem, syncNotice, dismissSyncNotice } = useStore();
   const [menu, setMenu] = useState(false);
 
   if (!ready) {
@@ -351,7 +363,8 @@ function Shell() {
         {storageProblem === "version"
           ? "The work saved in this browser was made by a different version of TRACE and could not be opened."
           : "The work saved in this browser was damaged and could not be opened."}{" "}
-        It was set aside, not deleted, and TRACE started fresh. If you have a backup file, restore it from Projects and tools.{" "}
+        {saveFailed ? "The original data remains in this browser." : "TRACE kept a recovery copy in this browser."}{" "}
+        You can restore a backup from Projects and tools.{" "}
         <button type="button" className="font-semibold underline underline-offset-2" onClick={dismissStorageProblem}>
           Dismiss
         </button>
@@ -359,19 +372,23 @@ function Shell() {
     </div>
   );
 
-  if (state.projects.length === 0 || !project) {
-    return (
-      <>
-        {problem}
-        <Welcome />
-      </>
-    );
-  }
-
   return (
     <>
       {problem}
-      <ProjectView key={project.id} project={project} onOpenTools={() => setMenu(true)} />
+      {syncNotice && (
+        <Notice tone="warn" icon={TriangleAlert} role="status" className="m-3">
+          Another tab saved a newer version of this work, so TRACE loaded it here. Keep one tab per project to avoid losing edits.{" "}
+          <button type="button" className="font-semibold underline underline-offset-2" onClick={dismissSyncNotice}>
+            Dismiss
+          </button>
+        </Notice>
+      )}
+      {saveFailed && (
+        <Notice tone="warn" icon={TriangleAlert} role="alert" className="m-3">
+          TRACE couldn’t save to this browser. Keep this tab open and download a backup from Projects and tools.
+        </Notice>
+      )}
+      {project ? <ProjectView key={project.id} project={project} onOpenTools={() => setMenu(true)} /> : <Welcome onOpenTools={() => setMenu(true)} />}
       <Drawer open={menu} side="left" label="Projects and tools" onClose={() => setMenu(false)}>
         <Sidebar onNavigate={() => setMenu(false)} />
       </Drawer>

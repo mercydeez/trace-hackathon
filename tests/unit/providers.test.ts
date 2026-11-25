@@ -4,7 +4,7 @@ import type { CitableInput, WorkRecord } from "@/lib/api";
 import { missingForApa, toCsl } from "@/lib/csl";
 import { formatApa, htmlToParts } from "@/lib/server/citations";
 import { lookupCrossref, normaliseWork, searchCrossref } from "@/lib/server/crossref";
-import { draftWithGemini } from "@/lib/server/gemini";
+import { classify, draftWithGemini } from "@/lib/server/gemini";
 import { lookupOpenAlexAbstract } from "@/lib/server/openalex";
 import { buildDraftPayload } from "@/lib/prompt";
 
@@ -128,6 +128,15 @@ describe("AI provider", () => {
     const r = await draftWithGemini(buildDraftPayload("Q?", [{ id: "ev_1", label: "x", text: "some passage text" }]));
     expect(r).toMatchObject({ ok: false, kind: "no_key" });
     expect(f).not.toHaveBeenCalled();
+  });
+
+  it("reads the status of the SDK's own error classes: a rejected key and a spent quota are not 'unreachable'", () => {
+    // Shape recorded from @google/genai's interactions API with an invalid key (25 Nov 2026).
+    const badKey = Object.assign(new Error("400 API error occurred"), { name: "BadRequestError", status: 400, body: '[{"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","details":[{"reason":"API_KEY_INVALID"}]}}]' });
+    expect(classify(badKey)).toMatchObject({ kind: "no_key", retry: false });
+    expect(classify(Object.assign(new Error("429"), { name: "RateLimitError", status: 429 }))).toMatchObject({ kind: "rate_limited", retry: false });
+    expect(classify(Object.assign(new Error("400"), { name: "BadRequestError", status: 400, body: "{}" }))).toMatchObject({ kind: "bad_request", retry: false });
+    expect(classify(new TypeError("fetch failed"))).toMatchObject({ kind: "unavailable", retry: true });
   });
 });
 

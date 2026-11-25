@@ -144,6 +144,7 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
   const refs = useReferences(
     project.sources.filter((s) => s.id === project.evidence.find((e) => e.id === claim?.evidenceId)?.sourceId),
     "each",
+    project.citationStyle,
   );
 
   if (!claim) {
