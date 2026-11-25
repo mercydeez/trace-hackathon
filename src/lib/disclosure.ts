@@ -39,7 +39,10 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation):
   }
   if (project.writing.trim()) {
     lines.push(
-      "The section \"Your text\" was typed or pasted by the student in TRACE's writing space. TRACE did not generate any of it, and it cannot tell whether pasted text came from elsewhere. Every in-text citation in it was matched to a source in this project.",
+      "The section \"Your text\" was typed or pasted by the student in TRACE's writing space. TRACE did not generate any of it, and it cannot tell whether pasted text came from elsewhere. " +
+        (evaluation.blockers.some((b) => b.code.startsWith("text_citation"))
+          ? "Some in-text citations in it do not match a source in this project, or match a source with a problem; see the export checks."
+          : "Every in-text citation in it was matched to a source in this project."),
     );
   }
   if (!live.length && !sample.length) {
@@ -66,6 +69,10 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation):
       `${r.minYear ? `sources published in ${r.minYear} or later` : "no publication-year limit"}; ` +
       `retracted sources ${r.blockRetracted ? "blocked" : "allowed, with a warning"}.`,
   );
-  lines.push("The student reviewed and approved each claim individually and remains responsible for the content of this brief.");
+  lines.push(
+    evaluation.eligible
+      ? "The student reviewed and approved each claim individually and remains responsible for the content of this brief."
+      : "This is a DRAFT: not every claim has been reviewed and approved by the student, and not every check has passed. The student remains responsible for the content.",
+  );
   return lines;
 }

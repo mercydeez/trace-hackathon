@@ -325,3 +325,9 @@ The assistant mapped each requirement in the Problem Statement to TRACE. Its mai
 > Assume that you are the Jury for this hackathon, make this the best project ever made in a hackathon
 
 The assistant scored TRACE against the rubric as a judge would. It then built a writing space that checks in-text citations against the project's sources as the student types, and added Harvard as a second reference style. It asked for Vercel access to provide the live link the rules expect.
+## 13 — Build everything before the event; teammates present
+
+- **Date:** 2026-11-25, about 13:10 (+04:00)
+- **Model:** Claude Opus 5.5
+
+> I have to more active members, so what I will do is i will build the entire project, rules have changed as we have to complete everything before the hackathon and in the hackathon just prepare for the presentation, I will build everything and tell the other 2-3 members to present, yup thats my goal... me Atharva, Maitrayee  and Shirley and 3 members currently, i will handover them the deployed sit with ppt and a pdf which gives them understanding of the entire project... I will keep it building until it becomes the best,  Start Audit and build

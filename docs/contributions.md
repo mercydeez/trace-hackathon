@@ -4,18 +4,18 @@ A record of who actually did what. Only real contributions are listed. Update it
 
 ## Team
 
-Four members were assigned (Rules p. 1: teams cannot change without the organisers' approval; every member is expected to contribute and may be questioned). As of 24 November 2026, one member is active.
+Four members were assigned (Rules p. 1: teams cannot change without the organisers' approval; every member is expected to contribute and may be questioned). On 24 November 2026 one member was active. On 25 November 2026 Atharva reported three active members: Atharva, Maitrayee and Shirley. Atharva builds the product before the event; Maitrayee and Shirley will present it.
 
 | Member | Role so far | Contributions (dated) |
 |---|---|---|
-| Member 1 (active builder; add name) | Direction, prompts, review, submission | 24 Nov 2026: chose the TRACE concept and constraints; wrote and ran the build prompt in Claude Code; answered the three set-up questions; approved the build plan. *(Add: review of the app, deck upload, deployment, live AI key, as they happen.)* |
-| Member 2 (add name) | — | None recorded. |
-| Member 3 (add name) | — | None recorded. |
-| Member 4 (add name) | — | None recorded. |
+| Atharva (builder) | Direction, prompts, review, deployment, submission | 24 Nov 2026: chose the TRACE concept and constraints; wrote and ran the build prompt in Claude Code; answered the set-up questions; approved the build plan. 24–25 Nov: directed the redesign, competitor analysis, new checks, writing space and audit through the prompts in `docs/prompt-log.md`; supplied the Gemini key; reviewed the app. |
+| Maitrayee | Presenter (planned) | None recorded yet. Planned: study the presenter guide, rehearse the demo, present and take questions. Record what actually happens, with dates. |
+| Shirley | Presenter (planned) | None recorded yet. Planned: study the presenter guide, rehearse the demo, present and take questions. Record what actually happens, with dates. |
+| Fourth assigned member (if still on the team) | — | None recorded. |
 
 ## AI assistance
 
-The application code, tests, documentation and the Phase 1 deck were produced with Claude Code (model Claude Fable 5.2) from the prompts in `docs/prompt-log.md`, under the active builder's direction. The sample brief in `src/data/sample-brief.json` was written with the same model during development and is labelled as sample output wherever it appears. Team members are responsible for understanding and being able to explain what was built.
+The application code, tests, documentation and the Phase 1 deck were produced with Claude Code (Claude Fable 5.2 on 24 Nov, Claude Opus 5.5 from 25 Nov) from the prompts in `docs/prompt-log.md`, under Atharva's direction. The sample brief in `src/data/sample-brief.json` was written with the same model during development and is labelled as sample output wherever it appears. Team members are responsible for understanding and being able to explain what was built.
 
 ## Action needed: tell the organisers
 

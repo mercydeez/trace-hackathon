@@ -50,6 +50,37 @@ describe("the student's own text", () => {
     expect(evaluateExport(p).blockers.map((b) => b.code)).toEqual(["text_citation_flagged"]);
   });
 
+  it("every unusual form of an invented citation still blocks", () => {
+    for (const cite of ["(World Health Organization, 2020)", "(Fabricated, n.d.)", "(van der Fake, 2019)", "(Smith, Jones, & Brown, 2020)", "(Roediger & Karpicke, 2006a, 2031)", "(Rowland, 2014; see also Invented, 2015)", "(as cited in Smith, 2020)"]) {
+      const e = evaluateExport(setWriting(reviewedDemo(), `A claim ${cite}.`));
+      expect(e.eligible, cite).toBe(false);
+      expect(e.blockers.every((b) => b.code === "text_citation_unknown"), cite).toBe(true);
+    }
+  });
+
+  it("the a/b letter decides which source is cited, at the gate and in the reference list", () => {
+    const p = setWriting(reviewedDemo(), "Testing helps (Roediger & Karpicke, 2006b).");
+    expect(evaluateExport(p).eligible).toBe(true);
+    expect(citedSources(p).map((s) => s.id)).toContain("src_demo_3");
+    const unlettered = evaluateExport(setWriting(reviewedDemo(), "Testing helps (Roediger & Karpicke, 2006)."));
+    expect(unlettered.blockers.map((b) => b.code)).toEqual(["text_citation_ambiguous"]);
+  });
+
+  it("a citation in the text follows the minimum-year rule, as a claim's source does", () => {
+    let p = setWriting(reviewedDemo(), "See Rowland (2014).");
+    p = { ...p, rules: { ...p.rules, minYear: 2015 } };
+    expect(evaluateExport(p).blockers.map((b) => b.code)).toContain("rule_min_year");
+    expect(evaluateExport(p).blockers.some((b) => b.message.includes('"Rowland (2014)"'))).toBe(true);
+  });
+
+  it("a DRAFT export's disclosure does not claim the student approved everything", () => {
+    const p = setWriting(reviewedDemo(), "Testing helps (Smith & Jones, 2020).");
+    const d = buildDisclosure(p, evaluateExport(p)).join(" ");
+    expect(d).toContain("This is a DRAFT");
+    expect(d).not.toContain("Every in-text citation in it was matched");
+    expect(d).not.toContain("reviewed and approved each claim");
+  });
+
   it("projects saved before the writing space existed load with empty text and APA", () => {
     const { writing: _w, citationStyle: _c, ...old } = reviewedDemo();
     void _w;

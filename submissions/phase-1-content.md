@@ -146,8 +146,8 @@ Fix only the quote and the claim's "one month" is still blocked.
 - Evidence approval with a preview of what is sent.
 - One live AI provider (Gemini), a full manual path, a labelled sample brief.
 - Claim Inspector and citation trap.
-- Writing space with live citation checks; list check; retraction flag; project rules. APA 7 or Harvard references.
-- APA 7 references (Citation.js); Markdown brief; JSON backup; browser-local storage.
+- Writing space with live citation checks; list check; retraction flag; project rules.
+- APA 7 or Harvard (Citation.js); Markdown brief; JSON backup; browser-local storage.
 
 **Deliberately out of scope**
 Accounts and collaboration; PDF or full-text ingestion; browser extension; plagiarism detection; systematic-review coverage.
@@ -180,4 +180,4 @@ Accounts and collaboration; PDF or full-text ingestion; browser extension; plagi
 | Another export format | one builder function |
 | A new workflow step | one tab and one approval fingerprint |
 
-**Status line:** 155 of 155 unit tests and 15 of 15 browser journey tests passing on 25 Nov 2026; live AI call verified: yes, 25 Nov (gemini-3.5-flash-lite, free tier; drafted claims cited only supplied evidence IDs and their excerpts were found verbatim); deployed: not yet.
+**Status line:** 166 of 166 unit tests and 15 of 15 browser journey tests passing on 25 Nov 2026; live AI call verified: yes, 25 Nov (gemini-3.5-flash-lite, free tier; drafted claims cited only supplied evidence IDs and their excerpts were found verbatim); deployed: not yet.

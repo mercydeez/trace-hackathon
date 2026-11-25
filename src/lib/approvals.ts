@@ -49,15 +49,23 @@ export function selectedEvidence(p: EvidenceBits): Evidence[] {
   return p.evidenceSet.ids.flatMap((id) => p.evidence.find((e) => e.id === id) ?? []);
 }
 
-export function claimFingerprint(p: EvidenceBits, c: Claim): string {
-  const version = c.evidenceId ? (p.evidence.find((e) => e.id === c.evidenceId)?.version ?? "missing") : null;
-  return hashText(JSON.stringify([planFingerprint(p), c.text.trim(), c.kind, c.evidenceId, c.excerpt.trim(), version]));
+type ClaimBits = EvidenceBits & Pick<Project, "sources">;
+
+export function claimFingerprint(p: ClaimBits, c: Claim): string {
+  const evidence = c.evidenceId ? p.evidence.find((e) => e.id === c.evidenceId) : undefined;
+  const version = c.evidenceId ? (evidence?.version ?? "missing") : null;
+  // A source without a DOI has no registry check, so its cited details are part of what was approved:
+  // editing its title, authors or year makes the approval stale. Sources with a DOI are compared with
+  // Crossref on every render instead (identity check), so correcting them does not reset approvals.
+  const source = evidence ? p.sources.find((s) => s.id === evidence.sourceId) : undefined;
+  const cited = source && !source.doi ? source.cited : null;
+  return hashText(JSON.stringify([planFingerprint(p), c.text.trim(), c.kind, c.evidenceId, c.excerpt.trim(), version, c.limitations.trim(), cited]));
 }
 
 export type EffectiveDecision = "pending" | "approved" | "rejected" | "stale";
 
-/** "stale" = approved once, but the claim, its evidence, or the question changed afterwards. */
-export function claimDecision(p: EvidenceBits, c: Claim): EffectiveDecision {
+/** "stale" = approved once, but the claim, its limitations, its evidence, its source's details, or the question changed afterwards. */
+export function claimDecision(p: ClaimBits, c: Claim): EffectiveDecision {
   if (c.decision !== "approved") return c.decision;
   return c.approvedFingerprint === claimFingerprint(p, c) ? "approved" : "stale";
 }

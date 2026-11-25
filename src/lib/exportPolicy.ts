@@ -26,6 +26,7 @@ export type IssueCode =
   | "source_retracted"
   | "text_citation_unknown"
   | "text_citation_flagged"
+  | "text_citation_ambiguous"
   | "rule_min_year"
   | "claim_pending"
   | "claim_stale"
@@ -138,8 +139,8 @@ export function inspectClaim(project: Project, claim: Claim): ClaimInspection {
 }
 
 /** In-text citations in the student's writing, each matched to a source in the project (or not). */
-export function textCitations(project: Project, letters?: Map<string, string>): CitationMatch[] {
-  return project.writing.trim() ? matchCitations(findCitations(project.writing), project.sources, letters) : [];
+export function textCitations(project: Project): CitationMatch[] {
+  return project.writing.trim() ? matchCitations(findCitations(project.writing), project.sources) : [];
 }
 
 /** A citation in the student's own text must point at a source in the project, and that source must pass its checks. */
@@ -149,16 +150,23 @@ function textIssues(project: Project, cites: CitationMatch[]): Issue[] {
   for (const c of cites) {
     if (seen.has(c.raw)) continue;
     seen.add(c.raw);
+    if (c.ambiguous) {
+      issues.push({ code: "text_citation_ambiguous", message: `Your text cites "${c.raw}", which matches more than one source in this project. Add the letter the reference list uses (for example ${c.year}a or ${c.year}b).` });
+      continue;
+    }
     if (!c.sourceId) {
       issues.push({ code: "text_citation_unknown", message: `Your text cites "${c.raw}", which is not a source in this project. Add the source, correct the citation, or remove it.` });
       continue;
     }
     const source = project.sources.find((s) => s.id === c.sourceId);
     const id = source ? sourceIdentity(source) : null;
+    const minYear = project.rules.minYear;
     if (id?.status === "mismatch") {
       issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", whose reference details disagree with Crossref.`, sourceId: c.sourceId });
     } else if (id?.retraction && project.rules.blockRetracted) {
       issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", which has a ${id.retraction.kind} notice in Crossref.`, sourceId: c.sourceId });
+    } else if (source && minYear !== null && (source.cited.year === null || source.cited.year < minYear)) {
+      issues.push({ code: "rule_min_year", message: `Your text cites "${c.raw}", from ${source.cited.year ?? "an unknown year"}, but the rules in force require ${minYear} or later.`, sourceId: c.sourceId });
     }
   }
   return issues;

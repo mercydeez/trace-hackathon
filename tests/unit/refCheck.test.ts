@@ -11,6 +11,10 @@ describe("judging a pasted reference against the registry", () => {
     expect(judgeReference(parseReference("https://doi.org/10.5555/test.fixture"), TEST_RECORD, "doi").verdict).toBe("doi_only");
   });
 
+  it("a DOI with only an agreeing year is a possible match, not a match", () => {
+    expect(judgeReference(parseReference("https://doi.org/10.5555/test.fixture (2011)"), TEST_RECORD, "doi").verdict).not.toBe("match");
+  });
+
   it("matches when the supplied title, first author and year agree with the DOI's record", () => {
     const r = judgeReference(parseReference(`${APA} https://doi.org/10.5555/test.fixture`), TEST_RECORD, "doi");
     expect(r.verdict).toBe("match");

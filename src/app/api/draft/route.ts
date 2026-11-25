@@ -6,6 +6,8 @@ import { clientKey, rateLimiter, respond } from "@/lib/server/http";
 export const maxDuration = 60;
 
 const allow = rateLimiter(6, 60_000);
+// The deployed site is public and the key's free quota is shared: cap all visitors together per server instance.
+const allowAll = rateLimiter(150, 24 * 60 * 60_000);
 
 const Body = z.object({
   /** The project's rule. Checked here as well as in the browser; it only guards honest clients (no accounts). */
@@ -26,6 +28,9 @@ const PROBLEMS: Record<PayloadProblem, string> = {
 export async function POST(req: Request) {
   if (!allow(clientKey(req))) {
     return respond({ ok: false, kind: "rate_limited", message: "Too many drafting requests in a short time. Wait a minute and try again." });
+  }
+  if (!allowAll("all")) {
+    return respond({ ok: false, kind: "rate_limited", message: "This site has used its drafting allowance for today. Write claims yourself, or try again tomorrow." });
   }
   let json: unknown;
   try {

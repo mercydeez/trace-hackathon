@@ -6,7 +6,7 @@
 // ── STATUS ── rendered as the status line on slide 6. Replace at the final pass with real values.
 const STATUS = {
   // Values from the full run recorded in docs/qa-report.md. Update only from a real run.
-  unitTests: '155 of 155', // number of unit tests passing
+  unitTests: '166 of 166', // number of unit tests passing
   e2eTests: '15 of 15', // number of browser journey tests passing
   date: '25 Nov 2026', // date the tests were run
   liveAi: 'Yes, 25 Nov', // live AI call verified: yes / no

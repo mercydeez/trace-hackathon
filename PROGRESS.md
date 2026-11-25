@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 2026-11-25 12:55 (+04:00)
+Last updated: 2026-11-25 14:35 (+04:00)
 
 ## Status
 
@@ -30,6 +30,8 @@ Last updated: 2026-11-25 12:55 (+04:00)
 - 25 Nov 2026, ~10:45: with a key in `.env.local`, `npm run smoke:live` passed 7 of 7 including a real Gemini draft; "Draft with AI" in the app added 4 claims, all quotes found in the stored abstracts; reviewed export disclosure named the model
 - Deck: 6 slides, rendered through PowerPoint, all slides read
 - 25 Nov 2026, ~12:50: writing space with live citation checks and Harvard style. 155/155 unit, 15/15 journeys.
+- 25 Nov 2026, ~14:30: independent code audit; 8 findings fixed (see docs/qa-report.md). Presenter guide PDF for Maitrayee and Shirley (submissions/TRACE-presenter-guide.pdf). 166/166 unit, 15/15 journeys.
+- Team plan (stated by Atharva, 25 Nov): Atharva finishes the build before the event; Maitrayee and Shirley present. Atharva reported that the rules changed so everything is built beforehand; the organiser PDFs in inputs/ have not been updated to say so, so the day-of playbook stays ready.
 - 25 Nov 2026, ~12:20: three-pane workbench + claim-details check, project rules, retraction flag, reference-list check. 141/141 unit, 14/14 journeys, 8/8 live smoke checks, design detector clean. Pre-workbench version tagged `pre-workbench`.
 - 25 Nov 2026, ~11:40: after the ReproSense-style redesign, typecheck, lint, 94/94 unit and 11/11 browser journeys passed. The pre-redesign version is tagged `pre-redesign`.
 

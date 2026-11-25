@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, FlaskConical, LayoutGrid, ShieldAlert, TriangleAlert, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { isEvidenceSetApproved, isPlanApproved } from "@/lib/approvals";
 import { buildDemoProject, demoSourcesAndEvidence, FIXTURES_FETCHED_AT } from "@/lib/demo";
 import { checkExcerpt } from "@/lib/excerpt";
@@ -225,6 +225,10 @@ function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: 
   const { deleteProject, status } = useStore();
   const [step, setStep] = useState<StepId>(() => (!isPlanApproved(project) ? "plan" : project.claims.length > 0 ? "brief" : "library"));
   const [inspecting, setInspecting] = useState<string | null>(null);
+  // A new step starts at its top, not wherever the last one was scrolled to.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [step]);
   const inspectorColumn = useMediaQuery("(min-width: 1200px)");
   const roomy = useMediaQuery("(min-width: 1440px)");
   const steps = stepStates(project);

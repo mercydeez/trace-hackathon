@@ -23,6 +23,7 @@ import {
   setQuestion,
   toggleEvidence,
   updateClaim,
+  updateCited,
   updateEvidenceText,
   takeRegistryValue,
 } from "@/lib/mutations";
@@ -125,12 +126,27 @@ describe("approvals are invalidated by changes", () => {
   it("editing a claim makes its approval stale", () => {
     const base = reviewedDemo();
     const id = base.claims[0]!.id;
-    for (const patch of [{ text: "Changed wording." }, { excerpt: "prior testing produced substantially greater retention" }, { evidenceId: "ev_demo_3" }]) {
+    for (const patch of [{ text: "Changed wording." }, { excerpt: "prior testing produced substantially greater retention" }, { evidenceId: "ev_demo_3" }, { limitations: "None at all." }]) {
       const p = updateClaim(base, id, patch);
       expect(claimDecision(p, p.claims[0]!)).toBe("stale");
       expect(p.claims[0]!.edited).toBe(true);
       expect(codes(p)).toContain("claim_stale");
     }
+  });
+
+  it("editing a source without a DOI makes its claims' approvals stale; correcting a DOI source to Crossref does not", () => {
+    const base = reviewedDemo();
+    const claim = base.claims.find((c) => c.evidenceId === "ev_demo_1")!;
+    const sourceId = base.evidence.find((e) => e.id === "ev_demo_1")!.sourceId;
+    const noDoi = { ...base, sources: base.sources.map((s) => (s.id === sourceId ? { ...s, doi: null } : s)) };
+    // Approve again with the source as it now is (no DOI), then edit its year.
+    const approved = decideClaim(noDoi, claim.id, "approved");
+    expect(claimDecision(approved, approved.claims.find((c) => c.id === claim.id)!)).toBe("approved");
+    const edited = updateCited(approved, sourceId, { year: 1999 });
+    expect(claimDecision(edited, edited.claims.find((c) => c.id === claim.id)!)).toBe("stale");
+    // With a DOI, the identity check covers the details, so the approval itself is unaffected.
+    const doiEdit = updateCited(base, sourceId, { year: 1999 });
+    expect(claimDecision(doiEdit, doiEdit.claims.find((c) => c.id === claim.id)!)).toBe("approved");
   });
 
   it("removing evidence or a source leaves the citing claim visibly broken, not silently fine", () => {

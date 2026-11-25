@@ -1,14 +1,14 @@
 "use client";
 
 import { Bot, Check, Download, Eye, FlaskConical, PenLine, Quote, RotateCcw, ScanSearch, TriangleAlert, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { callApi, type DraftResult } from "@/lib/api";
 import { isEvidenceSetApproved, isPlanApproved, selectedEvidence } from "@/lib/approvals";
 import { SAMPLE_RAW, sampleAvailable } from "@/lib/demo";
 import { buildBrief, citedSources, STYLE_LABEL } from "@/lib/exportMarkdown";
 import { evaluateExport, textCitations, type ClaimInspection, type ExportEvaluation } from "@/lib/exportPolicy";
 import { sourceIdentity } from "@/lib/identity";
-import { suffixOf } from "@/lib/inText";
+import { suffixOf, yearLetters } from "@/lib/inText";
 import { addClaims, approveEvidenceSet, claimsFromDraft, decideClaim, manualClaim, setCitationStyle, setWriting, toggleEvidence } from "@/lib/mutations";
 import { buildDraftPayload, LIMITS, type DraftEvidenceInput } from "@/lib/prompt";
 import { formatAuthorsShort, inTextShort, newId } from "@/lib/text";
@@ -158,9 +158,15 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
   const aiAllowed = project.rules.aiDrafting !== "off";
   const aiOn = (status?.ai.configured ?? false) && aiAllowed;
   const canSample = sampleAvailable(project);
+  // The live call takes seconds. Validate against the evidence set as it is when the answer arrives,
+  // so a passage removed meanwhile makes the claims that cite it rejected, not added.
+  const latest = useRef(project);
+  useEffect(() => {
+    latest.current = project;
+  }, [project]);
 
   function accept(raw: unknown, origin: "live_ai" | "sample", model: string | null) {
-    const approved = selectedEvidence(project);
+    const approved = selectedEvidence(latest.current);
     const v = validateDraft(raw, approved);
     const now = new Date().toISOString();
     if (v.fatal) {
@@ -344,11 +350,15 @@ function ClaimRow({ i, refs, active, onInspect }: { i: ClaimInspection; refs: Re
 
 // --- 3b. Writing --------------------------------------------------------------------------------
 
-/** In-text form for inserting a citation: the formatted one when the reference list has it, otherwise built from stored details. */
-function inTextFor(source: Source, refs: References, style: Project["citationStyle"]): string {
+/**
+ * In-text form for inserting a citation: the formatted one when the reference list has it with the right
+ * a/b letter, otherwise built from stored details plus the letter TRACE's checks expect.
+ */
+function inTextFor(source: Source, refs: References, style: Project["citationStyle"], letters: Map<string, string>): string {
+  const letter = letters.get(source.id) ?? "";
   const formatted = refs.byId.get(source.id)?.inText;
-  if (formatted) return formatted;
-  const short = inTextShort(source.cited.authors, source.cited.year);
+  if (formatted && suffixOf(formatted) === letter) return formatted;
+  const short = inTextShort(source.cited.authors, source.cited.year).replace(/(\d{4})\)$/, `$1${letter})`);
   return style === "harvard1" ? short.replace(" & ", " and ") : short;
 }
 
@@ -357,8 +367,8 @@ function WritingPanel({ refs }: { refs: References }) {
   const { update } = useStore();
   const box = useRef<HTMLTextAreaElement>(null);
   const [choice, setChoice] = useState("");
-  const letters = new Map(refs.ordered.map((r) => [r.id, suffixOf(r.inText)]));
-  const cites = textCitations(project, letters);
+  const letters = yearLetters(project.sources);
+  const cites = textCitations(project);
   const words = project.writing.trim() ? project.writing.trim().split(/\s+/).length : 0;
   const withText = new Set(project.evidence.map((e) => e.sourceId));
   const options = [...project.sources].sort((a, b) => Number(withText.has(b.id)) - Number(withText.has(a.id)));
@@ -367,7 +377,7 @@ function WritingPanel({ refs }: { refs: References }) {
     const source = project.sources.find((s) => s.id === choice);
     const el = box.current;
     if (!source || !el) return;
-    const citation = inTextFor(source, refs, project.citationStyle);
+    const citation = inTextFor(source, refs, project.citationStyle, letters);
     const at = el.selectionStart ?? project.writing.length;
     const before = project.writing.slice(0, at);
     const after = project.writing.slice(el.selectionEnd ?? at);
@@ -394,7 +404,7 @@ function WritingPanel({ refs }: { refs: References }) {
               <option value="">Choose a source</option>
               {options.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {inTextFor(s, refs, project.citationStyle)} {s.cited.title.length > 60 ? `${s.cited.title.slice(0, 60)}…` : s.cited.title}
+                  {inTextFor(s, refs, project.citationStyle, letters)} {s.cited.title.length > 60 ? `${s.cited.title.slice(0, 60)}…` : s.cited.title}
                 </option>
               ))}
             </Select>
@@ -426,16 +436,16 @@ function WritingPanel({ refs }: { refs: References }) {
             {unique.map((c) => {
               const source = c.sourceId ? project.sources.find((s) => s.id === c.sourceId) : undefined;
               const id = source ? sourceIdentity(source) : null;
-              const expected = c.sourceId ? letters.get(c.sourceId) : undefined;
-              const badge = !c.sourceId
-                ? { tone: "bad" as const, icon: X, label: "Not a source in this project" }
-                : id?.status === "mismatch"
-                  ? IDENTITY.mismatch
-                  : id?.retraction
-                    ? RETRACTED
-                    : c.ambiguous
-                      ? { tone: "warn" as const, icon: TriangleAlert, label: "Matches two sources: add the letter" }
-                      : expected !== undefined && expected !== c.suffix
+              const expected = c.sourceId ? (letters.get(c.sourceId) ?? "") : "";
+              const badge = c.ambiguous
+                ? { tone: "bad" as const, icon: TriangleAlert, label: "Matches more than one source: add the letter" }
+                : !c.sourceId
+                  ? { tone: "bad" as const, icon: X, label: "Not a source in this project" }
+                  : id?.status === "mismatch"
+                    ? IDENTITY.mismatch
+                    : id?.retraction
+                      ? RETRACTED
+                      : expected !== c.suffix
                         ? { tone: "warn" as const, icon: TriangleAlert, label: `Reference list uses ${c.year}${expected}` }
                         : { tone: "ok" as const, icon: Check, label: "Matches a source in this project" };
               return (

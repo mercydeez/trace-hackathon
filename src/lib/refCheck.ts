@@ -32,5 +32,7 @@ export function judgeReference(parsed: ParsedReference, record: RegistryRecord, 
   const mismatched = fields.filter((f) => f.verdict === "mismatch");
   if (via === "search" && mismatched.some((f) => f.field === "title")) return { verdict: "no_close_match", fields };
   if (mismatched.length) return { verdict: "mismatch", fields };
-  return { verdict: via === "doi" ? "match" : "possible", fields };
+  // Agreement on a year, or an author and a year, fits many papers. Only a compared title makes it a match.
+  const titleCompared = fields.some((f) => f.field === "title");
+  return { verdict: via === "doi" && titleCompared ? "match" : "possible", fields };
 }

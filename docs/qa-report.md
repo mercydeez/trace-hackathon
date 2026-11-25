@@ -74,6 +74,33 @@ Captured by the browser tests into `docs/screenshots/` at 1440×900, 1366×768 a
 - The reference-identity table was cramped inside the narrow inspector. There it is now a stacked list of only the details that need attention.
 - Opening a second claim kept the previous claim's scroll position. Each claim now opens at the top of the inspector.
 
+## Independent code audit and fixes: 25 November 2026, about 14:30 (+04:00)
+
+A separate read-only review agent audited `src/lib`, the API routes and the components, then reproduced each finding with a throwaway test. Fixed and covered by new tests:
+
+| Finding | Severity | Fix |
+|---|---|---|
+| Invented in-text citations in forms the parser did not read (organisations, "n.d.", "van der", Oxford comma, a second year, "see also", "as cited in") passed the reviewed export | High | Parser rewritten: any bracket with capitalised words before a year is read as a citation; unreadable authors are kept as written and flagged |
+| The a/b letter was ignored at the export gate, so "2006b" counted as the "a" paper and dropped from the reference list | High | Letters computed once from stored details (`yearLetters`) and used by gate, export and writing space; an unlettered citation that fits two sources blocks export. A test confirms the letters equal Citation.js's |
+| Editing a claim's limitations, or a hand-entered source's details, kept the approval | Medium | Both are in the claim fingerprint (source details only for sources without a DOI; DOI sources stay covered by the identity check) |
+| Citations in the student's text skipped the minimum-year rule | Medium | Same rule applied in the text check |
+| A DRAFT export's disclosure said every claim was approved and every citation matched | Medium | Those two lines now follow the export evaluation |
+| `/api/cite` had no rate limit or size cap; `/api/draft` could drain the shared Gemini quota | Medium | Rate limit and 300 KB cap on `/api/cite`; a daily cap across all visitors on `/api/draft` (per server instance) |
+| A pasted reference with a DOI and only a year was reported as "Details match" | Medium-low | A match now needs the title compared; otherwise "possible match" |
+| A draft answer was validated against the evidence set from when the button was pressed | Low | Validated against the set as it is when the answer arrives |
+
+Also fixed from the manual walk-through: switching steps kept the old scroll position.
+
+Checked and fine (per the audit): the key is never logged or returned; outbound calls go to an allow-list of hosts; no injected HTML; no "Verified" badge; sample output labelled everywhere; "not found" and "could not check" kept apart.
+
+Not changed (accepted limits): rate limits are per server instance; an excerpt as short as 12 characters can match generic text; heavy simultaneous Crossref search on one instance can queue into timeouts.
+
+| Check | Result |
+|---|---|
+| `npm run typecheck`, `npm run lint` | **passed** |
+| `npm test` | **passed**, 166 of 166 in 12 files |
+| `npm run test:e2e` | **passed**, 15 of 15 |
+
 ## Writing space and Harvard style: 25 November 2026, about 12:50 (+04:00)
 
 | Check | Result |
