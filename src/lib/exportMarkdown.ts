@@ -8,11 +8,13 @@
 import type { FormattedReference } from "./api";
 import { sourceLink } from "./csl";
 import { buildDisclosure } from "./disclosure";
-import { evaluateExport, type ClaimInspection } from "./exportPolicy";
+import { evaluateExport, textCitations, type ClaimInspection } from "./exportPolicy";
 import { newId, formatAuthorsShort, inTextShort } from "./text";
 import { ProjectSchema, SCHEMA_VERSION, type Claim, type Project, type Source } from "./types";
 
 export type ExportMode = "reviewed" | "draft";
+
+export const STYLE_LABEL: Record<Project["citationStyle"], string> = { apa: "APA 7", harvard1: "Harvard" };
 export type ExportResult = { ok: true; markdown: string; filename: string } | { ok: false; reasons: string[] };
 
 const oneLine = (s: string) => s.replace(/\s+/g, " ").trim();
@@ -52,6 +54,8 @@ export function citedSources(project: Project): Source[] {
     const ev = project.evidence.find((e) => e.id === c.evidenceId);
     if (ev) ids.add(ev.sourceId);
   }
+  // Sources cited in the student's own text are part of the reference list too.
+  for (const c of textCitations(project)) if (c.sourceId) ids.add(c.sourceId);
   return project.sources.filter((s) => ids.has(s.id));
 }
 
@@ -93,7 +97,11 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
     out.push("");
   }
 
-  out.push("## Brief", "");
+  if (project.writing.trim()) {
+    out.push("## Your text", "", project.writing.trim(), "");
+  }
+
+  out.push(project.writing.trim() ? "## Claims and evidence" : "## Brief", "");
   for (const i of included) {
     const c = i.claim;
     const ref = i.source ? refById.get(i.source.id) : undefined;
@@ -112,7 +120,7 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
     out.push("");
   }
 
-  out.push("## References (APA 7)", "");
+  out.push(`## References (${STYLE_LABEL[project.citationStyle]})`, "");
   if (cited.length === 0) out.push("No sources are cited.", "");
   const ordered = refs ? refs.filter((r) => cited.some((s) => s.id === r.id)) : [];
   const unformatted = cited.filter((s) => !refById.has(s.id));

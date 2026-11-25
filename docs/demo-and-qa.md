@@ -39,6 +39,7 @@ If time is short, drop 1:50 and 5:00. Never drop 5:15–7:00.
 
 - **Check a reference list** (Discover → Check a list): paste a reference list with one bare DOI and one wrong year. "A DOI that resolves is reported as 'nothing to compare', never as confirmed. The wrong year is named field by field."
 - **Retraction**: add DOI `10.1016/S0140-6736(97)11096-0` by DOI. "Its details match Crossref, and it is retracted. Two different questions, two different labels, and the export is blocked."
+- **Write and cite** (Brief → Your text): insert a citation from the picker, then type one from memory such as "(Smith & Jones, 2020)". "Every in-text citation is checked against the project as you type. An invented one blocks the reviewed export."
 - **Rules in force** (Plan step): switch AI drafting off. "This is where an assignment's AI policy goes. The draft button, the server and the export gate all enforce it, and the disclosure states it."
 
 ## Two minutes of questions

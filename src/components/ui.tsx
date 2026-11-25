@@ -89,7 +89,7 @@ export function TextInput({ className, ...props }: React.InputHTMLAttributes<HTM
   return <input className={cx(INPUT, "h-10", className)} {...props} />;
 }
 
-export function TextArea({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+export function TextArea({ className, ...props }: React.ComponentProps<"textarea">) {
   return <textarea className={cx(INPUT, "resize-y py-2 leading-relaxed", className)} {...props} />;
 }
 

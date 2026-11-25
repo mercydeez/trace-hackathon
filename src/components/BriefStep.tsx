@@ -1,20 +1,22 @@
 "use client";
 
-import { Bot, Check, Download, Eye, FlaskConical, PenLine, RotateCcw, ScanSearch, X } from "lucide-react";
-import { useState } from "react";
+import { Bot, Check, Download, Eye, FlaskConical, PenLine, Quote, RotateCcw, ScanSearch, TriangleAlert, X } from "lucide-react";
+import { useRef, useState } from "react";
 import { callApi, type DraftResult } from "@/lib/api";
 import { isEvidenceSetApproved, isPlanApproved, selectedEvidence } from "@/lib/approvals";
 import { SAMPLE_RAW, sampleAvailable } from "@/lib/demo";
-import { buildBrief, citedSources } from "@/lib/exportMarkdown";
-import { evaluateExport, type ClaimInspection, type ExportEvaluation } from "@/lib/exportPolicy";
-import { addClaims, approveEvidenceSet, claimsFromDraft, decideClaim, manualClaim, toggleEvidence } from "@/lib/mutations";
+import { buildBrief, citedSources, STYLE_LABEL } from "@/lib/exportMarkdown";
+import { evaluateExport, textCitations, type ClaimInspection, type ExportEvaluation } from "@/lib/exportPolicy";
+import { sourceIdentity } from "@/lib/identity";
+import { suffixOf } from "@/lib/inText";
+import { addClaims, approveEvidenceSet, claimsFromDraft, decideClaim, manualClaim, setCitationStyle, setWriting, toggleEvidence } from "@/lib/mutations";
 import { buildDraftPayload, LIMITS, type DraftEvidenceInput } from "@/lib/prompt";
 import { formatAuthorsShort, inTextShort, newId } from "@/lib/text";
-import type { Project } from "@/lib/types";
+import type { Project, Source } from "@/lib/types";
 import { validateDraft } from "@/lib/validateDraft";
 import { DECISION, excerptBadge, IDENTITY, RETRACTED, originBadge, StatusChip } from "./status";
 import { useProject, useReferences, useStore, type References } from "./store";
-import { Button, cx, downloadText, Empty, Notice, ReferenceText, SectionTitle, shortDate } from "./ui";
+import { Button, cx, downloadText, Empty, Field, Notice, ReferenceText, SectionTitle, Select, shortDate, TextArea } from "./ui";
 
 function evidenceInputs(project: Project): DraftEvidenceInput[] {
   return selectedEvidence(project).map((e) => {
@@ -340,6 +342,118 @@ function ClaimRow({ i, refs, active, onInspect }: { i: ClaimInspection; refs: Re
   );
 }
 
+// --- 3b. Writing --------------------------------------------------------------------------------
+
+/** In-text form for inserting a citation: the formatted one when the reference list has it, otherwise built from stored details. */
+function inTextFor(source: Source, refs: References, style: Project["citationStyle"]): string {
+  const formatted = refs.byId.get(source.id)?.inText;
+  if (formatted) return formatted;
+  const short = inTextShort(source.cited.authors, source.cited.year);
+  return style === "harvard1" ? short.replace(" & ", " and ") : short;
+}
+
+function WritingPanel({ refs }: { refs: References }) {
+  const project = useProject();
+  const { update } = useStore();
+  const box = useRef<HTMLTextAreaElement>(null);
+  const [choice, setChoice] = useState("");
+  const letters = new Map(refs.ordered.map((r) => [r.id, suffixOf(r.inText)]));
+  const cites = textCitations(project, letters);
+  const words = project.writing.trim() ? project.writing.trim().split(/\s+/).length : 0;
+  const withText = new Set(project.evidence.map((e) => e.sourceId));
+  const options = [...project.sources].sort((a, b) => Number(withText.has(b.id)) - Number(withText.has(a.id)));
+
+  function insert() {
+    const source = project.sources.find((s) => s.id === choice);
+    const el = box.current;
+    if (!source || !el) return;
+    const citation = inTextFor(source, refs, project.citationStyle);
+    const at = el.selectionStart ?? project.writing.length;
+    const before = project.writing.slice(0, at);
+    const after = project.writing.slice(el.selectionEnd ?? at);
+    const spaced = (before && !/\s$/.test(before) ? " " : "") + citation;
+    update((p) => setWriting(p, before + spaced + after));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(at + spaced.length, at + spaced.length);
+    });
+  }
+
+  const unique = cites.filter((c, n) => cites.findIndex((x) => x.raw === c.raw) === n);
+
+  return (
+    <section>
+      <SectionTitle aside={`${words} word${words === 1 ? "" : "s"}`}>Your text</SectionTitle>
+      <p className="-mt-2 mb-4 max-w-prose text-sm leading-relaxed text-ink-soft">
+        Write your paragraph or essay here and cite as you go. Every in-text citation is checked against the sources in this project as you type. TRACE never writes this text for you.
+      </p>
+      <div className="flex flex-wrap items-end gap-2">
+        <Field label="Source to cite" className="min-w-0 flex-1 basis-72">
+          {(id) => (
+            <Select id={id} value={choice} onChange={(e) => setChoice(e.target.value)}>
+              <option value="">Choose a source</option>
+              {options.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {inTextFor(s, refs, project.citationStyle)} {s.cited.title.length > 60 ? `${s.cited.title.slice(0, 60)}…` : s.cited.title}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <Button icon={Quote} disabled={!choice} onClick={insert}>
+          Insert citation
+        </Button>
+      </div>
+      <label htmlFor="writing" className="sr-only">
+        Your text
+      </label>
+      <TextArea
+        ref={box}
+        id="writing"
+        rows={10}
+        maxLength={40000}
+        className="mt-4 text-base leading-relaxed"
+        value={project.writing}
+        onChange={(e) => update((p) => setWriting(p, e.target.value))}
+        placeholder="Retrieval practice appears to improve long-term retention more than rereading (Roediger & Karpicke, 2006a)…"
+      />
+
+      <div className="mt-4" aria-live="polite">
+        {cites.length === 0 ? (
+          <p className="text-sm text-ink-soft">{project.writing.trim() ? "No citations in your text yet." : "Citations you type or insert are checked here."}</p>
+        ) : (
+          <ul aria-label="Citations in your text" className="divide-y divide-line rounded-lg border border-line">
+            {unique.map((c) => {
+              const source = c.sourceId ? project.sources.find((s) => s.id === c.sourceId) : undefined;
+              const id = source ? sourceIdentity(source) : null;
+              const expected = c.sourceId ? letters.get(c.sourceId) : undefined;
+              const badge = !c.sourceId
+                ? { tone: "bad" as const, icon: X, label: "Not a source in this project" }
+                : id?.status === "mismatch"
+                  ? IDENTITY.mismatch
+                  : id?.retraction
+                    ? RETRACTED
+                    : c.ambiguous
+                      ? { tone: "warn" as const, icon: TriangleAlert, label: "Matches two sources: add the letter" }
+                      : expected !== undefined && expected !== c.suffix
+                        ? { tone: "warn" as const, icon: TriangleAlert, label: `Reference list uses ${c.year}${expected}` }
+                        : { tone: "ok" as const, icon: Check, label: "Matches a source in this project" };
+              return (
+                <li key={c.raw} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+                  <span className="min-w-0 text-sm">
+                    <span className="font-semibold text-ink">{c.raw}</span>
+                    {source && <span className="text-ink-soft"> · {source.cited.title}</span>}
+                  </span>
+                  <StatusChip badge={badge} />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
 // --- 4. Review and export -------------------------------------------------------------------
 
 function ExportPanel({ evaluation, refs, onInspect, goToPlan }: { evaluation: ExportEvaluation; refs: References; onInspect: (id: string) => void; goToPlan: () => void }) {
@@ -400,7 +514,16 @@ function ExportPanel({ evaluation, refs, onInspect, goToPlan }: { evaluation: Ex
 
         {cited.length > 0 && (
           <div className="mt-6">
-            <h3 className="mb-3 text-base font-bold">References (APA 7)</h3>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-base font-bold">References ({STYLE_LABEL[project.citationStyle]})</h3>
+              <label className="flex items-center gap-2 text-sm">
+                <span className="text-ink-soft">Style</span>
+                <Select aria-label="Reference style" className="h-8 w-40 text-sm" value={project.citationStyle} onChange={(e) => update((p) => setCitationStyle(p, e.target.value === "harvard1" ? "harvard1" : "apa"), "Changed the reference style.")}>
+                  <option value="apa">APA 7</option>
+                  <option value="harvard1">Harvard</option>
+                </Select>
+              </label>
+            </div>
             {refs.state === "error" && (
               <Notice tone="bad" role="alert">
                 The references could not be formatted. {refs.message} A reviewed brief needs formatted references; a draft can still be downloaded.
@@ -418,7 +541,7 @@ function ExportPanel({ evaluation, refs, onInspect, goToPlan }: { evaluation: Ex
         )}
 
         <p className="mt-6 max-w-prose text-sm leading-relaxed text-ink-soft">
-          Both files are Markdown with your brief, APA 7 references, source links, where each excerpt came from, limitations, and a disclosure of how AI was used. You remain responsible for what you submit. TRACE does not detect plagiarism and does not certify the work.
+          Both files are Markdown with your text, your claims, the references, source links, where each excerpt came from, limitations, and a disclosure of how AI was used. You remain responsible for what you submit. TRACE does not detect plagiarism and does not certify the work.
         </p>
         <Button variant="ghost" icon={Eye} className="mt-3" aria-expanded={preview} disabled={project.claims.length === 0} onClick={() => setPreview(!preview)}>
           {preview ? "Hide preview" : "Preview the file"}
@@ -474,7 +597,7 @@ function ExportPanel({ evaluation, refs, onInspect, goToPlan }: { evaluation: Ex
 export function BriefStep({ inspectingId, onInspect, goToLibrary, goToPlan }: { inspectingId: string | null; onInspect: (id: string) => void; goToLibrary: () => void; goToPlan: () => void }) {
   const project = useProject();
   const evaluation = evaluateExport(project);
-  const refs = useReferences(citedSources(project), "list");
+  const refs = useReferences(citedSources(project), "list", project.citationStyle);
 
   return (
     <div className="step-body max-w-5xl space-y-6">
@@ -496,6 +619,7 @@ export function BriefStep({ inspectingId, onInspect, goToLibrary, goToPlan }: { 
           </ol>
         )}
       </section>
+      <WritingPanel refs={refs} />
       <ExportPanel evaluation={evaluation} refs={refs} onInspect={onInspect} goToPlan={goToPlan} />
     </div>
   );

@@ -75,6 +75,8 @@ export function buildDemoProject(now: string): Project {
     question: DEMO_QUESTION,
     plan: suggestPlan(DEMO_QUESTION),
     rules: { ...DEFAULT_RULES },
+    writing: "",
+    citationStyle: "apa",
     sources,
     evidence,
     evidenceSet: { ids: [], approvedFingerprint: null, approvedAt: null },

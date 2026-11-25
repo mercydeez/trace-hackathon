@@ -22,6 +22,8 @@ export function emptyProject(name: string, question: string, now: string): Proje
     question,
     plan: suggestPlan(question),
     rules: { ...DEFAULT_RULES },
+    writing: "",
+    citationStyle: "apa",
     sources: [],
     evidence: [],
     evidenceSet: { ids: [], approvedFingerprint: null, approvedAt: null },
@@ -45,6 +47,14 @@ export function setQuestion(p: Project, question: string): Project {
 
 export function setPlan(p: Project, patch: Partial<Pick<Plan, "terms" | "yearFrom" | "yearTo" | "scopeNote">>): Project {
   return { ...p, plan: { ...p.plan, ...patch } };
+}
+
+export function setWriting(p: Project, writing: string): Project {
+  return { ...p, writing: writing.slice(0, 40000) };
+}
+
+export function setCitationStyle(p: Project, citationStyle: Project["citationStyle"]): Project {
+  return { ...p, citationStyle };
 }
 
 export function setRules(p: Project, patch: Partial<Rules>): Project {

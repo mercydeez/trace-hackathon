@@ -213,7 +213,7 @@ function SourceDetail({ source, reference, refs }: { source: Source; reference: 
         </div>
       </DetailSection>
 
-      <DetailSection title="Reference (APA 7)">
+      <DetailSection title={`Reference (${project.citationStyle === "harvard1" ? "Harvard" : "APA 7"})`}>
         {reference ? (
           <p className="max-w-prose text-base leading-relaxed break-words">
             <ReferenceText parts={reference.parts} />
@@ -298,7 +298,7 @@ function SourceDetail({ source, reference, refs }: { source: Source; reference: 
 
 export function LibraryStep({ goToDiscover, goToBrief }: { goToDiscover: () => void; goToBrief: () => void }) {
   const project = useProject();
-  const refs = useReferences(project.sources, "each");
+  const refs = useReferences(project.sources, "each", project.citationStyle);
   const split = useMediaQuery("(min-width: 1280px)");
   const [openId, setOpenId] = useState<string | null>(null);
   const [text, setText] = useState("");

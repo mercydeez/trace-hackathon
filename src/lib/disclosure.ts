@@ -37,6 +37,11 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation):
   if (manual.length) {
     lines.push(`${plural(manual.length, "claim")} ${manual.length === 1 ? "was" : "were"} written by the student without AI drafting.`);
   }
+  if (project.writing.trim()) {
+    lines.push(
+      "The section \"Your text\" was typed or pasted by the student in TRACE's writing space. TRACE did not generate any of it, and it cannot tell whether pasted text came from elsewhere. Every in-text citation in it was matched to a source in this project.",
+    );
+  }
   if (!live.length && !sample.length) {
     lines.push("No generative AI system drafted any text in this brief.");
   }
@@ -48,7 +53,7 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation):
 
   lines.push(
     "Sources were found through Crossref, and the search terms came from a rule-based suggestion that the student edited and approved. " +
-      "References were formatted from stored metadata by Citation.js (APA 7th edition style), not written by an AI model.",
+      `References were formatted from stored metadata by Citation.js (${project.citationStyle === "harvard1" ? "Harvard" : "APA 7th edition"} style), not written by an AI model.`,
   );
   lines.push(
     "TRACE checked three things automatically: that each quoted excerpt appears, by text matching, in the stored source passage; that the numbers " +

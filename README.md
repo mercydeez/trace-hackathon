@@ -38,6 +38,7 @@ npm start
 | OpenAlex abstract fallback | live | live |
 | Library: tags, notes, filters, duplicate prevention | yes | yes |
 | Check a pasted reference list (up to 15) | live | live |
+| Writing space with live in-text citation checks; APA 7 or Harvard | yes | yes |
 | Retraction notices from Crossref | live | live |
 | Rules in force (AI drafting on/off, oldest year, block retracted) | yes | yes |
 | Excerpt, claim-details, identity, approval and export checks | yes | yes |

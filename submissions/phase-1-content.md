@@ -146,7 +146,7 @@ Fix only the quote and the claim's "one month" is still blocked.
 - Evidence approval with a preview of what is sent.
 - One live AI provider (Gemini), a full manual path, a labelled sample brief.
 - Claim Inspector and citation trap.
-- Reference-list check; retraction flag; project rules.
+- Writing space with live citation checks; list check; retraction flag; project rules. APA 7 or Harvard references.
 - APA 7 references (Citation.js); Markdown brief; JSON backup; browser-local storage.
 
 **Deliberately out of scope**
@@ -156,7 +156,7 @@ Accounts and collaboration; PDF or full-text ingestion; browser extension; plagi
 - Search → save → tag → reload → approve → brief → inspect → export runs end to end.
 - A model answer that cites an unknown ID, or carries a DOI or author field, is rejected.
 - An altered number or a dropped negation in a quotation fails the check.
-- A claim stating a number its excerpt lacks is blocked.
+- A claim stating a number its excerpt lacks, or an in-text citation with no source, is blocked.
 - Editing a claim, a passage or the question makes approvals stale and blocks reviewed export.
 - A timeout shows "Could not check", never "Not found".
 - Sample output stays labelled through to the exported file.
@@ -180,4 +180,4 @@ Accounts and collaboration; PDF or full-text ingestion; browser extension; plagi
 | Another export format | one builder function |
 | A new workflow step | one tab and one approval fingerprint |
 
-**Status line:** 141 of 141 unit tests and 14 of 14 browser journey tests passing on 25 Nov 2026; live AI call verified: yes, 25 Nov (gemini-3.5-flash-lite, free tier; drafted claims cited only supplied evidence IDs and their excerpts were found verbatim); deployed: not yet.
+**Status line:** 155 of 155 unit tests and 15 of 15 browser journey tests passing on 25 Nov 2026; live AI call verified: yes, 25 Nov (gemini-3.5-flash-lite, free tier; drafted claims cited only supplied evidence IDs and their excerpts were found verbatim); deployed: not yet.

@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 2026-11-25 12:25 (+04:00)
+Last updated: 2026-11-25 12:55 (+04:00)
 
 ## Status
 
@@ -29,6 +29,7 @@ Last updated: 2026-11-25 12:25 (+04:00)
 - `npm run smoke:live`: 6 of 6 run checks passed; live AI draft not run (no key)
 - 25 Nov 2026, ~10:45: with a key in `.env.local`, `npm run smoke:live` passed 7 of 7 including a real Gemini draft; "Draft with AI" in the app added 4 claims, all quotes found in the stored abstracts; reviewed export disclosure named the model
 - Deck: 6 slides, rendered through PowerPoint, all slides read
+- 25 Nov 2026, ~12:50: writing space with live citation checks and Harvard style. 155/155 unit, 15/15 journeys.
 - 25 Nov 2026, ~12:20: three-pane workbench + claim-details check, project rules, retraction flag, reference-list check. 141/141 unit, 14/14 journeys, 8/8 live smoke checks, design detector clean. Pre-workbench version tagged `pre-workbench`.
 - 25 Nov 2026, ~11:40: after the ReproSense-style redesign, typecheck, lint, 94/94 unit and 11/11 browser journeys passed. The pre-redesign version is tagged `pre-redesign`.
 

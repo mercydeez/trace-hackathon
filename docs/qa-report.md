@@ -74,6 +74,14 @@ Captured by the browser tests into `docs/screenshots/` at 1440×900, 1366×768 a
 - The reference-identity table was cramped inside the narrow inspector. There it is now a stacked list of only the details that need attention.
 - Opening a second claim kept the previous claim's scroll position. Each claim now opens at the top of the inspector.
 
+## Writing space and Harvard style: 25 November 2026, about 12:50 (+04:00)
+
+| Check | Result |
+|---|---|
+| `npm run typecheck`, `npm run lint` | **passed** |
+| `npm test` | **passed**, 155 of 155 in 12 files. New tests cover finding and matching in-text citations, including two works by the same authors in one year; an unknown citation blocking export; text and references in the export; Harvard formatting. |
+| `npm run test:e2e` | **passed**, 15 of 15. New journey: insert a citation, catch an invented one, export the text with its references. |
+| Deck | 6 slides; status line updated; rendered and read |
 ## Workbench redesign and new features: 25 November 2026, about 12:00–12:20 (+04:00)
 
 The previous redesign is tagged `pre-workbench`.

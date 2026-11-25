@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { demoWithApprovedEvidence, mockStatus, openDemo, openTools, reply, shot, stepButton, TEST_WORK } from "./helpers";
 
@@ -73,4 +74,38 @@ test("numbers check: repairing only the quotation in the trap still leaves the c
   await inspector.getByLabel("Claim", { exact: true }).fill("Students were given a final test up to one week later.");
   await expect(inspector.getByText("Every number and negation in the claim also appears in the excerpt.")).toBeVisible();
   await expect(inspector.getByRole("button", { name: "Approve claim" })).toBeEnabled();
+});
+
+test("writing space: insert a citation, catch an invented one, and export the text with its references", async ({ page }) => {
+  await mockStatus(page, false);
+  await demoWithApprovedEvidence(page);
+  await page.getByRole("button", { name: "Load sample brief (not live AI)" }).click();
+  for (const n of [1, 2, 3, 4, 5]) await page.getByRole("button", { name: `Approve claim ${n}` }).click();
+
+  const text = page.getByLabel("Your text", { exact: true });
+  await text.fill("Self-testing beats rereading for long-term retention");
+  await page.getByLabel("Source to cite").selectOption("src_demo_2"); // Karpicke & Roediger (2008), a real demo source
+  await page.getByRole("button", { name: "Insert citation" }).click();
+  await expect(text).toHaveValue("Self-testing beats rereading for long-term retention (Karpicke & Roediger, 2008)");
+
+  // A citation the student typed from memory, with no source behind it.
+  await text.press("End");
+  await text.pressSequentially(". Others agree (Smith & Jones, 2020).");
+  const checks = page.getByRole("list", { name: "Citations in your text" });
+  await expect(checks).toContainText("Not a source in this project");
+  await expect(checks).toContainText("Matches a source in this project");
+  await expect(page.getByRole("button", { name: "Download reviewed brief" })).toBeDisabled();
+  await expect(page.getByText('Your text cites "Smith & Jones, 2020", which is not a source in this project.').first()).toBeVisible();
+  await shot(page, "14-writing-space");
+
+  await text.fill("Self-testing beats rereading for long-term retention (Karpicke & Roediger, 2008). A meta-analysis agrees (Rowland, 2014).");
+  await expect(checks).not.toContainText("Not a source in this project");
+  const reviewed = page.getByRole("button", { name: "Download reviewed brief" });
+  await expect(reviewed).toBeEnabled();
+  const [download] = await Promise.all([page.waitForEvent("download"), reviewed.click()]);
+  const md = await readFile(await download.path(), "utf8");
+  expect(md).toContain("## Your text");
+  expect(md).toContain("A meta-analysis agrees (Rowland, 2014).");
+  expect(md).toContain("Rowland, C. A. (2014).");
+  expect(md).toContain("TRACE did not generate any of it");
 });

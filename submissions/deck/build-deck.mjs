@@ -6,8 +6,8 @@
 // ── STATUS ── rendered as the status line on slide 6. Replace at the final pass with real values.
 const STATUS = {
   // Values from the full run recorded in docs/qa-report.md. Update only from a real run.
-  unitTests: '141 of 141', // number of unit tests passing
-  e2eTests: '14 of 14', // number of browser journey tests passing
+  unitTests: '155 of 155', // number of unit tests passing
+  e2eTests: '15 of 15', // number of browser journey tests passing
   date: '25 Nov 2026', // date the tests were run
   liveAi: 'Yes, 25 Nov', // live AI call verified: yes / no
   deployed: 'Not yet', // URL, or "laptop demo declared"
@@ -541,18 +541,17 @@ function frame(n, kickers, title, headline, o = {}) {
     scope: ['In the MVP', [
       'The eight-step journey on one page.',
       'Live Crossref search and DOI lookup; OpenAlex abstract fallback.',
-      'Library with tags, notes, filters and duplicate prevention.',
-      'Evidence approval with a preview of what is sent.',
+      'Library with tags, notes, filters; evidence approval with a preview of what is sent.',
       'One live AI provider (Gemini), a full manual path, a labelled sample brief.',
       'Claim Inspector and citation trap.',
-      'Reference-list check; retraction flag; project rules.',
-      'APA 7 references (Citation.js); Markdown brief; JSON backup; browser-local storage.',
+      'Writing space with live citation checks; list check; retraction flag; project rules.',
+      'APA 7 or Harvard (Citation.js); Markdown brief; JSON backup; local storage.',
     ]],
     acceptance: ['Acceptance criteria we demonstrate', 'Each has an automated test.', [
       'Search → save → tag → reload → approve → brief → inspect → export runs end to end.',
       'A model answer that cites an unknown ID, or carries a DOI or author field, is rejected.',
       'An altered number or a dropped negation in a quotation fails the check.',
-      'A claim stating a number its excerpt lacks is blocked.',
+      'A claim stating a number its excerpt lacks, or an in-text citation with no source, is blocked.',
       'Editing a claim, a passage or the question makes approvals stale and blocks reviewed export.',
       'A timeout shows “Could not check”, never “Not found”.',
       'Sample output stays labelled through to the exported file.',

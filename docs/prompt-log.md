@@ -308,3 +308,20 @@ Only the light palette was implemented; there is no theme switch.
 > Looks very shit, the UI is also not very perfect, you have added colours but the spaces, layout architecure is very bad, use all the design and frontend skills available and make accordingly.. Also i have added a github repository which i downloaded from one our our competitors girhub, check what have he done, his UI, Whos logic is right and how can we overcome them
 
 The assistant read the competitor's zip in memory only (nothing extracted or copied into this repository) and audited TRACE's layout. It asked three questions; the answers were: keep the ReproSense look; a three-pane workbench layout; full scope including new features. A written plan was approved. The redesign and four features (claim-details check, project rules, retraction flag, reference-list check) were then built from TRACE's own code; only ideas were taken from the competitor analysis, in line with the event's no-copying rule.
+## 11 — Problem-statement check
+
+- **Date:** 2026-11-25, about 12:30 (+04:00)
+- **Model:** Claude Opus 5.5
+
+> Is this problem satisfying the problem statement?
+
+The assistant mapped each requirement in the Problem Statement to TRACE. Its main gap: there was nowhere to "insert citations while you write". No files changed.
+
+## 12 — Judge's view
+
+- **Date:** 2026-11-25, about 12:35 (+04:00)
+- **Model:** Claude Opus 5.5
+
+> Assume that you are the Jury for this hackathon, make this the best project ever made in a hackathon
+
+The assistant scored TRACE against the rubric as a judge would. It then built a writing space that checks in-text citations against the project's sources as the student types, and added Harvard as a second reference style. It asked for Vercel access to provide the live link the rules expect.

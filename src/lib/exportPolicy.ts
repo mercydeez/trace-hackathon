@@ -9,6 +9,7 @@ import { claimDecision, isEvidenceSetApproved, isPlanApproved, type EffectiveDec
 import { checkClaimDetails, type DetailIssue } from "./claimNumbers";
 import { checkExcerpt, type ExcerptCheck } from "./excerpt";
 import { sourceIdentity, type Identity } from "./identity";
+import { findCitations, matchCitations, type CitationMatch } from "./inText";
 import type { Claim, Evidence, Project, Source } from "./types";
 
 export type IssueCode =
@@ -23,6 +24,8 @@ export type IssueCode =
   | "claim_detail_unsupported"
   | "rule_ai_off"
   | "source_retracted"
+  | "text_citation_unknown"
+  | "text_citation_flagged"
   | "rule_min_year"
   | "claim_pending"
   | "claim_stale"
@@ -134,6 +137,33 @@ export function inspectClaim(project: Project, claim: Claim): ClaimInspection {
   };
 }
 
+/** In-text citations in the student's writing, each matched to a source in the project (or not). */
+export function textCitations(project: Project, letters?: Map<string, string>): CitationMatch[] {
+  return project.writing.trim() ? matchCitations(findCitations(project.writing), project.sources, letters) : [];
+}
+
+/** A citation in the student's own text must point at a source in the project, and that source must pass its checks. */
+function textIssues(project: Project, cites: CitationMatch[]): Issue[] {
+  const issues: Issue[] = [];
+  const seen = new Set<string>();
+  for (const c of cites) {
+    if (seen.has(c.raw)) continue;
+    seen.add(c.raw);
+    if (!c.sourceId) {
+      issues.push({ code: "text_citation_unknown", message: `Your text cites "${c.raw}", which is not a source in this project. Add the source, correct the citation, or remove it.` });
+      continue;
+    }
+    const source = project.sources.find((s) => s.id === c.sourceId);
+    const id = source ? sourceIdentity(source) : null;
+    if (id?.status === "mismatch") {
+      issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", whose reference details disagree with Crossref.`, sourceId: c.sourceId });
+    } else if (id?.retraction && project.rules.blockRetracted) {
+      issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", which has a ${id.retraction.kind} notice in Crossref.`, sourceId: c.sourceId });
+    }
+  }
+  return issues;
+}
+
 export interface ExportEvaluation {
   eligible: boolean;
   blockers: Issue[];
@@ -165,6 +195,7 @@ export function evaluateExport(project: Project): ExportEvaluation {
   }
   if (live.length === 0) blockers.push({ code: "no_claims", message: "There are no claims to export." });
   for (const i of live) blockers.push(...i.issues);
+  blockers.push(...textIssues(project, textCitations(project)));
 
   const counts = {
     total: live.length,

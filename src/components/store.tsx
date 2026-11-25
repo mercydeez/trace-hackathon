@@ -107,13 +107,13 @@ const NO_REFS: References = { byId: new Map(), ordered: [], state: "idle", messa
  * APA 7 references for a set of sources, formatted on the server by Citation.js.
  * "list" formats them as one reference list; "each" formats every source by itself.
  */
-export function useReferences(sources: Source[], mode: "list" | "each"): References {
+export function useReferences(sources: Source[], mode: "list" | "each", style: "apa" | "harvard1" = "apa"): References {
   // The request body as a string: the effect below then re-runs only when the content changes,
   // not whenever a caller passes a freshly built array.
   const body =
     sources.length === 0
       ? ""
-      : JSON.stringify({ mode, items: sources.map((s): CitableInput => ({ id: s.id, doi: s.doi, cited: s.cited, accessed: s.addedAt })) });
+      : JSON.stringify({ mode, style, items: sources.map((s): CitableInput => ({ id: s.id, doi: s.doi, cited: s.cited, accessed: s.addedAt })) });
   const [result, setResult] = useState<{ body: string; refs: References }>({ body: "", refs: NO_REFS });
 
   useEffect(() => {

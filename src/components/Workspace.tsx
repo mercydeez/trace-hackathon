@@ -31,7 +31,8 @@ function stepStates(project: Project): StepState[] {
   const planOk = isPlanApproved(project);
   const setOk = isEvidenceSetApproved(project);
   const evaluation = evaluateExport(project);
-  const { total, needsReview } = evaluation.counts;
+  const { total } = evaluation.counts;
+  const open = evaluation.blockers.length;
   const s = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
   return [
     { id: "plan", label: "Plan", short: "Plan", state: planOk ? "Approved" : project.plan.approvedFingerprint ? "Changed, approve again" : "Not approved yet", done: planOk },
@@ -47,7 +48,7 @@ function stepStates(project: Project): StepState[] {
       id: "brief",
       label: "Brief and export",
       short: "Brief",
-      state: total === 0 ? "No claims yet" : evaluation.eligible ? `${s(total, "claim")}, ready to export` : `${s(total, "claim")}, ${needsReview} to review`,
+      state: total === 0 ? "No claims yet" : evaluation.eligible ? `${s(total, "claim")}, ready to export` : `${s(total, "claim")}, ${open} to resolve`,
       done: evaluation.eligible,
     },
   ];

@@ -7,7 +7,8 @@ import "@citation-js/plugin-csl";
 import type { CitableInput, FormattedReference } from "../api";
 import { toCsl } from "../csl";
 
-const OPTIONS = { template: "apa", lang: "en-US" } as const;
+/** Bundled Citation.js CSL templates: "apa" is APA 7th edition; "harvard1" is a Harvard author-date style. */
+export type CitationStyle = "apa" | "harvard1";
 
 function decode(s: string): string {
   return s
@@ -39,12 +40,13 @@ export function htmlToParts(html: string): FormattedReference["parts"] {
 }
 
 /** Each reference formatted by itself: for the library, where two same-year works should not get a/b letters. */
-export function formatApaEach(inputs: CitableInput[]): FormattedReference[] {
-  return inputs.flatMap((i) => formatApa([i]));
+export function formatApaEach(inputs: CitableInput[], style: CitationStyle = "apa"): FormattedReference[] {
+  return inputs.flatMap((i) => formatApa([i], style));
 }
 
 /** References formatted as one list: for a brief, where same-author same-year works need a/b letters. */
-export function formatApa(inputs: CitableInput[]): FormattedReference[] {
+export function formatApa(inputs: CitableInput[], style: CitationStyle = "apa"): FormattedReference[] {
+  const OPTIONS = { template: style, lang: "en-US" } as const;
   if (inputs.length === 0) return [];
   const cite = new Cite(inputs.map(toCsl));
   // Entries come back in bibliography (alphabetical) order, with year suffixes (2006a, 2006b) already applied.
