@@ -23,7 +23,7 @@ The log is chronological and includes the build prompt, the set-up answers, the 
 **If deployed** (use this):
 
 ```
-[live URL]
+https://trace-hackathon.vercel.app
 ```
 
 **If not deployed** (use this wording instead, as the guidelines allow):

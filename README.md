@@ -1,5 +1,7 @@
 # TRACE — Research you can defend.
 
+**Live:** https://trace-hackathon.vercel.app · release `release-2026-11-25`
+
 A reference manager with a bounded AI research assistant, built for the AI Club Hackathon 2026. A student finds real sources, reads the evidence, approves what to use, and exports a short brief in which every claim points to the stored passage behind it, with APA 7 references and an honest AI-use disclosure.
 
 **A real DOI does not make a claim supported.** TRACE keeps five questions apart and never merges them into one "verified" badge:

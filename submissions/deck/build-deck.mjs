@@ -6,11 +6,11 @@
 // ── STATUS ── rendered as the status line on slide 6. Replace at the final pass with real values.
 const STATUS = {
   // Values from the full run recorded in docs/qa-report.md. Update only from a real run.
-  unitTests: '173 of 173', // number of unit tests passing
-  e2eTests: '15 of 15', // number of browser journey tests passing
+  unitTests: '182 of 182', // number of unit tests passing
+  e2eTests: '16 of 16', // number of browser journey tests passing
   date: '25 Nov 2026', // date the tests were run
   liveAi: 'Yes, 25 Nov', // live AI call verified: yes / no
-  deployed: 'Not yet', // URL, or "laptop demo declared"
+  deployed: 'trace-hackathon.vercel.app', // URL, or "laptop demo declared"
 };
 const PLACEHOLDER = 'to be confirmed';
 

@@ -180,4 +180,4 @@ Accounts and collaboration; PDF or full-text ingestion; browser extension; plagi
 | Another export format | one builder function |
 | A new workflow step | one tab and one approval fingerprint |
 
-**Status line:** 166 of 166 unit tests and 15 of 15 browser journey tests passing on 25 Nov 2026; live AI call verified: yes, 25 Nov (gemini-3.5-flash-lite, free tier; drafted claims cited only supplied evidence IDs and their excerpts were found verbatim); deployed: not yet.
+**Status line:** 182 of 182 unit tests and 16 of 16 browser journey tests passing on 25 Nov 2026; live AI call verified: yes, 25 Nov (gemini-3.5-flash-lite, free tier; drafted claims cited only supplied evidence IDs and their excerpts were found verbatim); deployed: trace-hackathon.vercel.app.

@@ -2,6 +2,25 @@
 
 Results of checks that were actually run. Each line is **passed**, **failed** or **not run**. Nothing is listed as passed without a run behind it.
 
+## Production deployment · 25 November 2026, about 17:20 Dubai time
+
+- **URL:** https://trace-hackathon.vercel.app. Vercel Hobby, GitHub import of `mercydeez/trace-hackathon`, branch `main`.
+- **Release:** commit `3d32bb1`, tagged `release-2026-11-25`. First production deployment `6dw5K7Y4m7miQwvnGHEjyZQZD4yv`, built in 41 s, with no Gemini key.
+- **Rollback target:** deployment `6dw5K7Y4m7miQwvnGHEjyZQZD4yv`, the verified no-key release. Use Vercel → Deployments → Instant Rollback.
+- **Build context:** the Git commit. `.env.local` and `inputs/` are git-ignored and absent. Only the Next.js output is served: `/docs/prompt-log.md`, `/.env.example`, `/package.json`, `/CLAUDE.md` and the deck all return 404.
+
+| Check on production, clean browser session with no Vercel login | Result |
+| --- | --- |
+| HTTPS, public, no login wall | **Passed** |
+| Headers | `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy` present |
+| `/api/status` with no key | `configured: false`, so the sample and manual paths apply |
+| Core demo, desktop | **Passed**: plan, live Crossref search (10 results), save, evidence approval, labelled sample brief, approval, reviewed brief downloaded with APA 7 references and SAMPLE provenance |
+| Citation trap | **Passed**. Quote corrected, and the numbers check still flagged "one month". Claim corrected and approved. Crossref's first author and year used. Reviewed test copy downloaded (`trace-TEST-COPY-…-reviewed.md`, with its banner) |
+| Mobile, 375 px | No horizontal overflow; the Claim Inspector opens full width |
+| `npm run smoke:live` against production | 6 passed, 1 failed, 1 skipped. The failure is the OpenAlex abstract fallback: **rate-limited** (HTTP 429) from Vercel's shared addresses, reported honestly as "could not check". A manual retry succeeded once. The live AI draft was skipped because no key was set. |
+
+Known limit added by hosting: anonymous OpenAlex calls from Vercel are often throttled. Setting `OPENALEX_API_KEY`, a free key from openalex.org, gives the site its own budget. It only matters when Crossref has no abstract for a paper.
+
 ## Release verification in the working tree · 25 November 2026, 16:50–17:10 Dubai time
 
 Run by Claude Code (Claude Opus 5.5) on the full working tree, with the earlier Codex pass preserved.
