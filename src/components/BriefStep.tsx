@@ -243,11 +243,11 @@ function ClaimCard({ i, refs, active, onInspect }: { i: ClaimInspection; refs: R
   const inText = source ? (refs.byId.get(source.id)?.inText ?? inTextShort(source.cited.authors, source.cited.year)) : null;
 
   return (
-    <li className={cx("relative border-b border-line py-4 pl-9 last:border-b-0", active && "bg-brand-tint/45", rejected && "opacity-60")}>
-      <span aria-hidden className="absolute top-4 left-1 font-serif text-lg text-ink-faint">
+    <li className={cx("relative rounded-[22px] border bg-surface py-4 pr-4 pl-12 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 sm:py-5 sm:pr-5 sm:pl-14", active ? "border-brand/40 ring-2 ring-brand/15" : "border-line", rejected && "opacity-60")}>
+      <span aria-hidden className="num absolute top-4 left-3 grid size-7 place-items-center rounded-full bg-s2 text-[0.8125rem] font-bold text-ink-soft sm:top-5 sm:left-4">
         {i.number}
       </span>
-      <p className={cx("max-w-prose font-serif text-[1.0625rem] leading-relaxed text-ink", rejected && "line-through decoration-ink-faint")}>
+      <p className={cx("max-w-prose font-display text-[1.0625rem] leading-relaxed text-ink", rejected && "line-through decoration-ink-faint")}>
         {claim.text || <span className="text-ink-faint">No text yet. Open the claim to write it.</span>}{" "}
         {claim.kind === "evidence" && inText && (
           <button type="button" className="font-sans text-sm text-brand underline decoration-brand/40 underline-offset-2 hover:text-brand-deep" onClick={onInspect}>
@@ -255,7 +255,7 @@ function ClaimCard({ i, refs, active, onInspect }: { i: ClaimInspection; refs: R
           </button>
         )}
       </p>
-      {claim.kind === "evidence" && claim.excerpt && <p className="mt-1.5 max-w-prose border-l-2 border-line-strong pl-3 font-serif text-sm leading-relaxed text-ink-soft">“{claim.excerpt.length > 220 ? `${claim.excerpt.slice(0, 220).trimEnd()}…` : claim.excerpt}”</p>}
+      {claim.kind === "evidence" && claim.excerpt && <p className="mt-1.5 max-w-prose border-l-2 border-brand/40 pl-3 font-reading text-sm leading-relaxed text-ink-soft">“{claim.excerpt.length > 220 ? `${claim.excerpt.slice(0, 220).trimEnd()}…` : claim.excerpt}”</p>}
       {claim.testCorruption && <p className="mt-2 max-w-prose rounded border border-bad/30 bg-bad-tint px-2.5 py-1.5 text-sm">{claim.testCorruption}</p>}
 
       <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -356,7 +356,7 @@ function ExportPanel({ evaluation, refs, onInspect, goToPlan }: { evaluation: Ex
             </Notice>
           )}
           {refs.state !== "error" && refs.ordered.length === 0 && <p className="text-sm text-ink-faint">Formatting…</p>}
-          <ul className="max-w-prose space-y-2 font-serif text-[0.9375rem] leading-relaxed">
+          <ul className="max-w-prose space-y-2 font-reading text-[0.9375rem] leading-relaxed">
             {refs.ordered.map((r) => (
               <li key={r.id} className="pl-6 -indent-6 break-words">
                 <ReferenceText parts={r.parts} />
@@ -411,7 +411,7 @@ export function BriefStep({ inspectingId, onInspect, goToLibrary, goToPlan }: { 
   const refs = useReferences(citedSources(project), "list");
 
   return (
-    <div className="max-w-3xl space-y-10">
+    <div className="step-body space-y-5">
       <EvidenceSetPanel goToLibrary={goToLibrary} goToPlan={goToPlan} />
       <DraftPanel onInspect={onInspect} />
       <section>
@@ -419,7 +419,7 @@ export function BriefStep({ inspectingId, onInspect, goToLibrary, goToPlan }: { 
         {project.claims.length === 0 ? (
           <Empty title="No claims yet">Draft from the approved evidence set, or write a claim yourself. Each claim is a short card you can inspect, edit, approve or reject.</Empty>
         ) : (
-          <ol className="border-t border-line">
+          <ol className="space-y-3">
             {evaluation.inspections.map((i) => (
               <ClaimCard key={i.claim.id} i={i} refs={refs} active={inspectingId === i.claim.id} onInspect={() => onInspect(i.claim.id)} />
             ))}

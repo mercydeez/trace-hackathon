@@ -30,12 +30,12 @@ export function PlanStep({ onApproved }: { onApproved: () => void }) {
   }
 
   return (
-    <div className="max-w-3xl space-y-7">
+    <div className="step-body space-y-5">
       <section>
         <SectionTitle>Your research question</SectionTitle>
         <Field label="Question" hint="Write it as a question a source could answer.">
           {(id) => (
-            <TextArea id={id} rows={2} maxLength={400} className="font-serif text-lg" value={project.question} onChange={(e) => update((p) => setQuestion(p, e.target.value))} />
+            <TextArea id={id} rows={2} maxLength={400} className="font-display text-lg" value={project.question} onChange={(e) => update((p) => setQuestion(p, e.target.value))} />
           )}
         </Field>
       </section>
@@ -88,7 +88,7 @@ export function PlanStep({ onApproved }: { onApproved: () => void }) {
         </div>
       </section>
 
-      <section className="space-y-3 border-t border-line pt-5">
+      <section className="space-y-3">
         {approved ? (
           <Notice tone="ok" icon={Check} role="status">
             You approved this plan on {shortDate(plan.approvedAt)}. Changing the question, terms or years will ask for approval again and mark the evidence set and claims for another look.

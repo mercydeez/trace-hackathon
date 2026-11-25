@@ -74,6 +74,30 @@ Captured by the browser tests into `docs/screenshots/` at 1440×900, 1366×768 a
 - The reference-identity table was cramped inside the narrow inspector. There it is now a stacked list of only the details that need attention.
 - Opening a second claim kept the previous claim's scroll position. Each claim now opens at the top of the inspector.
 
+## Visual redesign: 25 November 2026, about 11:40 (+04:00)
+
+The interface was restyled to match ReproSense, light theme only:
+- Plus Jakarta Sans and a plum/pink palette, with soft colour washes behind the page.
+- A floating glass header with the four steps as pill navigation.
+- A summary band with live counts and a "next step" button.
+- White cards and short 0.15–0.28 s motion.
+
+The sidebar's contents (projects, demo, citation trap, backup, erase) moved into a "Projects and tools" panel opened from the header. Workflow, check wording and logic are unchanged. The last tested version before the redesign is tagged `pre-redesign`.
+
+| Check | Result |
+|---|---|
+| `npm run typecheck`, `npm run lint` | **passed** |
+| `npm test` | **passed**, 94 of 94 |
+| `npm run test:e2e` | **passed**, 11 of 11 in the final full run. One earlier run had a single "browser has been closed" failure in the live-AI journey; that journey passed on two immediate re-runs and in the next full run. |
+
+Defects found and fixed during the redesign:
+- A nested confirm dialog's close event also closed the tools panel behind it. Each dialog now reacts only to its own close event.
+- Hidden screen-reader text in the step pills widened the page on phones.
+- A long button label overflowed a 390 px card.
+- The header and content were misaligned while the inspector was open.
+
+The browser tests were updated for the new location of the project tools: they now open "Projects and tools" first at every screen size. The restore check now looks for the restored project's name instead of the panel message.
+
 ## Live AI verification: 25 November 2026, about 10:45 (+04:00)
 
 A free-tier Gemini key was added to `.env.local` (git-ignored; it was briefly pasted into the tracked `.env.example`, moved out before any commit, and never appeared in a commit or push). The dev server was restarted.

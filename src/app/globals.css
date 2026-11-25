@@ -1,47 +1,91 @@
 @import "tailwindcss";
 
+/*
+ * Visual language taken from ReproSense (reprosense.vercel.app), light theme:
+ * Plus Jakarta Sans, a soft plum/pink palette, colour washes behind the page, white
+ * cards with a faint plum shadow, a floating glass header with pill navigation, and
+ * short, quiet motion (0.15s hovers, 0.28s entrances). Token names are kept from the
+ * first TRACE build so every component picks up the look without changing its markup.
+ */
 @theme {
-  /* Paper, ink and one emerald. Semantic colours are used only for status. */
-  --color-canvas: #faf7f1;
+  /* Paper, sheets and ink (ReproSense :root). */
+  --color-canvas: #f6f1f4;
   --color-surface: #ffffff;
-  --color-ink: #1d1b18;
-  --color-ink-soft: #57534b;
-  --color-ink-faint: #6e695f;
-  --color-line: #e2ddd3;
-  --color-line-strong: #cfc9bc;
-  --color-brand: #0e5a47;
-  --color-brand-deep: #0a4636;
-  --color-brand-tint: #e4f0eb;
-  --color-warn: #8a5200;
-  --color-warn-tint: #fbf0d9;
-  --color-bad: #a3271f;
-  --color-bad-tint: #fbe9e6;
-  --color-mark: #cde9dc;
-  --color-mark-near: #f8e3b0;
+  --color-s2: #f4edf4;
+  --color-s3: #eee5ef;
+  --color-ink: #2e2233;
+  --color-ink-soft: #6e5d73;
+  --color-ink-faint: #746479;
+  --color-line: #eee5ef;
+  --color-line-strong: #dfd2e2;
 
-  /* Self-hosted variable fonts with system fallbacks, so an offline demo still looks right. */
-  --font-serif: "Literata Variable", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --font-sans: "Atkinson Hyperlegible Next Variable", "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  /* Plum for actions and selection; pink as the second voice. */
+  --color-brand: #4b3653;
+  --color-brand-deep: #3a2840;
+  --color-brand-tint: #f4edf4;
+  --color-accent: #c9559f;
+  --color-accent-text: #a24884;
+  --color-accent-soft: #f9e4f1;
+
+  /* The deep band behind the project summary. */
+  --color-field: #4b3653;
+  --color-on-field-2: #eadbea;
+
+  /* Status (ReproSense ok / warn / urgent, text variants for AA). */
+  --color-ok: #37776f;
+  --color-ok-tint: #e2f3ef;
+  --color-warn: #986013;
+  --color-warn-tint: #fbeedb;
+  --color-bad: #c0352b;
+  --color-bad-tint: #fce6e3;
+  --color-info: #a24884;
+  --color-info-tint: #f9e4f1;
+
+  /* Evidence highlighting. */
+  --color-mark: #cfeee6;
+  --color-mark-near: #fbe3c2;
+
+  --font-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-reading: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+
+  --shadow-1: 0 6px 18px #4b365314;
+  --shadow-2: 0 18px 50px #4b36531f;
+  --shadow-3: 0 24px 60px #4b36532e;
+
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html {
   background: var(--color-canvas);
+  color-scheme: light;
 }
 
+/* Paper with three soft colour washes, as on ReproSense. */
 body {
-  background: var(--color-canvas);
+  min-height: 100dvh;
+  background-color: var(--color-canvas);
+  background-image:
+    radial-gradient(900px 600px at 8% -5%, #e9b0d68c, transparent 60%),
+    radial-gradient(800px 600px at 95% 10%, #c4a8ec73, transparent 60%),
+    radial-gradient(700px 500px at 50% 105%, #fad6c873, transparent 60%);
+  background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
   font-size: 0.9375rem;
-  line-height: 1.5;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
 :focus-visible {
-  outline: 2px solid var(--color-brand);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
-  border-radius: 3px;
+  border-radius: 10px;
 }
 
 button:not(:disabled),
@@ -51,25 +95,112 @@ select {
   cursor: pointer;
 }
 
-/* The evidence passage is the one place the page raises its voice. */
+/* --- Surfaces ---------------------------------------------------------------------------- */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 24px;
+  box-shadow: var(--shadow-1);
+}
+
+/* Each step's top-level sections become cards. */
+.step-body > section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 24px;
+  box-shadow: var(--shadow-1);
+  padding: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .step-body > section {
+    padding: 1.75rem;
+  }
+}
+
+/* Plum band with a pink glow, for the project summary and welcome banner. */
+.field-band {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(520px 320px at 100% 0%, rgb(236 139 203 / 0.45), transparent 65%),
+    radial-gradient(420px 300px at 0% 100%, rgb(184 139 227 / 0.35), transparent 65%),
+    linear-gradient(135deg, #3a2840 0%, #4b3653 55%, #6b3f66 100%);
+  color: #fff;
+}
+
+.field-band > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Floating glass header card. */
+.glass-bar {
+  background: #fffffff0;
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+
+/* Small gradient orb used as the TRACE mark. */
+.orb {
+  background:
+    radial-gradient(circle at 30% 28%, #fff 0 8%, transparent 9%),
+    linear-gradient(135deg, #e879be 0%, #c9559f 45%, #b88be3 100%);
+  box-shadow:
+    0 4px 12px rgb(201 85 159 / 0.35),
+    inset 0 -2px 4px rgb(75 54 83 / 0.25);
+}
+
+/* Cards that respond to the pointer (ReproSense: transform + shadow, 0.15s). */
+.lift {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.thin-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 999px;
+}
+
+/* --- Evidence highlighting -------------------------------------------------------------- */
+
 mark.match {
   background: var(--color-mark);
   color: inherit;
   padding: 0.12em 0;
-  box-shadow: 0 0.14em 0 0 var(--color-brand);
+  border-radius: 3px;
+  box-shadow: 0 0.14em 0 0 var(--color-ok);
 }
 
 mark.near {
   background: var(--color-mark-near);
   color: inherit;
   padding: 0.12em 0;
+  border-radius: 3px;
   box-shadow: 0 0.14em 0 0 var(--color-warn);
 }
 
-/* Native dialogs: a centred confirm box, and side drawers on small screens. */
+/* --- Dialogs: a centred confirm box, and side drawers ------------------------------------ */
+
 dialog {
   color: var(--color-ink);
-  border: 1px solid var(--color-line-strong);
+  border: 1px solid var(--color-line);
   background: var(--color-surface);
   padding: 0;
   max-width: none;
@@ -77,13 +208,15 @@ dialog {
 }
 
 dialog::backdrop {
-  background: rgb(29 27 24 / 0.38);
+  background: rgb(46 34 51 / 0.38);
+  backdrop-filter: blur(3px);
 }
 
 dialog.confirm {
   margin: auto;
   width: min(28rem, calc(100vw - 2rem));
-  border-radius: 6px;
+  border-radius: 24px;
+  box-shadow: var(--shadow-3);
 }
 
 dialog.drawer {
@@ -92,6 +225,7 @@ dialog.drawer {
   border-top: 0;
   border-bottom: 0;
   overflow-y: auto;
+  box-shadow: var(--shadow-3);
 }
 
 dialog.drawer.right {
@@ -101,16 +235,16 @@ dialog.drawer.right {
 
 dialog.drawer.left {
   margin: 0 auto 0 0;
-  width: min(19rem, 88vw);
+  width: min(21rem, 90vw);
   border-left: 0;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  dialog.drawer.right[open] {
-    animation: slide-in-right 160ms ease-out;
-  }
-  dialog.drawer.left[open] {
-    animation: slide-in-left 160ms ease-out;
+/* --- Motion: short and quiet; all of it off for reduced motion --------------------------- */
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
 }
 
@@ -125,6 +259,41 @@ dialog.drawer.left {
   from {
     transform: translateX(-1.5rem);
     opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-page-enter {
+    animation: enter 0.28s var(--ease-out-soft) both;
+  }
+  .step-body > section,
+  .animate-card-enter {
+    animation: enter 0.32s var(--ease-out-soft) both;
+  }
+  .step-body > section:nth-child(2) {
+    animation-delay: 40ms;
+  }
+  .step-body > section:nth-child(3) {
+    animation-delay: 80ms;
+  }
+  .step-body > section:nth-child(4) {
+    animation-delay: 120ms;
+  }
+  dialog.drawer.right[open] {
+    animation: slide-in-right 220ms var(--ease-out-soft);
+  }
+  dialog.drawer.left[open] {
+    animation: slide-in-left 220ms var(--ease-out-soft);
+  }
+  dialog.confirm[open] {
+    animation: pop-in 200ms var(--ease-out-soft);
   }
 }
 

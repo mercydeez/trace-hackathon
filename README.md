@@ -109,6 +109,6 @@ Start with [docs/architecture-and-governance.md](docs/architecture-and-governanc
 
 ## Credits
 
-Built with Next.js, React, Tailwind CSS, zod, lucide-react, Citation.js (with citeproc-js), the Google Gen AI SDK, Vitest and Playwright. Fonts: Literata and Atkinson Hyperlegible Next, self-hosted under the SIL Open Font License. Bibliographic data from Crossref and OpenAlex. Versions and licences: [docs/research-and-decisions.md](docs/research-and-decisions.md). Abstracts in the demo fixtures remain the copyright of their publishers.
+Built with Next.js, React, Tailwind CSS, zod, lucide-react, Citation.js (with citeproc-js), the Google Gen AI SDK, Vitest and Playwright. Font: Plus Jakarta Sans, self-hosted under the SIL Open Font License. Visual style modelled on ReproSense. Bibliographic data from Crossref and OpenAlex. Versions and licences: [docs/research-and-decisions.md](docs/research-and-decisions.md). Abstracts in the demo fixtures remain the copyright of their publishers.
 
 Code, tests, documentation and the deck were produced with Claude Code (Claude Fable 5.2) from the prompts in [docs/prompt-log.md](docs/prompt-log.md).

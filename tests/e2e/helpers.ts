@@ -49,6 +49,12 @@ export async function openDemo(page: Page) {
   await expect(page.getByRole("heading", { level: 1 })).toContainText("retrieval practice");
 }
 
+/** The project tools (demo, trap, backup, erase) live in a panel opened from the header. */
+export async function openTools(page: Page) {
+  await page.getByRole("button", { name: "Projects and tools" }).click();
+  await expect(page.getByRole("dialog", { name: "Projects and tools" })).toBeVisible();
+}
+
 /** Open a source row in the Library and tick its passage into the evidence set. */
 export async function tickEvidenceOf(page: Page, title: RegExp) {
   await page.getByRole("button", { name: title }).click();

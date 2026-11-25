@@ -41,10 +41,10 @@ function EvidenceBlock({ evidence }: { evidence: Evidence }) {
         </span>
       </div>
       {evidence.provenance.note && <p className="mt-1 text-xs text-ink-faint">{evidence.provenance.note}</p>}
-      <p className="mt-2 max-w-prose font-serif text-[0.9375rem] leading-relaxed whitespace-pre-line text-ink">{all || !long ? evidence.text : `${evidence.text.slice(0, 420).trimEnd()}…`}</p>
+      <p className="mt-2 max-w-prose font-reading text-[0.9375rem] leading-relaxed whitespace-pre-line text-ink">{all || !long ? evidence.text : `${evidence.text.slice(0, 420).trimEnd()}…`}</p>
       <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
         <label className="inline-flex items-center gap-2 text-sm font-medium">
-          <input type="checkbox" className="size-4 accent-brand" checked={selected} onChange={() => update((p) => toggleEvidence(p, evidence.id), selected ? "Removed a passage from the evidence set." : "Added a passage to the evidence set.")} />
+          <input type="checkbox" className="size-4 accent-[#c9559f]" checked={selected} onChange={() => update((p) => toggleEvidence(p, evidence.id), selected ? "Removed a passage from the evidence set." : "Added a passage to the evidence set.")} />
           Use in the evidence set
         </label>
         {long && (
@@ -144,7 +144,7 @@ function SourceCard({ source, open, onToggle, reference, refs }: { source: Sourc
       <button type="button" aria-expanded={open} onClick={onToggle} className="flex w-full items-start gap-2 py-3 text-left hover:bg-ink/[0.025]">
         <Caret aria-hidden className="mt-1 size-4 shrink-0 text-ink-faint" />
         <span className="min-w-0 flex-1">
-          <span className="block font-serif text-[1.0625rem] leading-snug font-medium text-ink">{source.cited.title || "Untitled reference"}</span>
+          <span className="block font-display text-[0.975rem] leading-snug font-semibold text-ink">{source.cited.title || "Untitled reference"}</span>
           <span className="mt-0.5 block text-sm text-ink-soft">
             {formatAuthorsShort(source.cited.authors, source.cited.year)}
             {source.cited.container && `, ${source.cited.container}`}
@@ -171,7 +171,7 @@ function SourceCard({ source, open, onToggle, reference, refs }: { source: Sourc
           <section>
             <h4 className="mb-1.5 text-[0.8125rem] font-semibold text-ink-soft">Reference (APA 7)</h4>
             {reference ? (
-              <p className="max-w-prose font-serif text-[0.9375rem] leading-relaxed break-words">
+              <p className="max-w-prose font-reading text-[0.9375rem] leading-relaxed break-words">
                 <ReferenceText parts={reference.parts} />
               </p>
             ) : (
@@ -294,7 +294,7 @@ export function LibraryStep({ goToDiscover, goToBrief }: { goToDiscover: () => v
 
   if (project.sources.length === 0) {
     return (
-      <div className="max-w-3xl">
+      <div className="card animate-card-enter p-5 sm:p-7">
         <SectionTitle>Your library</SectionTitle>
         <Empty title="No sources saved yet">
           Search Crossref or add a source by DOI, and it will appear here with its details, tags, notes and any source text.
@@ -309,7 +309,7 @@ export function LibraryStep({ goToDiscover, goToBrief }: { goToDiscover: () => v
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="card animate-card-enter p-5 sm:p-7">
       <SectionTitle aside={`${shown.length} of ${project.sources.length} source${project.sources.length === 1 ? "" : "s"} shown`}>Your library</SectionTitle>
       <div className="mb-2 flex flex-wrap items-end gap-3">
         <Field label="Filter" className="min-w-0 flex-1 basis-56">
@@ -328,7 +328,7 @@ export function LibraryStep({ goToDiscover, goToBrief }: { goToDiscover: () => v
           )}
         </Field>
         <label className="inline-flex min-h-9 items-center gap-2 text-sm">
-          <input type="checkbox" className="size-4 accent-brand" checked={withText} onChange={(e) => setWithText(e.target.checked)} />
+          <input type="checkbox" className="size-4 accent-[#c9559f]" checked={withText} onChange={(e) => setWithText(e.target.checked)} />
           Only with source text
         </label>
       </div>
@@ -343,7 +343,7 @@ export function LibraryStep({ goToDiscover, goToBrief }: { goToDiscover: () => v
         </ul>
       )}
 
-      <div className="sticky bottom-0 mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line-strong bg-canvas py-3">
+      <div className="sticky bottom-0 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-line bg-surface/95 px-4 py-3 shadow-2 backdrop-blur">
         <p className="text-sm text-ink-soft">
           {selected === 0 ? "No passages chosen for the evidence set yet. Open a source and tick “Use in the evidence set”." : `${selected} passage${selected === 1 ? "" : "s"} chosen for the evidence set.`}
         </p>

@@ -44,14 +44,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   }
 
   return (
-    <div className="flex min-h-full flex-col gap-6 px-4 py-5 text-sm">
+    <div className="flex min-h-full flex-col gap-7 px-5 pt-1 pb-6 text-sm">
       <div>
-        <p className="font-serif text-2xl leading-none font-semibold tracking-tight text-brand-deep">TRACE</p>
-        <p className="mt-1 text-xs text-ink-faint">Research you can defend.</p>
+        <p className="font-display text-xl leading-none font-bold tracking-[-0.02em] text-ink">Projects and tools</p>
+        <p className="mt-1.5 text-[0.8125rem] text-ink-faint">Switch project, run the demo or the citation trap, and keep a backup.</p>
       </div>
 
       <nav aria-label="Projects">
-        <h2 className="mb-1.5 text-xs font-semibold text-ink-soft">Projects</h2>
+        <h2 className="mb-2 text-[0.8125rem] font-semibold text-ink-faint">Projects</h2>
         <ul className="space-y-0.5">
           {state.projects.map((p) => (
             <li key={p.id}>
@@ -63,13 +63,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                   onNavigate?.();
                 }}
                 className={cx(
-                  "flex w-full items-start gap-2 rounded px-2 py-1.5 text-left transition-colors",
-                  p.id === project?.id ? "bg-brand-tint font-medium text-brand-deep" : "text-ink hover:bg-ink/5",
+                  "flex w-full items-start gap-2 rounded-[14px] px-3 py-2.5 text-left text-[0.9375rem] transition-colors",
+                  p.id === project?.id ? "bg-brand-tint font-semibold text-brand" : "text-ink hover:bg-s2",
                 )}
               >
                 <span className="min-w-0 flex-1 break-words">{p.name}</span>
                 {KIND_LABEL[p.kind] && (
-                  <span className={cx("mt-0.5 shrink-0 rounded-sm border px-1 text-[0.6875rem] leading-4", p.kind === "trap" ? "border-bad/30 text-bad" : "border-line-strong text-ink-faint")}>
+                  <span className={cx("mt-0.5 shrink-0 rounded-full border px-2 text-[0.6875rem] leading-4 font-semibold", p.kind === "trap" ? "border-bad/30 text-bad" : "border-line-strong text-ink-faint")}>
                     {KIND_LABEL[p.kind]}
                   </span>
                 )}
@@ -105,8 +105,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <section aria-label="Demo and test case">
-        <h2 className="mb-1.5 text-xs font-semibold text-ink-soft">Demo and test case</h2>
-        <div className="flex flex-col items-start gap-1.5">
+        <h2 className="mb-2 text-[0.8125rem] font-semibold text-ink-faint">Demo and test case</h2>
+        <div className="flex flex-col items-stretch gap-2">
           {demo ? (
             <Button size="sm" icon={RotateCcw} onClick={() => setConfirm("resetDemo")}>
               Reset demo project
@@ -138,8 +138,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </section>
 
       <section aria-label="Backup">
-        <h2 className="mb-1.5 text-xs font-semibold text-ink-soft">Backup</h2>
-        <div className="flex flex-col items-start gap-1.5">
+        <h2 className="mb-2 text-[0.8125rem] font-semibold text-ink-faint">Backup</h2>
+        <div className="flex flex-col items-stretch gap-2">
           <Button
             size="sm"
             icon={Download}
@@ -173,7 +173,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </section>
 
-      <section aria-label="AI status" className="text-xs text-ink-soft">
+      <section aria-label="AI status" className="rounded-[18px] bg-s2 p-3.5 text-[0.8125rem] text-ink-soft">
         <h2 className="mb-1 text-xs font-semibold">Live AI drafting</h2>
         {status === null ? (
           <p className="text-ink-faint">Checking…</p>
@@ -212,13 +212,13 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </Button>
       </div>
 
-      <ConfirmDialog open={confirm === "delete"} title="Delete this project?" confirmLabel="Delete project" danger onClose={() => setConfirm(null)} onConfirm={() => project && deleteProject(project.id)}>
+      <ConfirmDialog open={confirm === "delete"} title="Delete this project?" confirmLabel="Delete project" danger onClose={() => setConfirm(null)} onConfirm={() => { if (project) deleteProject(project.id); onNavigate?.(); }}>
         “{project?.name}” and its sources, notes, claims and approvals will be removed from this browser. This cannot be undone unless you have a backup file.
       </ConfirmDialog>
-      <ConfirmDialog open={confirm === "resetDemo"} title="Reset the demo project?" confirmLabel="Reset demo" onClose={() => setConfirm(null)} onConfirm={() => demo && replaceProject(demo.id, buildDemoProject(now()))}>
+      <ConfirmDialog open={confirm === "resetDemo"} title="Reset the demo project?" confirmLabel="Reset demo" onClose={() => setConfirm(null)} onConfirm={() => { if (demo) replaceProject(demo.id, buildDemoProject(now())); onNavigate?.(); }}>
         The demo returns to its starting state: seven saved sources, nothing approved, no claims. Changes you made to the demo are discarded.
       </ConfirmDialog>
-      <ConfirmDialog open={confirm === "erase"} title="Erase all TRACE data in this browser?" confirmLabel="Erase everything" danger onClose={() => setConfirm(null)} onConfirm={resetAll}>
+      <ConfirmDialog open={confirm === "erase"} title="Erase all TRACE data in this browser?" confirmLabel="Erase everything" danger onClose={() => setConfirm(null)} onConfirm={() => { resetAll(); onNavigate?.(); }}>
         Every project in this browser will be deleted, including the demo and any test copies. Download a backup first if you want to keep anything.
       </ConfirmDialog>
     </div>

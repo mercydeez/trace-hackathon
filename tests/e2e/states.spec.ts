@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { mockStatus, openDemo, reply, shot, stepButton, TEST_WORK } from "./helpers";
+import { mockStatus, openDemo, reply, shot, stepButton, TEST_WORK, openTools } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await mockStatus(page, false);
@@ -111,23 +111,26 @@ test("damaged browser storage is set aside and the app still opens", async ({ pa
 
 test("erasing everything asks first, and backup then restore brings a project back", async ({ page }) => {
   await openDemo(page);
+  await openTools(page);
   const [backup] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Download project backup" }).click()]);
   expect(backup.suggestedFilename()).toBe("trace-project-demo-retrieval-practice.json");
   const path = await backup.path();
 
   await page.getByRole("button", { name: "Erase all TRACE data here" }).click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.getByRole("dialog", { name: "Erase all TRACE data in this browser?" });
   await expect(dialog).toContainText("Every project in this browser will be deleted");
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toContainText("retrieval practice");
 
   await page.getByRole("button", { name: "Erase all TRACE data here" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Erase everything" }).click();
+  await page.getByRole("dialog", { name: "Erase all TRACE data in this browser?" }).getByRole("button", { name: "Erase everything" }).click();
   await expect(page.getByRole("heading", { name: "Research you can defend." })).toBeVisible();
 
   await page.getByRole("button", { name: "Open the demo project" }).click();
+  await openTools(page);
   await page.getByLabel("Backup file to restore").setInputFiles(path);
-  await expect(page.getByText("Restored “Demo: retrieval practice (imported)”.")).toBeVisible();
+  // A successful restore opens the restored project and closes the panel.
+  await expect(page.getByText("Demo: retrieval practice (imported)").first()).toBeVisible();
 });
 
 test("keyboard: the first action is reachable and works without a mouse", async ({ page }) => {
@@ -150,7 +153,7 @@ for (const size of [
   test(`responsive at ${size.name}: the trap and its inspector are usable`, async ({ page }) => {
     await page.setViewportSize({ width: size.width, height: size.height });
     await openDemo(page);
-    if (size.width < 1024) await page.getByRole("button", { name: "Projects and tools" }).click();
+    await openTools(page);
     await page.getByRole("button", { name: "Run the citation trap" }).click();
     await expect(page.getByText("Citation-trap test copy.")).toBeVisible();
     await shot(page, `10-${size.name}-brief`);

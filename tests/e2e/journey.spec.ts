@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
-import { demoWithApprovedEvidence, mockSearch, mockStatus, openDemo, shot, stepButton, tickEvidenceOf } from "./helpers";
+import { demoWithApprovedEvidence, mockSearch, mockStatus, openDemo, shot, stepButton, tickEvidenceOf, openTools } from "./helpers";
 
 test.beforeEach(async ({ page }) => {
   await mockStatus(page, false);
@@ -117,6 +117,7 @@ test("main journey: plan, discover, save, organise, reload, approve evidence, br
 
 test("citation trap: real DOI and real source, altered details and quotation are caught and clear one by one", async ({ page }) => {
   await openDemo(page);
+  await openTools(page);
   await page.getByRole("button", { name: "Run the citation trap" }).click();
   await expect(page.getByText("Citation-trap test copy.")).toBeVisible();
   await expect(page.getByText("3 points to resolve before this can be exported as reviewed")).toBeVisible();

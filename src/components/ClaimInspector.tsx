@@ -43,7 +43,7 @@ function Passage({ text, check, onSelection }: { text: string; check: ExcerptChe
   }
 
   return (
-    <p ref={box} tabIndex={0} aria-label="Stored source text" onMouseUp={readSelection} onKeyUp={readSelection} className="relative max-h-64 overflow-y-auto rounded border border-line bg-canvas/70 px-3.5 py-3 font-serif text-base leading-[1.7] whitespace-pre-line text-ink">
+    <p ref={box} tabIndex={0} aria-label="Stored source text" onMouseUp={readSelection} onKeyUp={readSelection} className="relative max-h-64 overflow-y-auto rounded border border-line bg-white/80 px-3.5 py-3 font-reading text-base leading-[1.7] whitespace-pre-line text-ink">
       {range ? (
         <>
           {text.slice(0, range.start)}
@@ -60,7 +60,7 @@ function Passage({ text, check, onSelection }: { text: string; check: ExcerptChe
 function Check5({ n, name, children }: { n: number; name: string; children: React.ReactNode }) {
   return (
     <li className="grid grid-cols-[1.25rem_1fr] gap-x-2 border-b border-line py-3 last:border-b-0">
-      <span aria-hidden className="pt-px font-serif text-sm text-ink-faint">
+      <span aria-hidden className="pt-px font-display text-sm text-ink-faint">
         {n}
       </span>
       <div className="min-w-0">
@@ -83,16 +83,16 @@ function Editor({ i }: { i: ClaimInspection }) {
 
   return (
     <div className="space-y-3">
-      <Field label="Claim">{(id) => <TextArea id={id} rows={3} maxLength={600} className="font-serif text-base" value={claim.text} onChange={(e) => update((p) => updateClaim(p, claim.id, { text: e.target.value }))} />}</Field>
+      <Field label="Claim">{(id) => <TextArea id={id} rows={3} maxLength={600} className="font-display text-base" value={claim.text} onChange={(e) => update((p) => updateClaim(p, claim.id, { text: e.target.value }))} />}</Field>
       <fieldset>
         <legend className="mb-1 text-[0.8125rem] font-medium">This claim</legend>
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
           <label className="inline-flex items-center gap-2">
-            <input type="radio" className="accent-brand" name={`kind-${claim.id}`} checked={claim.kind === "evidence"} onChange={() => update((p) => updateClaim(p, claim.id, { kind: "evidence" }))} />
+            <input type="radio" className="accent-[#c9559f]" name={`kind-${claim.id}`} checked={claim.kind === "evidence"} onChange={() => update((p) => updateClaim(p, claim.id, { kind: "evidence" }))} />
             quotes a stored passage
           </label>
           <label className="inline-flex items-center gap-2">
-            <input type="radio" className="accent-brand" name={`kind-${claim.id}`} checked={claim.kind === "inference"} onChange={() => update((p) => updateClaim(p, claim.id, { kind: "inference" }))} />
+            <input type="radio" className="accent-[#c9559f]" name={`kind-${claim.id}`} checked={claim.kind === "inference"} onChange={() => update((p) => updateClaim(p, claim.id, { kind: "inference" }))} />
             is my own inference, with no source
           </label>
         </div>
@@ -112,7 +112,7 @@ function Editor({ i }: { i: ClaimInspection }) {
             )}
           </Field>
           <Field label="Excerpt that supports it" hint="The exact words from the passage. Select them in the source text below, or paste them here.">
-            {(id) => <TextArea id={id} rows={3} maxLength={600} className="font-serif" value={claim.excerpt} onChange={(e) => update((p) => updateClaim(p, claim.id, { excerpt: e.target.value }))} />}
+            {(id) => <TextArea id={id} rows={3} maxLength={600} className="font-reading" value={claim.excerpt} onChange={(e) => update((p) => updateClaim(p, claim.id, { excerpt: e.target.value }))} />}
           </Field>
         </>
       )}
@@ -165,7 +165,7 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
     <div ref={root} className="flex flex-col">
       <header className="flex items-start justify-between gap-3 border-b border-line px-5 pt-4 pb-3">
         <div>
-          <h2 className="font-serif text-xl font-medium">Claim {i.number}</h2>
+          <h2 className="font-display text-lg font-semibold tracking-[-0.01em]">Claim {i.number}</h2>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             <StatusChip badge={originBadge(claim)} title={claim.origin === "live_ai" ? `Drafted by ${claim.model ?? "an AI model"}` : undefined} />
             <StatusChip badge={DECISION[decision]} />
@@ -186,7 +186,7 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
         {evidence && claim.kind === "evidence" && (
           <section>
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-              <h3 className="font-serif text-lg font-medium">Source text</h3>
+              <h3 className="font-display text-base font-semibold tracking-[-0.01em]">Source text</h3>
               <StatusChip badge={excerptBadge(excerpt)} />
             </div>
             <p className="mt-0.5 mb-2 text-xs text-ink-faint">
@@ -214,14 +214,14 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
         )}
 
         <details open={editing} onToggle={(e) => setEditing(e.currentTarget.open)}>
-          <summary className="font-serif text-lg font-medium">Edit this claim</summary>
+          <summary className="font-display text-base font-semibold tracking-[-0.01em]">Edit this claim</summary>
           <div className="mt-3">
             <Editor i={i} />
           </div>
         </details>
 
         <section>
-          <h3 className="font-serif text-lg font-medium">Five separate checks</h3>
+          <h3 className="font-display text-base font-semibold tracking-[-0.01em]">Five separate checks</h3>
           <p className="mt-0.5 text-xs text-ink-faint">Each answers a different question. None of them, alone or together, means “verified”.</p>
           <ol className="mt-1">
             <Check5 n={1} name="Reference identity">
@@ -311,8 +311,8 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
 
         {source && (
           <section>
-            <h3 className="font-serif text-lg font-medium">Reference</h3>
-            <p className="mt-1 font-serif text-[0.9375rem] leading-relaxed break-words">
+            <h3 className="font-display text-base font-semibold tracking-[-0.01em]">Reference</h3>
+            <p className="mt-1 font-reading text-[0.9375rem] leading-relaxed break-words">
               {reference ? <ReferenceText parts={reference.parts} /> : <span className="text-ink-faint">{refs.state === "error" ? "Could not format this reference." : "Formatting…"}</span>}
             </p>
             {link && (

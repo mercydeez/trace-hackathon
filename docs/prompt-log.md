@@ -254,3 +254,48 @@ The assistant presented a written build plan (stack, simplifications, build orde
 > I have pasted the api key in the env.example
 
 The key itself is not reproduced here. The assistant moved it from the tracked `.env.example` to the git-ignored `.env.local` before anything was committed, restored `.env.example`, and then verified live AI drafting (results in `docs/qa-report.md`).
+
+## 5 — Problem statement explained
+
+- **Date:** 2026-11-25, morning (+04:00)
+- **Model:** Claude Opus 5.5
+
+> Before deploying the project, first simply explain me what the problem statement is
+
+The assistant summarised the organisers' Problem Statement PDF in plain language. No files changed.
+
+## 6 — SaaS-style redesign
+
+- **Date:** 2026-11-25, about 11:05 (+04:00)
+- **Model:** Claude Opus 5.5
+
+> Okay i got the the problem statement now, the hackathon is on but the UI of this project is not at all user friendly, make it like a saas, remember how did we designed our student LMS? the exact same way, it should look premium, user interactive, users should feel better to interact with this
+
+The assistant tagged the last tested version as `pre-redesign`, read the design system of an older student LMS build on this machine, and began restyling TRACE to match. (That was the wrong LMS design; see entry 7.)
+
+## 7 — Correction: use mockup G
+
+- **Date:** 2026-11-25, about 11:15 (+04:00)
+- **Model:** Claude Opus 5.5
+
+> Wtf stop, you are copyting the wrong LMS design, search for the LMS mockup G whic we created, it was a html file, or the code which is running on the localhost 5180
+
+The assistant found the approved "mockup G" (Learners Campus) prototype and the student redesign build, and began applying that look instead.
+
+## 8 — Change of plan: ReproSense look
+
+- **Date:** 2026-11-25, about 11:25 (+04:00)
+- **Model:** Claude Opus 5.5
+
+> https://reprosense.vercel.app/ change of planm, change the UI according to thid website, subtle animation, same screen , font and the poppins colours which looks smooth
+
+The assistant read the live site's fonts, colour tokens, card and motion styles, and switched TRACE to them: Plus Jakarta Sans, a plum/pink palette, and a floating glass header with pill navigation.
+
+## 9 — Light theme only
+
+- **Date:** 2026-11-25, about 11:28 (+04:00)
+- **Model:** Claude Opus 5.5
+
+> dont waste your time on dark light themes, keep it light only
+
+Only the light palette was implemented; there is no theme switch.

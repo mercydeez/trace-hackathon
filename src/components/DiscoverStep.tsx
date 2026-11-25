@@ -37,7 +37,7 @@ function ResultRow({ work }: { work: WorkRecord }) {
     <li className="border-b border-line py-3.5 last:border-b-0">
       <div className="flex items-start gap-4">
         <div className="min-w-0 flex-1">
-          <h3 className="font-serif text-[1.0625rem] leading-snug font-medium text-ink">{r.title || "Untitled record"}</h3>
+          <h3 className="font-display text-[0.975rem] leading-snug font-semibold text-ink">{r.title || "Untitled record"}</h3>
           <p className="mt-0.5 text-sm text-ink-soft">
             {formatAuthorsShort(r.authors, r.year)}
             {r.container && <span>, {r.container}</span>}
@@ -63,7 +63,7 @@ function ResultRow({ work }: { work: WorkRecord }) {
               </button>
             )}
           </div>
-          {open && work.abstract && <p className="mt-2 max-w-prose font-serif text-[0.9375rem] leading-relaxed whitespace-pre-line text-ink-soft">{work.abstract}</p>}
+          {open && work.abstract && <p className="mt-2 max-w-prose font-reading text-[0.9375rem] leading-relaxed whitespace-pre-line text-ink-soft">{work.abstract}</p>}
         </div>
         {saved ? (
           <Chip tone="neutral" icon={Check}>
@@ -369,7 +369,7 @@ function ByHand() {
 export function DiscoverStep({ goToPlan }: { goToPlan: () => void }) {
   const [mode, setMode] = useState<"doi" | "hand">("doi");
   return (
-    <div className="max-w-3xl space-y-10">
+    <div className="step-body space-y-5">
       <SearchPanel goToPlan={goToPlan} />
       <section>
         <SectionTitle>Add a source you already have</SectionTitle>

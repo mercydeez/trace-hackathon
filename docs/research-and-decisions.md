@@ -86,8 +86,7 @@ Abstract text is redistributed as retrieved from Crossref's open API for a small
 | @citation-js/core, @citation-js/plugin-csl | 0.9.0 | MIT |
 | citeproc (dependency of plugin-csl) | 2.4.63 | CPAL-1.0 OR AGPL-1.0 |
 | @google/genai | 3.6.1 | Apache-2.0 |
-| @fontsource-variable/literata | 5.3.0 | OFL-1.1 |
-| @fontsource-variable/atkinson-hyperlegible-next | 5.3.0 | OFL-1.1 |
+| @fontsource-variable/plus-jakarta-sans | 5.3.0 | OFL-1.1 |
 | typescript | 6.0.3 | Apache-2.0 |
 | vitest | 5.1.1 | MIT |
 | @playwright/test | 1.65.1 | Apache-2.0 |
@@ -108,6 +107,18 @@ Node 22.12 or later is required (plugin-csl and vitest). Fonts are self-hosted f
 | Project = collection | Tags, notes and filters organise sources; nested folders were not needed for one journey. |
 | APA formatting on the server | Keeps the CSL engine out of the browser bundle. |
 | Browser tests run in the installed Edge | No browser download; set `PW_CHANNEL=chromium` to use Playwright's own. |
+
+## Visual design (25 Nov 2026)
+
+On the active builder's instruction, the interface follows the look of ReproSense (`reprosense.vercel.app`), light theme only. The values below were read from the live site's CSS:
+
+- **Font:** Plus Jakarta Sans.
+- **Colours:** paper `#f6f1f4`, ink `#2e2233`, plum `#4b3653` for actions and selection, pink `#c9559f` as the accent, teal `#37776f` for passed checks.
+- **Background:** three soft radial colour washes behind the page.
+- **Surfaces:** white cards with 24 px radius and a faint plum shadow, plus a floating glass header.
+- **Motion:** 0.15 s transitions and 0.28 s entrances.
+
+Token names in `src/app/globals.css` were kept from the first build, so components needed no new markup.
 
 ## Tools and skills used to build
 

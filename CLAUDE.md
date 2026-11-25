@@ -29,6 +29,7 @@ Read `PROGRESS.md` first for current state and the next action. The organiser PD
 - Browser-local persistence (one versioned localStorage key). No auth, no database, no telemetry.
 - Server routes only for provider calls: Crossref (search + DOI), OpenAlex (free DOI-singleton abstract fallback only), Gemini (one structured drafting call), Citation.js (APA 7).
 - Local UI primitives and native `<dialog>`; no shadcn CLI or Radix (deliberate — fewer moving parts).
+- Visual style follows ReproSense (reprosense.vercel.app), light theme only: Plus Jakarta Sans, plum/pink tokens in `src/app/globals.css`. Project tools live in the "Projects and tools" panel opened from the header.
 - Approvals are **derived from fingerprints**, not stored flags: an edit can never leave a stale approval.
 - Identity check is a pure function over stored data: `compareMetadata(cited, registrySnapshot)`.
 - Project = collection; tags, notes and filters organise sources.
