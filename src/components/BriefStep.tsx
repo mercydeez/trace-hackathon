@@ -14,7 +14,7 @@ import type { Project } from "@/lib/types";
 import { validateDraft } from "@/lib/validateDraft";
 import { DECISION, excerptBadge, IDENTITY, originBadge, StatusChip } from "./status";
 import { useProject, useReferences, useStore, type References } from "./store";
-import { Button, Chip, cx, downloadText, Empty, Notice, ReferenceText, SectionTitle, shortDate } from "./ui";
+import { Button, cx, downloadText, Empty, Notice, ReferenceText, SectionTitle, shortDate } from "./ui";
 
 function evidenceInputs(project: Project): DraftEvidenceInput[] {
   return selectedEvidence(project).map((e) => {
@@ -37,13 +37,72 @@ function EvidenceSetPanel({ goToLibrary, goToPlan }: { goToLibrary: () => void; 
   const payload = buildDraftPayload(project.question, inputs);
   const tooLong = payload.totalChars > LIMITS.maxTotalChars;
 
+  const passages = (
+    <ul className="divide-y divide-line rounded-lg border border-line">
+      {chosen.map((e) => {
+        const s = project.sources.find((x) => x.id === e.sourceId);
+        return (
+          <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2">
+            <span className="min-w-0 flex-1 basis-60 text-sm">
+              <span className="font-semibold">{s ? formatAuthorsShort(s.cited.authors, s.cited.year) : "Source removed"}</span>
+              <span className="text-ink-soft">
+                {" "}
+                · {e.scope === "abstract" ? "Abstract only" : "Pasted passage, not checked"}, {e.text.length.toLocaleString("en-GB")} characters
+                {payload.truncated.includes(e.id) && `, first ${LIMITS.maxCharsPerEvidence.toLocaleString("en-GB")} sent`}
+              </span>
+            </span>
+            <Button size="sm" variant="ghost" icon={X} onClick={() => update((p) => toggleEvidence(p, e.id), "Removed a passage from the evidence set.")}>
+              Remove
+            </Button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  const payloadPreview = (
+    <details className="mt-4">
+      <summary className="text-sm font-semibold text-ink-soft hover:text-ink">Show exactly what would be sent to the AI model</summary>
+      <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+        This is the complete request: the instructions, your question and the {chosen.length} passage{chosen.length === 1 ? "" : "s"} above ({payload.totalChars.toLocaleString("en-GB")} characters of source text). Your notes, tags and the rest of your library are not sent.{" "}
+        {status?.ai.configured ? `It goes to Google's Gemini API (${status.ai.model}). On Google's free tier, content may be used to improve its products and may be read by reviewers.` : "Live AI is not configured on this server, so nothing is sent anywhere."}
+      </p>
+      <pre className="thin-scroll mt-3 max-h-72 overflow-auto rounded-lg bg-s2 p-4 text-xs leading-relaxed whitespace-pre-wrap text-ink-soft">{`${payload.system}\n\n----\n\n${payload.user}`}</pre>
+    </details>
+  );
+
+  if (chosen.length > 0 && approved) {
+    return (
+      <section>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="flex items-start gap-2 text-sm" role="status">
+            <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-ok" />
+            <span>
+              <span className="font-semibold text-ink">You approved this evidence set on {shortDate(project.evidenceSet.approvedAt)}</span>
+              <span className="text-ink-soft">
+                {" "}
+                · {chosen.length} passage{chosen.length === 1 ? "" : "s"}. Adding, removing or editing a passage asks for approval again.
+              </span>
+            </span>
+          </p>
+        </div>
+        <details className="mt-3">
+          <summary className="text-sm font-semibold text-ink-soft hover:text-ink">Show the passages</summary>
+          <div className="mt-3">{passages}</div>
+          {payloadPreview}
+        </details>
+      </section>
+    );
+  }
+
   return (
     <section>
-      <SectionTitle aside="Only these passages can be quoted or sent to the AI model.">Evidence set</SectionTitle>
+      <SectionTitle>Evidence set</SectionTitle>
+      <p className="-mt-2 mb-4 text-sm text-ink-soft">Only these passages can be quoted or sent to the AI model.</p>
       {chosen.length === 0 ? (
         <Empty title="No passages chosen yet">
           Open a source in the Library and tick “Use in the evidence set” on the text you want to work from. Without source text there is nothing to draft from, and TRACE will not guess.
-          <div className="mt-3">
+          <div className="mt-4">
             <Button variant="primary" onClick={goToLibrary}>
               Go to the Library
             </Button>
@@ -51,58 +110,26 @@ function EvidenceSetPanel({ goToLibrary, goToPlan }: { goToLibrary: () => void; 
         </Empty>
       ) : (
         <>
-          <ul className="border-t border-line">
-            {chosen.map((e) => {
-              const s = project.sources.find((x) => x.id === e.sourceId);
-              return (
-                <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line py-2">
-                  <span className="min-w-0 flex-1 basis-60">
-                    <span className="font-medium">{s ? formatAuthorsShort(s.cited.authors, s.cited.year) : "Source removed"}</span>
-                    <span className="text-ink-soft">
-                      {" "}
-                      {e.scope === "abstract" ? "Abstract only" : "Pasted passage, not checked"}, {e.text.length.toLocaleString("en-GB")} characters
-                      {payload.truncated.includes(e.id) && `, first ${LIMITS.maxCharsPerEvidence.toLocaleString("en-GB")} sent`}
-                    </span>
-                  </span>
-                  <Button size="sm" variant="ghost" icon={X} onClick={() => update((p) => toggleEvidence(p, e.id), "Removed a passage from the evidence set.")}>
-                    Remove
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
-
-          <details className="mt-3 text-sm">
-            <summary className="font-medium text-ink-soft">Show exactly what would be sent to the AI model</summary>
-            <p className="mt-2 text-xs text-ink-faint">
-              This is the complete request: the instructions, your question and the {chosen.length} passage{chosen.length === 1 ? "" : "s"} above ({payload.totalChars.toLocaleString("en-GB")} characters of source text). Your notes, tags and the rest of your library are not sent.{" "}
-              {status?.ai.configured ? `It would go to Google's Gemini API (${status.ai.model}). On Google's free tier, content may be used to improve its products and may be read by reviewers.` : "Live AI is not configured on this server, so nothing is sent anywhere."}
-            </p>
-            <pre className="mt-2 max-h-72 overflow-auto rounded border border-line bg-surface p-3 text-xs leading-relaxed whitespace-pre-wrap text-ink-soft">{`${payload.system}\n\n----\n\n${payload.user}`}</pre>
-          </details>
-
-          <div className="mt-4 space-y-3">
+          {passages}
+          {payloadPreview}
+          <div className="mt-6 space-y-3">
             {tooMany && <Notice tone="bad">At most {LIMITS.maxEvidenceItems} passages can be in the evidence set. Remove {chosen.length - LIMITS.maxEvidenceItems}.</Notice>}
             {tooLong && <Notice tone="bad">These passages are too long to send together. Remove one.</Notice>}
-            {approved ? (
-              <Notice tone="ok" icon={Check} role="status">
-                You approved this evidence set on {shortDate(project.evidenceSet.approvedAt)}. Adding, removing or editing a passage will ask for approval again.
-              </Notice>
-            ) : everApproved ? (
+            {everApproved && (
               <Notice tone="warn" icon={RotateCcw} role="status">
                 The evidence set, a passage in it, or your plan changed after you approved. Check the list and approve it again.
               </Notice>
-            ) : null}
+            )}
             {!planOk && (
               <Notice tone="warn">
                 Your search plan is not approved for the current question.{" "}
-                <button type="button" className="font-medium underline underline-offset-2" onClick={goToPlan}>
+                <button type="button" className="font-semibold underline underline-offset-2" onClick={goToPlan}>
                   Approve the plan first
                 </button>
               </Notice>
             )}
-            <Button variant="primary" icon={Check} disabled={approved || !planOk || tooMany || tooLong} onClick={() => update((p) => approveEvidenceSet(p, new Date().toISOString()), `Approved an evidence set of ${chosen.length} passage(s).`)}>
-              {approved ? "Evidence set approved" : "Approve evidence set"}
+            <Button variant="primary" icon={Check} disabled={!planOk || tooMany || tooLong} onClick={() => update((p) => approveEvidenceSet(p, new Date().toISOString()), `Approved an evidence set of ${chosen.length} passage(s).`)}>
+              Approve evidence set
             </Button>
           </div>
         </>
@@ -110,7 +137,6 @@ function EvidenceSetPanel({ goToLibrary, goToPlan }: { goToLibrary: () => void; 
     </section>
   );
 }
-
 // --- 2. Drafting ----------------------------------------------------------------------------
 
 interface DraftReport {
@@ -178,8 +204,14 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
 
   return (
     <section>
-      <SectionTitle aside="One request, at most five short claims.">Draft claims</SectionTitle>
-      {!setOk && <p className="mb-3 text-sm text-ink-soft">Approve the evidence set above to draft from it. You can write a claim yourself at any time.</p>}
+      <SectionTitle>Draft claims</SectionTitle>
+      <p className="-mt-2 mb-4 max-w-prose text-sm leading-relaxed text-ink-soft">
+        {!setOk
+          ? "Approve the evidence set above to draft from it. You can write a claim yourself at any time."
+          : aiOn
+            ? "One request, at most five short claims. The model sees only the approved passages, may cite only them, and cannot write references."
+            : "Live AI is not configured on this server. You can still write claims yourself and link them to passages."}
+      </p>
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" icon={Bot} disabled={!setOk || !aiOn || busy} title={!aiOn ? "Live AI is not configured on this server" : !setOk ? "Approve the evidence set first" : undefined} onClick={() => void draftLive()}>
           {busy ? "Drafting…" : "Draft with AI"}
@@ -193,26 +225,21 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
           </Button>
         )}
       </div>
-      <p className="mt-2 max-w-prose text-xs text-ink-faint">
-        {aiOn
-          ? "The AI model sees only the approved passages. It may cite only those passages and cannot write references. Its answer is checked before anything is added."
-          : "Live AI is not configured on this server. You can still write claims yourself and link them to passages."}
-        {canSample && " The sample brief was written during development for this demo project and is not a live AI call. It is checked by the same rules as live output and stays labelled as a sample."}
-      </p>
+      {canSample && <p className="mt-3 max-w-prose text-sm text-ink-soft">The sample brief was written during development for this demo. It is not a live AI call, goes through the same checks, and stays labelled as a sample.</p>}
 
-      <div aria-live="polite" className="mt-3">
+      <div aria-live="polite">
         {report && (
-          <Notice tone={report.tone} role={report.tone === "bad" ? "alert" : "status"}>
+          <Notice tone={report.tone} role={report.tone === "bad" ? "alert" : "status"} className="mt-4">
             {report.title}
             {report.rejected.length > 0 && (
-              <ul className="mt-1.5 list-disc space-y-1 pl-4 text-sm text-ink-soft">
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-ink-soft">
                 {report.rejected.map((r, i) => (
                   <li key={i}>{r}</li>
                 ))}
               </ul>
             )}
             {report.offerChoices && (
-              <span className="mt-2 flex flex-wrap gap-2">
+              <span className="mt-3 flex flex-wrap gap-2">
                 <Button size="sm" icon={RotateCcw} disabled={!setOk || !aiOn || busy} onClick={() => void draftLive()}>
                   Try the AI draft again
                 </Button>
@@ -235,7 +262,19 @@ function DraftPanel({ onInspect }: { onInspect: (id: string) => void }) {
 
 // --- 3. Claims ------------------------------------------------------------------------------
 
-function ClaimCard({ i, refs, active, onInspect }: { i: ClaimInspection; refs: References; active: boolean; onInspect: () => void }) {
+/** The single most important thing to say about a claim's evidence, so a row carries one status, not five. */
+function worstIssueBadge(i: ClaimInspection) {
+  const codes = i.issues.map((x) => x.code);
+  if (codes.includes("evidence_missing")) return { tone: "bad" as const, icon: X, label: "Passage missing" };
+  if (codes.includes("identity_mismatch") && i.identity) return IDENTITY[i.identity.status];
+  if (codes.includes("quote_mismatch") || codes.includes("quote_not_checkable")) return excerptBadge(i.excerpt);
+  if (codes.includes("evidence_unapproved")) return { tone: "warn" as const, icon: RotateCcw, label: "Passage not in evidence set" };
+  if (codes.includes("claim_empty")) return { tone: "warn" as const, icon: PenLine, label: "No text yet" };
+  if (i.claim.kind === "inference") return { tone: "neutral" as const, icon: PenLine, label: "Inference, no source passage" };
+  return excerptBadge(i.excerpt);
+}
+
+function ClaimRow({ i, refs, active, onInspect }: { i: ClaimInspection; refs: References; active: boolean; onInspect: () => void }) {
   const { update } = useStore();
   const { claim, source } = i;
   const blocking = i.issues.filter((x) => x.code !== "claim_pending" && x.code !== "claim_stale");
@@ -243,48 +282,54 @@ function ClaimCard({ i, refs, active, onInspect }: { i: ClaimInspection; refs: R
   const inText = source ? (refs.byId.get(source.id)?.inText ?? inTextShort(source.cited.authors, source.cited.year)) : null;
 
   return (
-    <li className={cx("relative rounded-[22px] border bg-surface py-4 pr-4 pl-12 shadow-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2 sm:py-5 sm:pr-5 sm:pl-14", active ? "border-brand/40 ring-2 ring-brand/15" : "border-line", rejected && "opacity-60")}>
-      <span aria-hidden className="num absolute top-4 left-3 grid size-7 place-items-center rounded-full bg-s2 text-[0.8125rem] font-bold text-ink-soft sm:top-5 sm:left-4">
+    <li className={cx("grid grid-cols-[2rem_minmax(0,1fr)] gap-x-4 px-4 py-6 transition-colors sm:px-6", active && "bg-brand-tint/60", rejected && "opacity-60")}>
+      <span aria-hidden className="num grid size-8 place-items-center rounded-full bg-s2 text-sm font-bold text-ink-soft">
         {i.number}
       </span>
-      <p className={cx("max-w-prose font-display text-[1.0625rem] leading-relaxed text-ink", rejected && "line-through decoration-ink-faint")}>
-        {claim.text || <span className="text-ink-faint">No text yet. Open the claim to write it.</span>}{" "}
-        {claim.kind === "evidence" && inText && (
-          <button type="button" className="font-sans text-sm text-brand underline decoration-brand/40 underline-offset-2 hover:text-brand-deep" onClick={onInspect}>
-            {inText}
-          </button>
+      <div className="min-w-0 max-w-[68ch]">
+        <p className={cx("text-lg leading-relaxed text-ink", rejected && "line-through decoration-ink-faint")}>
+          {claim.text || <span className="text-ink-faint">No text yet. Open the claim to write it.</span>}{" "}
+          {claim.kind === "evidence" && inText && (
+            <button type="button" className="text-base font-semibold text-accent-text underline decoration-accent/30 underline-offset-2 hover:decoration-accent" onClick={onInspect}>
+              {inText}
+            </button>
+          )}
+        </p>
+        {claim.kind === "evidence" && claim.excerpt && (
+          <p className="mt-2 text-base leading-relaxed text-ink-soft">
+            <span aria-hidden className="font-bold text-accent">“</span>
+            {claim.excerpt.length > 240 ? `${claim.excerpt.slice(0, 240).trimEnd()}…` : claim.excerpt}
+            <span aria-hidden className="font-bold text-accent">”</span>
+          </p>
         )}
-      </p>
-      {claim.kind === "evidence" && claim.excerpt && <p className="mt-1.5 max-w-prose border-l-2 border-brand/40 pl-3 font-reading text-sm leading-relaxed text-ink-soft">“{claim.excerpt.length > 220 ? `${claim.excerpt.slice(0, 220).trimEnd()}…` : claim.excerpt}”</p>}
-      {claim.testCorruption && <p className="mt-2 max-w-prose rounded border border-bad/30 bg-bad-tint px-2.5 py-1.5 text-sm">{claim.testCorruption}</p>}
+        {claim.testCorruption && <p className="mt-3 rounded-lg bg-bad-tint px-3 py-2 text-sm text-ink">{claim.testCorruption}</p>}
 
-      <div className="mt-2.5 flex flex-wrap gap-1.5">
-        <StatusChip badge={originBadge(claim)} title={claim.origin === "live_ai" ? `Drafted by ${claim.model ?? "an AI model"}` : undefined} />
-        {claim.kind === "inference" ? <Chip tone="neutral">Inference, no source passage</Chip> : <StatusChip badge={excerptBadge(i.excerpt)} />}
-        {i.identity && i.identity.status !== "matched" && <StatusChip badge={IDENTITY[i.identity.status]} />}
-        {i.evidence && <Chip tone="neutral">{i.evidence.scope === "abstract" ? "Abstract only" : "Pasted passage"}</Chip>}
-        <StatusChip badge={DECISION[i.decision]} />
-      </div>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <StatusChip badge={originBadge(claim)} title={claim.origin === "live_ai" ? `Drafted by ${claim.model ?? "an AI model"}` : undefined} />
+          <StatusChip badge={worstIssueBadge(i)} />
+          <StatusChip badge={DECISION[i.decision]} />
+        </div>
+        {blocking.length > 0 && !rejected && <p className="mt-2 text-sm text-bad">{blocking[0]?.message.replace(/^Claim \d+: /, "Needs attention: ")}</p>}
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button size="sm" icon={ScanSearch} onClick={onInspect} aria-label={`Inspect claim ${i.number}`}>
-          Inspect evidence
-        </Button>
-        {i.decision !== "approved" && !rejected && (
-          <Button size="sm" variant="primary" icon={Check} disabled={blocking.length > 0} title={blocking.length > 0 ? "Open the claim to resolve its open points first" : undefined} aria-label={`Approve claim ${i.number}`} onClick={() => update((p) => decideClaim(p, claim.id, "approved"), `Approved claim ${i.number}.`)}>
-            {i.decision === "stale" ? "Approve again" : "Approve"}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Button size="sm" icon={ScanSearch} onClick={onInspect} aria-label={`Inspect claim ${i.number}`}>
+            Inspect evidence
           </Button>
-        )}
-        {!rejected ? (
-          <Button size="sm" variant="ghost" icon={X} aria-label={`Reject claim ${i.number}`} onClick={() => update((p) => decideClaim(p, claim.id, "rejected"), `Rejected claim ${i.number}.`)}>
-            Reject
-          </Button>
-        ) : (
-          <Button size="sm" variant="ghost" icon={RotateCcw} aria-label={`Restore claim ${i.number}`} onClick={() => update((p) => decideClaim(p, claim.id, "pending"), `Reopened claim ${i.number}.`)}>
-            Restore
-          </Button>
-        )}
-        {blocking.length > 0 && !rejected && <span className="text-xs text-bad">{blocking[0]?.message.replace(/^Claim \d+: /, "Needs attention: ")}</span>}
+          {i.decision !== "approved" && !rejected && (
+            <Button size="sm" variant="primary" icon={Check} disabled={blocking.length > 0} title={blocking.length > 0 ? "Open the claim to resolve its open points first" : undefined} aria-label={`Approve claim ${i.number}`} onClick={() => update((p) => decideClaim(p, claim.id, "approved"), `Approved claim ${i.number}.`)}>
+              {i.decision === "stale" ? "Approve again" : "Approve"}
+            </Button>
+          )}
+          {!rejected ? (
+            <Button size="sm" variant="ghost" icon={X} aria-label={`Reject claim ${i.number}`} onClick={() => update((p) => decideClaim(p, claim.id, "rejected"), `Rejected claim ${i.number}.`)}>
+              Reject
+            </Button>
+          ) : (
+            <Button size="sm" variant="ghost" icon={RotateCcw} aria-label={`Restore claim ${i.number}`} onClick={() => update((p) => decideClaim(p, claim.id, "pending"), `Reopened claim ${i.number}.`)}>
+              Restore
+            </Button>
+          )}
+        </div>
       </div>
     </li>
   );
@@ -313,95 +358,111 @@ function ExportPanel({ evaluation, refs, onInspect, goToPlan }: { evaluation: Ex
   }
 
   const previewResult = preview ? buildBrief(project, ordered, canReview ? "reviewed" : "draft", new Date().toISOString()) : null;
+  const blockers = evaluation.blockers.length;
 
   return (
-    <section>
-      <SectionTitle aside={evaluation.counts.total ? evaluation.summary : undefined}>Review and export</SectionTitle>
+    <>
+      <section>
+        <SectionTitle>Review and export</SectionTitle>
+        {evaluation.eligible ? (
+          <Notice tone="ok" icon={Check} role="status">
+            Every claim that is left has your approval, its excerpt is in the stored text, and no reference disagrees with Crossref. That is what a reviewed brief means here. It does not mean the sources are correct, or that each claim follows from its excerpt.
+          </Notice>
+        ) : (
+          <div className="rounded-xl border border-warn/25 bg-warn-tint px-4 py-3">
+            <p className="text-sm font-semibold text-ink">
+              {blockers} point{blockers === 1 ? "" : "s"} to resolve before this can be exported as reviewed
+            </p>
+            <ul className="mt-2 space-y-2 text-sm">
+              {evaluation.blockers.map((b, n) => (
+                <li key={n} className="flex flex-wrap items-baseline gap-x-2">
+                  <span>{b.message}</span>
+                  {b.claimId && (
+                    <button type="button" className="font-semibold text-accent-text underline underline-offset-2" onClick={() => onInspect(b.claimId as string)}>
+                      Open claim
+                    </button>
+                  )}
+                  {b.code === "plan_unapproved" && (
+                    <button type="button" className="font-semibold text-accent-text underline underline-offset-2" onClick={goToPlan}>
+                      Go to the plan
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-      {evaluation.eligible ? (
-        <Notice tone="ok" icon={Check} role="status">
-          Every claim that is left has your approval, its excerpt is in the stored text, and no reference disagrees with Crossref. That is what a reviewed brief means here. It does not mean the sources are correct, or that each claim follows from its excerpt.
-        </Notice>
-      ) : (
-        <div className="rounded border border-warn/30 bg-warn-tint px-3 py-2.5">
-          <p className="text-sm font-medium text-ink">
-            {evaluation.blockers.length} point{evaluation.blockers.length === 1 ? "" : "s"} to resolve before this can be exported as reviewed
-          </p>
-          <ul className="mt-1.5 space-y-1 text-sm">
-            {evaluation.blockers.map((b, n) => (
-              <li key={n} className="flex flex-wrap items-baseline gap-x-2">
-                <span>{b.message}</span>
-                {b.claimId && (
-                  <button type="button" className="font-medium text-brand underline underline-offset-2" onClick={() => onInspect(b.claimId as string)}>
-                    Open claim
-                  </button>
-                )}
-                {b.code === "plan_unapproved" && (
-                  <button type="button" className="font-medium text-brand underline underline-offset-2" onClick={goToPlan}>
-                    Go to the plan
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        {cited.length > 0 && (
+          <div className="mt-6">
+            <h3 className="mb-3 text-base font-bold">References (APA 7)</h3>
+            {refs.state === "error" && (
+              <Notice tone="bad" role="alert">
+                The references could not be formatted. {refs.message} A reviewed brief needs formatted references; a draft can still be downloaded.
+              </Notice>
+            )}
+            {refs.state !== "error" && refs.ordered.length === 0 && <p className="text-sm text-ink-soft">Formatting…</p>}
+            <ul className="max-w-[68ch] space-y-3 text-base leading-relaxed">
+              {refs.ordered.map((r) => (
+                <li key={r.id} className="pl-6 -indent-6 break-words">
+                  <ReferenceText parts={r.parts} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
-      {cited.length > 0 && (
-        <div className="mt-5">
-          <h3 className="mb-1.5 text-[0.8125rem] font-semibold text-ink-soft">References (APA 7)</h3>
-          {refs.state === "error" && (
-            <Notice tone="bad" role="alert">
-              The references could not be formatted. {refs.message} A reviewed brief needs formatted references; a draft can still be downloaded.
-            </Notice>
-          )}
-          {refs.state !== "error" && refs.ordered.length === 0 && <p className="text-sm text-ink-faint">Formatting…</p>}
-          <ul className="max-w-prose space-y-2 font-reading text-[0.9375rem] leading-relaxed">
-            {refs.ordered.map((r) => (
-              <li key={r.id} className="pl-6 -indent-6 break-words">
-                <ReferenceText parts={r.parts} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="mt-5 flex flex-wrap items-center gap-2">
-        <Button variant="primary" icon={Download} disabled={!canReview} title={!evaluation.eligible ? "Resolve the points listed above first" : !refsReady ? "Waiting for the references to be formatted" : undefined} onClick={() => download("reviewed")}>
-          Download reviewed brief
-        </Button>
-        <Button icon={Download} disabled={project.claims.length === 0} onClick={() => download("draft")}>
-          Download draft, marked as not reviewed
-        </Button>
-        <Button variant="ghost" icon={Eye} aria-expanded={preview} disabled={project.claims.length === 0} onClick={() => setPreview(!preview)}>
+        <p className="mt-6 max-w-prose text-sm leading-relaxed text-ink-soft">
+          Both files are Markdown with your brief, APA 7 references, source links, where each excerpt came from, limitations, and a disclosure of how AI was used. You remain responsible for what you submit. TRACE does not detect plagiarism and does not certify the work.
+        </p>
+        <Button variant="ghost" icon={Eye} className="mt-3" aria-expanded={preview} disabled={project.claims.length === 0} onClick={() => setPreview(!preview)}>
           {preview ? "Hide preview" : "Preview the file"}
         </Button>
-      </div>
-      <p className="mt-2 max-w-prose text-xs text-ink-faint">
-        Both files are Markdown text with your brief, APA 7 references, source links, where each excerpt came from, limitations, and a disclosure of how AI was used. You remain responsible for what you submit. TRACE does not detect plagiarism and does not certify the work.
-      </p>
-      {refused && (
-        <Notice tone="bad" role="alert" className="mt-3">
-          The reviewed brief was not produced:
-          <ul className="mt-1 list-disc pl-4">
-            {refused.map((r, n) => (
-              <li key={n}>{r}</li>
-            ))}
-          </ul>
-        </Notice>
-      )}
-      {previewResult?.ok && (
-        <div className="mt-4">
-          <p className="mb-1 text-xs text-ink-faint">
-            Preview of {previewResult.filename}
-            {!canReview && ". This is the draft version, because the review is not complete."}
+        {previewResult?.ok && (
+          <div className="mt-3">
+            <p className="mb-2 text-sm text-ink-soft">
+              Preview of {previewResult.filename}
+              {!canReview && ". This is the draft version, because the review is not complete."}
+            </p>
+            <pre tabIndex={0} aria-label="Preview of the exported file" className="thin-scroll max-h-[28rem] overflow-auto rounded-lg bg-s2 p-4 text-xs leading-relaxed whitespace-pre-wrap text-ink">
+              {previewResult.markdown}
+            </pre>
+          </div>
+        )}
+      </section>
+
+      <div className="float sticky bottom-4 z-10 rounded-xl px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="min-w-0 flex-1 basis-56 text-sm" role="status">
+            {evaluation.eligible ? (
+              <span className="font-semibold text-ok">Ready to export as reviewed.</span>
+            ) : (
+              <span className="text-ink-soft">
+                <span className="font-semibold text-warn">{blockers} to resolve</span> before a reviewed export. {evaluation.counts.total ? evaluation.summary + "." : ""}
+              </span>
+            )}
           </p>
-          <pre tabIndex={0} aria-label="Preview of the exported file" className="max-h-[28rem] overflow-auto rounded border border-line bg-surface p-4 text-xs leading-relaxed whitespace-pre-wrap text-ink">
-            {previewResult.markdown}
-          </pre>
+          <div className="flex flex-wrap gap-2">
+            <Button icon={Download} disabled={project.claims.length === 0} onClick={() => download("draft")}>
+              Download draft, marked as not reviewed
+            </Button>
+            <Button variant="primary" icon={Download} disabled={!canReview} title={!evaluation.eligible ? "Resolve the points listed above first" : !refsReady ? "Waiting for the references to be formatted" : undefined} onClick={() => download("reviewed")}>
+              Download reviewed brief
+            </Button>
+          </div>
         </div>
-      )}
-    </section>
+        {refused && (
+          <Notice tone="bad" role="alert" className="mt-3">
+            The reviewed brief was not produced:
+            <ul className="mt-1 list-disc pl-4">
+              {refused.map((r, n) => (
+                <li key={n}>{r}</li>
+              ))}
+            </ul>
+          </Notice>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -411,17 +472,21 @@ export function BriefStep({ inspectingId, onInspect, goToLibrary, goToPlan }: { 
   const refs = useReferences(citedSources(project), "list");
 
   return (
-    <div className="step-body space-y-5">
+    <div className="step-body max-w-5xl space-y-6">
       <EvidenceSetPanel goToLibrary={goToLibrary} goToPlan={goToPlan} />
       <DraftPanel onInspect={onInspect} />
-      <section>
-        <SectionTitle aside={project.claims.length ? evaluation.summary : undefined}>Claims</SectionTitle>
+      <section className="!p-0">
+        <div className="px-4 pt-6 sm:px-6">
+          <SectionTitle aside={project.claims.length ? evaluation.summary : undefined}>Claims</SectionTitle>
+        </div>
         {project.claims.length === 0 ? (
-          <Empty title="No claims yet">Draft from the approved evidence set, or write a claim yourself. Each claim is a short card you can inspect, edit, approve or reject.</Empty>
+          <div className="px-4 pb-6 sm:px-6">
+            <Empty title="No claims yet">Draft from the approved evidence set, or write a claim yourself. Each claim is a short card you can inspect, edit, approve or reject.</Empty>
+          </div>
         ) : (
-          <ol className="space-y-3">
+          <ol className="divide-y divide-line border-t border-line">
             {evaluation.inspections.map((i) => (
-              <ClaimCard key={i.claim.id} i={i} refs={refs} active={inspectingId === i.claim.id} onInspect={() => onInspect(i.claim.id)} />
+              <ClaimRow key={i.claim.id} i={i} refs={refs} active={inspectingId === i.claim.id} onInspect={() => onInspect(i.claim.id)} />
             ))}
           </ol>
         )}

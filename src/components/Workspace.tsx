@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowRight, BookOpen, Check, Compass, FileCheck2, FlaskConical, LayoutGrid, ListChecks, ShieldAlert, Sparkles, TriangleAlert, type LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { Check, FlaskConical, LayoutGrid, ShieldAlert, TriangleAlert, X } from "lucide-react";
+import { useMemo, useState } from "react";
 import { isEvidenceSetApproved, isPlanApproved } from "@/lib/approvals";
-import { buildDemoProject, FIXTURES_FETCHED_AT } from "@/lib/demo";
+import { buildDemoProject, demoSourcesAndEvidence, FIXTURES_FETCHED_AT } from "@/lib/demo";
+import { checkExcerpt } from "@/lib/excerpt";
 import { evaluateExport } from "@/lib/exportPolicy";
 import { emptyProject } from "@/lib/mutations";
 import type { Project } from "@/lib/types";
@@ -18,63 +19,80 @@ import { Button, cx, Drawer, Notice, shortDate, TextArea, useMediaQuery } from "
 
 type StepId = "plan" | "discover" | "library" | "brief";
 
-const STEP_ICON: Record<StepId, LucideIcon> = { plan: Compass, discover: BookOpen, library: ListChecks, brief: FileCheck2 };
-
-/* Mockup G: one strict container for every band of the page. */
-function Container({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cx("mx-auto w-full max-w-[1240px] px-4 sm:px-6 lg:px-8", className)}>{children}</div>;
+interface StepState {
+  id: StepId;
+  label: string;
+  short: string;
+  state: string;
+  done: boolean;
 }
 
-function stepStates(project: Project): { id: StepId; label: string; state: string; done: boolean }[] {
+function stepStates(project: Project): StepState[] {
   const planOk = isPlanApproved(project);
   const setOk = isEvidenceSetApproved(project);
   const evaluation = evaluateExport(project);
   const { total, needsReview } = evaluation.counts;
+  const s = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
   return [
-    { id: "plan", label: "Plan", state: planOk ? "Approved" : project.plan.approvedFingerprint ? "Changed, approve again" : "Not approved yet", done: planOk },
-    { id: "discover", label: "Discover", state: "Search Crossref, add by DOI", done: project.sources.length > 0 },
+    { id: "plan", label: "Plan", short: "Plan", state: planOk ? "Approved" : project.plan.approvedFingerprint ? "Changed, approve again" : "Not approved yet", done: planOk },
+    { id: "discover", label: "Discover", short: "Find", state: "Search Crossref, add by DOI", done: project.sources.length > 0 },
     {
       id: "library",
       label: "Library and evidence",
-      state: `${project.sources.length} source${project.sources.length === 1 ? "" : "s"}, ${project.evidenceSet.ids.length} passage${project.evidenceSet.ids.length === 1 ? "" : "s"} chosen`,
+      short: "Library",
+      state: `${s(project.sources.length, "source")}, ${s(project.evidenceSet.ids.length, "passage")} chosen`,
       done: setOk,
     },
     {
       id: "brief",
       label: "Brief and export",
-      state: total === 0 ? "No claims yet" : evaluation.eligible ? `${total} claim${total === 1 ? "" : "s"}, ready to export` : `${total} claim${total === 1 ? "" : "s"}, ${needsReview} to review`,
+      short: "Brief",
+      state: total === 0 ? "No claims yet" : evaluation.eligible ? `${s(total, "claim")}, ready to export` : `${s(total, "claim")}, ${needsReview} to review`,
       done: evaluation.eligible,
     },
   ];
 }
 
-const NEXT_ACTION: Record<StepId, string> = {
-  plan: "Approve your search plan",
-  discover: "Find and save sources",
-  library: "Choose and approve your evidence",
-  brief: "Review your claims and export",
-};
-
-function todayLine(): string {
-  return new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
-}
-
-function Brand() {
+function Brand({ compact }: { compact?: boolean }) {
   return (
-    <span className="flex flex-none items-center gap-2.5">
-      <span aria-hidden className="orb size-7 rounded-full" />
-      <span className="text-[1.0625rem] leading-none font-bold tracking-[-0.02em] text-ink">TRACE</span>
+    <span className="flex flex-none items-center gap-2">
+      <span aria-hidden className="orb size-6 rounded-full" />
+      <span className={cx("text-base font-bold tracking-[-0.02em] text-ink", compact && "lg:sr-only")}>TRACE</span>
     </span>
   );
 }
 
-function Footer() {
+// --- Welcome -------------------------------------------------------------------------------
+
+/* The trap, computed live from the demo fixture by the same function the workspace uses. */
+function TrapPreview() {
+  const result = useMemo(() => {
+    const ev = demoSourcesAndEvidence(new Date(0).toISOString()).evidence.find((e) => e.id === "ev_demo_1");
+    const real = "Students then took a final retention test 5 min, 2 days, or 1 week later.";
+    const altered = "Students then took a final retention test 5 min, 2 days, or 1 month later.";
+    return { ok: checkExcerpt(real, ev?.text).status === "matched", bad: checkExcerpt(altered, ev?.text).status === "mismatch" };
+  }, []);
   return (
-    <Container>
-      <p className="mt-14 flex flex-wrap items-center justify-center gap-x-2 border-t border-line py-6 text-[0.8125rem] text-ink-faint">
-        <span className="font-semibold text-ink-soft">TRACE</span> Research you can defend. Your work stays in this browser.
-      </p>
-    </Container>
+    <figure className="float rounded-xl p-6">
+      <figcaption className="text-sm text-ink-soft">Roediger &amp; Karpicke (2006), abstract as stored from Crossref</figcaption>
+      <ul className="mt-4 space-y-3">
+        <li className="rounded-lg bg-ok-tint/70 p-4">
+          <p className="text-base leading-relaxed text-ink">&ldquo;Students then took a final retention test 5 min, 2 days, or 1 week later.&rdquo;</p>
+          <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-ok">
+            <Check aria-hidden className="size-4" /> {result.ok ? "Found in the stored abstract" : "Check unavailable"}
+          </p>
+        </li>
+        <li className="rounded-lg bg-bad-tint/70 p-4">
+          <p className="text-base leading-relaxed text-ink">
+            &ldquo;Students then took a final retention test 5 min, 2 days, or 1 <span className="rounded bg-bad/15 px-0.5 font-semibold">month</span> later.&rdquo;
+          </p>
+          <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-bad">
+            <X aria-hidden className="size-4" /> {result.bad ? "Not in the stored abstract" : "Check unavailable"}
+          </p>
+        </li>
+      </ul>
+      <p className="mt-4 text-sm leading-relaxed text-ink-soft">The paper is real. One changed word makes the quotation false, and TRACE blocks the brief until it is fixed. Checked just now, in your browser, by the same code the workspace uses.</p>
+    </figure>
   );
 }
 
@@ -84,253 +102,222 @@ function Welcome() {
   const now = () => new Date().toISOString();
   return (
     <div className="min-h-dvh">
-      <header className="sticky top-0 z-30 pt-3">
-        <Container>
-          <div className="glass-bar flex h-[60px] items-center justify-between rounded-[24px] border border-white/70 px-5 shadow-1">
-            <Brand />
-            <span className="rounded-full bg-accent-soft px-3 py-1 text-[0.8125rem] font-semibold text-accent-text">Research you can defend</span>
-          </div>
-        </Container>
+      <header className="mx-auto flex h-16 max-w-6xl items-center px-4 sm:px-6">
+        <Brand />
       </header>
-      <main className="animate-page-enter">
-        <Container className="pt-6 sm:pt-9">
-          <p className="text-[0.9375rem] text-ink-soft">{todayLine()}</p>
-          <h1 className="mt-0.5 font-display text-[2.1rem] leading-[1.04] font-bold tracking-[-0.035em] text-balance sm:text-[3rem]">Research you can defend.</h1>
-        </Container>
-
-        <Container className="mt-5">
-          <section className="field-band rounded-[24px] px-6 py-8 shadow-2 sm:rounded-[28px] sm:px-10 sm:py-12">
-            <div className="max-w-[600px]">
-              <h2 className="font-display text-[1.5rem] leading-[1.1] font-bold tracking-[-0.02em] sm:text-[2.4rem]">A real DOI does not make a claim supported.</h2>
-              <p className="mt-3 max-w-[52ch] text-base text-on-field-2 sm:text-[1.0625rem]">
-                Find real sources, read the evidence, decide what to use, and export a short brief in which every claim points to the passage behind it. TRACE checks the reference and the quotation separately, and leaves the decisions to you.
-              </p>
-              <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <button
-                  type="button"
-                  onClick={() => addProject(buildDemoProject(now()))}
-                  className="flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[0.9375rem] font-semibold text-field shadow-1 transition-transform hover:bg-s2 active:scale-[0.98]"
-                >
-                  <FlaskConical aria-hidden className="size-[17px]" />
-                  Open the demo project
-                </button>
-                <span className="text-[0.8125rem] font-medium text-on-field-2">Seven real papers, saved from Crossref on {shortDate(FIXTURES_FETCHED_AT)}</span>
-              </div>
+      <main className="animate-page-enter mx-auto max-w-6xl px-4 pb-16 sm:px-6">
+        <section className="grid items-center gap-12 pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:pt-16">
+          <div>
+            <h1 className="text-4xl leading-[1.05] font-bold tracking-[-0.035em] text-balance sm:text-6xl">Research you can defend.</h1>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-soft">
+              A real DOI does not make a claim supported. TRACE finds real sources, keeps the passage behind every claim, checks the two separately, and leaves every decision to you.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Button variant="primary" icon={FlaskConical} onClick={() => addProject(buildDemoProject(now()))}>
+                Open the demo project
+              </Button>
+              <span className="text-sm text-ink-soft">Seven real papers, saved from Crossref on {shortDate(FIXTURES_FETCHED_AT)}</span>
             </div>
-          </section>
-        </Container>
+          </div>
+          <TrapPreview />
+        </section>
 
-        <Container className="mt-10 grid gap-6 lg:grid-cols-12">
+        <section className="mt-24 grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
+          <div>
+            <h2 className="text-2xl font-bold tracking-[-0.02em]">How it works</h2>
+            <ol className="mt-6 grid gap-x-8 gap-y-6 sm:grid-cols-2">
+              {[
+                ["Plan", "Write your question, edit the search terms, and approve them."],
+                ["Discover", "Search Crossref, add a source by DOI, or check a citation someone gave you."],
+                ["Library and evidence", "Tag and annotate sources, then choose the passages you will work from."],
+                ["Brief and export", "Draft or write short claims, inspect each against its passage, approve, and export."],
+              ].map(([title, text], i) => (
+                <li key={title} className="grid grid-cols-[2rem_1fr] gap-x-3">
+                  <span aria-hidden className="grid size-8 place-items-center rounded-full bg-accent-soft text-sm font-bold text-accent-text">
+                    {i + 1}
+                  </span>
+                  <span>
+                    <span className="block text-base font-semibold text-ink">{title}</span>
+                    <span className="mt-1 block text-sm leading-relaxed text-ink-soft">{text}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
           <form
-            className="card lift p-6 sm:p-7 lg:col-span-5"
+            className="card p-6"
             onSubmit={(e) => {
               e.preventDefault();
               const q = question.trim();
               if (q) addProject(emptyProject(q.length > 44 ? `${q.slice(0, 44).trimEnd()}…` : q, q, now()));
             }}
           >
-            <span aria-hidden className="grid size-11 place-items-center rounded-[14px] bg-accent-soft text-accent-text">
-              <Sparkles className="size-5" />
-            </span>
-            <h2 className="mt-4 font-display text-[1.375rem] leading-tight font-bold tracking-[-0.015em]">Start with your own question</h2>
-            <label htmlFor="welcome-question" className="mt-1 block text-[0.9375rem] text-ink-soft">
+            <h2 className="text-xl font-bold tracking-[-0.02em]">Start with your own question</h2>
+            <label htmlFor="welcome-question" className="mt-2 block text-sm text-ink-soft">
               Write a question a source could answer.
             </label>
-            <TextArea id="welcome-question" rows={3} className="mt-3" maxLength={400} value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="For example: Does spacing study sessions improve exam results?" />
+            <TextArea id="welcome-question" rows={3} className="mt-4" maxLength={400} value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="For example: Does spacing study sessions improve exam results?" />
             <Button type="submit" variant="primary" className="mt-4" disabled={!question.trim()}>
               Start a project
             </Button>
           </form>
+        </section>
 
-          <section className="lg:col-span-7">
-            <h2 className="mb-4 font-display text-[1.375rem] leading-tight font-bold tracking-[-0.015em] sm:text-[1.5rem]">How it works</h2>
-            <ol className="grid gap-3 sm:grid-cols-2">
-              {(
-                [
-                  ["plan", "Plan", "Set your question and search terms, and approve them."],
-                  ["discover", "Discover", "Search Crossref, or add a source by DOI. Check a citation someone gave you."],
-                  ["library", "Library and evidence", "Tag and annotate sources, then choose the passages you will work from."],
-                  ["brief", "Brief and export", "Draft or write short claims, inspect each against its passage, approve, and export."],
-                ] as const
-              ).map(([id, title, text], i) => {
-                const Icon = STEP_ICON[id];
-                return (
-                  <li key={title} className="card lift flex gap-3.5 rounded-[22px] p-4">
-                    <span aria-hidden className="grid size-11 flex-none place-items-center rounded-[14px] bg-accent-soft text-accent-text">
-                      <Icon className="size-5" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-[0.8125rem] font-semibold text-ink-faint">Step {i + 1}</span>
-                      <span className="block text-base font-semibold text-ink">{title}</span>
-                      <span className="mt-0.5 block text-[0.875rem] leading-relaxed text-ink-soft">{text}</span>
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
-            <p className="mt-4 text-[0.8125rem] text-ink-faint">
-              Your work is saved in this browser only, with no account. It is not a cloud backup. TRACE does not detect plagiarism, judge whether a source is correct, or replace your institution&rsquo;s academic-integrity rules.
-            </p>
-          </section>
-        </Container>
+        <p className="mt-24 border-t border-line pt-6 text-sm leading-relaxed text-ink-soft">
+          Your work is saved in this browser only, with no account. It is not a cloud backup. TRACE does not detect plagiarism, judge whether a source is correct, or replace your institution&rsquo;s academic-integrity rules.
+        </p>
       </main>
-      <Footer />
     </div>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone?: "attention" }) {
+// --- Project workspace ---------------------------------------------------------------------
+
+function StepNav({ steps, step, compact, onSelect }: { steps: StepState[]; step: StepId; compact: boolean; onSelect: (id: StepId) => void }) {
   return (
-    <div className={cx("min-w-0 rounded-[16px] px-4 py-3", tone ? "bg-white text-ink" : "bg-white/[0.1]")}>
-      <p className={cx("num font-display text-[1.75rem] leading-none font-bold", tone ? "text-warn" : "text-white")}>{value}</p>
-      <p className={cx("mt-1.5 truncate text-[0.8125rem] font-medium", tone ? "text-ink-soft" : "text-on-field-2")}>{label}</p>
-    </div>
+    <nav aria-label="Steps">
+      <ol className="grid grid-cols-4 gap-1 lg:grid-cols-1">
+        {steps.map((s, n) => {
+          const active = step === s.id;
+          return (
+            <li key={s.id}>
+              <button
+                type="button"
+                aria-current={active ? "step" : undefined}
+                onClick={() => onSelect(s.id)}
+                className={cx(
+                  "relative flex w-full items-center gap-3 rounded-lg text-left transition-colors duration-150",
+                  "max-lg:flex-col max-lg:gap-1 max-lg:px-1 max-lg:py-2",
+                  compact ? "lg:justify-center lg:p-2" : "lg:px-3 lg:py-2",
+                  active ? "bg-brand text-white" : "text-ink hover:bg-s2",
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cx(
+                    "grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold",
+                    active ? "bg-white/20 text-white" : s.done ? "bg-ok-tint text-ok" : "bg-s3 text-ink-soft",
+                  )}
+                >
+                  {s.done ? <Check className="size-3.5" strokeWidth={3} /> : n + 1}
+                </span>
+                <span aria-hidden className="text-xs font-semibold lg:hidden">
+                  {s.short}
+                </span>
+                <span className={cx("min-w-0 max-lg:sr-only", compact && "lg:sr-only")}>
+                  <span className="block text-sm font-semibold">{s.label}</span>
+                  <span className={cx("line-clamp-2 block text-xs leading-snug", active ? "text-white/75" : "text-ink-soft")}>
+                    <span className="sr-only">: </span>
+                    {s.state}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 }
 
 function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: () => void }) {
-  const { deleteProject } = useStore();
+  const { deleteProject, status } = useStore();
   const [step, setStep] = useState<StepId>(() => (!isPlanApproved(project) ? "plan" : project.claims.length > 0 ? "brief" : "library"));
   const [inspecting, setInspecting] = useState<string | null>(null);
-  const wide = useMediaQuery("(min-width: 1200px)");
+  const inspectorColumn = useMediaQuery("(min-width: 1200px)");
+  const roomy = useMediaQuery("(min-width: 1440px)");
   const steps = stepStates(project);
-  const evaluation = evaluateExport(project);
-  const next = steps.find((s) => !s.done);
-  const doneCount = steps.filter((s) => s.done).length;
+  const current = steps.find((s) => s.id === step) ?? steps[0]!;
+  const position = steps.findIndex((s) => s.id === step) + 1;
+  const showAside = inspectorColumn && inspecting !== null;
+  const compactRail = showAside && !roomy;
   const inspect = (id: string) => {
     setStep("brief");
     setInspecting(id);
   };
-  const showAside = wide && inspecting !== null;
-  const current = steps.find((s) => s.id === step);
 
   return (
-    <div className="min-h-dvh">
+    <div
+      className={cx(
+        "grid min-h-dvh grid-cols-1",
+        !showAside && "lg:grid-cols-[248px_minmax(0,1fr)]",
+        showAside && (compactRail ? "lg:grid-cols-[72px_minmax(0,1fr)_400px]" : "lg:grid-cols-[248px_minmax(0,1fr)_400px]"),
+      )}
+    >
+      <aside aria-label="Project" className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur lg:h-dvh lg:overflow-y-auto lg:border-r lg:border-b-0 lg:bg-surface">
+        <div className={cx("flex flex-col gap-3 px-4 py-3 lg:h-full lg:gap-6 lg:py-6", compactRail ? "lg:px-3" : "lg:px-5")}>
+          <div className={cx("flex items-center justify-between gap-2 lg:flex-col lg:items-stretch lg:gap-4", compactRail && "lg:items-center")}>
+            <Brand compact={compactRail} />
+            <Button size="sm" variant="ghost" icon={LayoutGrid} onClick={onOpenTools} aria-label={compactRail ? "Projects and tools" : undefined} className={cx("lg:justify-start", compactRail ? "lg:px-2" : "lg:-mx-3")}>
+              <span className={cx(compactRail && "lg:sr-only")}>Projects and tools</span>
+            </Button>
+          </div>
 
-      <div className="flex items-start">
-        <main className="animate-page-enter min-w-0 flex-1">
-          <header className="sticky top-0 z-30 pt-3">
-            <Container>
-              <div className="glass-bar rounded-[24px] border border-white/70 px-3 pt-2 pb-2.5 shadow-1 sm:px-4">
-              <div className="flex h-11 items-center justify-between gap-3 px-1">
-                <Brand />
-                <Button size="sm" icon={LayoutGrid} onClick={onOpenTools}>
-                  Projects and tools
-                </Button>
-              </div>
-              <nav aria-label="Steps" className="no-scrollbar mt-1.5 overflow-x-auto">
-                <ol className="flex items-center gap-1">
-                  {steps.map((s, n) => (
-                    <li key={s.id} className="flex-none">
-                      <button
-                        type="button"
-                        aria-current={step === s.id ? "step" : undefined}
-                        title={s.state}
-                        onClick={() => setStep(s.id)}
-                        className={cx(
-                          "relative flex items-center gap-2 rounded-full px-3.5 py-2 text-[0.875rem] font-semibold whitespace-nowrap transition-colors duration-150",
-                          step === s.id ? "bg-brand text-white shadow-[0_6px_16px_rgb(75_54_83/0.22)]" : "text-ink-soft hover:bg-s2 hover:text-ink",
-                        )}
-                      >
-                        <span
-                          aria-hidden
-                          className={cx(
-                            "grid size-5 place-items-center rounded-full text-[0.6875rem] font-bold",
-                            step === s.id ? "bg-white/20 text-white" : s.done ? "bg-ok-tint text-ok" : "bg-s3 text-ink-soft",
-                          )}
-                        >
-                          {s.done ? <Check className="size-3" strokeWidth={3} /> : n + 1}
-                        </span>
-                        {s.label}
-                        <span className="sr-only">: {s.state}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ol>
-              </nav>
-              </div>
-            </Container>
-          </header>
-          <Container className="pt-5 sm:pt-7">
-            {project.kind === "trap" && (
-              <Notice tone="bad" icon={ShieldAlert} className="mb-5" role="note">
-                <strong className="font-semibold">Citation-trap test copy.</strong> Two items in this project were deliberately corrupted to show the checks working: one reference&rsquo;s details, and one quotation. They are test cases, not research findings.{" "}
-                <button type="button" className="font-semibold underline underline-offset-2" onClick={() => deleteProject(project.id)}>
-                  Delete this test copy
-                </button>
-              </Notice>
-            )}
-            {project.kind === "demo" && (
-              <Notice tone="neutral" icon={FlaskConical} className="mb-5" role="note">
-                Demo project. The sources and abstracts are real Crossref records saved on {shortDate(FIXTURES_FETCHED_AT)}. Any sample output is labelled where it appears.
-              </Notice>
-            )}
+          {!compactRail && (
+            <div className="hidden lg:block">
+              <p className="text-sm font-semibold text-ink">{project.name}</p>
+              {project.kind !== "user" && (
+                <span className={cx("mt-2 inline-flex h-6 items-center rounded-full px-2 text-xs font-semibold", project.kind === "trap" ? "bg-bad-tint text-bad" : "bg-s2 text-ink-soft")}>
+                  {project.kind === "trap" ? "Citation-trap test copy" : "Demo project"}
+                </span>
+              )}
+            </div>
+          )}
 
-            <p className="text-[0.9375rem] text-ink-soft">
-              {todayLine()} <span aria-hidden>·</span> {project.name}
+          <StepNav steps={steps} step={step} compact={compactRail} onSelect={setStep} />
+
+          {!compactRail && (
+            <div className="mt-auto hidden border-t border-line pt-4 text-xs leading-relaxed text-ink-soft lg:block">
+              <p className="flex items-center gap-2 font-semibold text-ink">
+                <span aria-hidden className={cx("size-2 rounded-full", status?.ai.configured ? "bg-ok" : "bg-ink-faint/50")} />
+                {status === null ? "Checking live AI…" : status.ai.configured ? "Live AI drafting on" : "Live AI not configured"}
+              </p>
+              {status?.ai.configured && <p className="mt-1 break-all">{status.ai.model}</p>}
+              <p className="mt-2">Saved in this browser only.</p>
+            </div>
+          )}
+        </div>
+      </aside>
+
+      <main className="min-w-0">
+        <header className="border-b border-line bg-surface px-4 py-4 sm:px-8 lg:py-6">
+          <p className="text-sm text-ink-soft">
+            Step {position} of 4 <span aria-hidden>·</span> <span className="font-semibold text-ink">{current.label}</span> <span aria-hidden>·</span> {current.state}
+          </p>
+          <h1 className="mt-1 line-clamp-2 max-w-4xl text-xl leading-snug font-bold tracking-[-0.02em] text-ink sm:text-2xl">
+            {project.question.trim() || <span className="text-ink-faint">No question yet. Write one in the Plan step.</span>}
+          </h1>
+          {project.kind === "trap" && (
+            <Notice tone="bad" icon={ShieldAlert} className="mt-4" role="note">
+              <strong className="font-semibold">Citation-trap test copy.</strong> One reference&rsquo;s details and one quotation were deliberately corrupted to show the checks working. They are test cases, not research findings.{" "}
+              <button type="button" className="font-semibold underline underline-offset-2" onClick={() => deleteProject(project.id)}>
+                Delete this test copy
+              </button>
+            </Notice>
+          )}
+          {project.kind === "demo" && (
+            <p role="note" className="mt-3 flex items-center gap-2 text-sm text-ink-soft">
+              <FlaskConical aria-hidden className="size-4 shrink-0" />
+              Demo project: real Crossref records saved on {shortDate(FIXTURES_FETCHED_AT)}. Any sample output is labelled where it appears.
             </p>
-            <h1 className="mt-0.5 max-w-4xl font-display text-[1.6rem] leading-[1.12] font-bold tracking-[-0.03em] text-balance sm:text-[2.25rem]">
-              {project.question.trim() || <span className="text-ink-faint">No question yet. Write one in the Plan step.</span>}
-            </h1>
-          </Container>
+          )}
+        </header>
 
-          <Container className="mt-5">
-            <section aria-label="Project summary" className="field-band rounded-[24px] p-5 shadow-2 sm:rounded-[28px] sm:p-7">
-              <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
-                <div>
-                  <p className="text-[0.8125rem] font-semibold text-on-field-2">
-                    <span className="num">{doneCount} of 4</span> steps done
-                  </p>
-                  <span aria-hidden className="mt-2 block h-1.5 w-full max-w-sm rounded-full bg-white/15">
-                    <span className="block h-full rounded-full bg-white transition-[width] duration-500 ease-out" style={{ width: `${(doneCount / 4) * 100}%` }} />
-                  </span>
-                  <p className="mt-4 font-display text-[1.25rem] leading-tight font-bold tracking-[-0.015em] sm:text-[1.6rem]">
-                    {next ? NEXT_ACTION[next.id] : "Your brief is reviewed and ready to export"}
-                  </p>
-                  <p className="mt-1 text-[0.9375rem] text-on-field-2">{next ? next.state : evaluation.summary}</p>
-                  {(next ? next.id !== step : step !== "brief") && (
-                    <button
-                      type="button"
-                      onClick={() => setStep(next ? next.id : "brief")}
-                      className="mt-4 flex h-11 items-center gap-2 rounded-full bg-white px-5 text-[0.9375rem] font-semibold text-field transition-transform hover:bg-s2 active:scale-[0.98]"
-                    >
-                      {next ? `Go to ${next.label}` : "Go to Brief and export"} <ArrowRight aria-hidden className="size-4" />
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:w-[32rem]">
-                  <Stat label="Sources" value={project.sources.length} />
-                  <Stat label="Passages" value={project.evidenceSet.ids.length} />
-                  <Stat label="Claims" value={evaluation.counts.total} />
-                  <Stat label="Need review" value={evaluation.counts.needsReview} tone={evaluation.counts.needsReview > 0 ? "attention" : undefined} />
-                </div>
-              </div>
-            </section>
-          </Container>
+        <div key={step} className="animate-page-enter px-4 py-6 sm:px-8 sm:py-8">
+          {step === "plan" && <PlanStep onApproved={() => setStep(project.sources.length ? "library" : "discover")} />}
+          {step === "discover" && <DiscoverStep goToPlan={() => setStep("plan")} />}
+          {step === "library" && <LibraryStep goToDiscover={() => setStep("discover")} goToBrief={() => setStep("brief")} />}
+          {step === "brief" && <BriefStep inspectingId={inspecting} onInspect={inspect} goToLibrary={() => setStep("library")} goToPlan={() => setStep("plan")} />}
+        </div>
+      </main>
 
-          <Container className="mt-8">
-            <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h2 className="font-display text-[1.5rem] leading-tight font-bold tracking-[-0.015em] sm:text-[1.75rem]">{current?.label}</h2>
-              <span className="rounded-full bg-s2 px-2.5 py-1 text-[0.8125rem] font-semibold text-ink-soft">{current?.state}</span>
-            </div>
-            <div key={step} className="animate-page-enter">
-              {step === "plan" && <PlanStep onApproved={() => setStep(project.sources.length ? "library" : "discover")} />}
-              {step === "discover" && <DiscoverStep goToPlan={() => setStep("plan")} />}
-              {step === "library" && <LibraryStep goToDiscover={() => setStep("discover")} goToBrief={() => setStep("brief")} />}
-              {step === "brief" && <BriefStep inspectingId={inspecting} onInspect={inspect} goToLibrary={() => setStep("library")} goToPlan={() => setStep("plan")} />}
-            </div>
-          </Container>
-          <Footer />
-        </main>
-
-        {showAside && inspecting && (
-          <aside aria-label="Claim Inspector" className="thin-scroll sticky top-3 my-3 mr-4 h-[calc(100dvh-1.5rem)] w-[27rem] shrink-0 overflow-y-auto rounded-[24px] border border-line bg-surface shadow-2">
-            <ClaimInspector key={inspecting} claimId={inspecting} onClose={() => setInspecting(null)} />
-          </aside>
-        )}
-      </div>
-      {!wide && (
-        <Drawer open={inspecting !== null} side="right" label="Claim Inspector" onClose={() => setInspecting(null)}>
+      {showAside && inspecting && (
+        <aside aria-label="Claim Inspector" className="thin-scroll sticky top-0 h-dvh overflow-y-auto border-l border-line bg-surface">
+          <ClaimInspector key={inspecting} claimId={inspecting} onClose={() => setInspecting(null)} />
+        </aside>
+      )}
+      {!inspectorColumn && (
+        <Drawer open={inspecting !== null} side="right" label="Claim Inspector" bare onClose={() => setInspecting(null)}>
           {inspecting && <ClaimInspector key={inspecting} claimId={inspecting} onClose={() => setInspecting(null)} />}
         </Drawer>
       )}
@@ -347,14 +334,14 @@ function Shell() {
       <div className="grid min-h-dvh place-items-center" role="status">
         <div className="flex flex-col items-center gap-3">
           <Brand />
-          <p className="text-sm text-ink-faint">Opening your workspace…</p>
+          <p className="text-sm text-ink-soft">Opening your workspace…</p>
         </div>
       </div>
     );
   }
 
   const problem = storageProblem && (
-    <Container className="pt-4">
+    <div className="mx-auto max-w-6xl px-4 pt-4 sm:px-6">
       <Notice tone="warn" icon={TriangleAlert} role="alert">
         {storageProblem === "version"
           ? "The work saved in this browser was made by a different version of TRACE and could not be opened."
@@ -364,7 +351,7 @@ function Shell() {
           Dismiss
         </button>
       </Notice>
-    </Container>
+    </div>
   );
 
   if (state.projects.length === 0 || !project) {

@@ -15,12 +15,16 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   icon?: LucideIcon;
 };
 
-/* Mockup G actions: rounded-full, brand fill for the main action, white with a hairline for the rest. */
+/*
+ * One control height scale shared with inputs: md 40px, sm 32px. A disabled primary keeps a
+ * solid, legible fill instead of fading, so it reads as "not yet" rather than "broken".
+ */
 const BUTTON_VARIANT = {
-  primary: "bg-brand text-white border-brand shadow-[0_8px_20px_rgb(75_54_83/0.22)] enabled:hover:bg-brand-deep enabled:hover:border-brand-deep enabled:hover:-translate-y-px enabled:hover:shadow-[0_12px_26px_rgb(75_54_83/0.28)]",
-  secondary: "bg-surface text-ink border-line-strong shadow-1 enabled:hover:bg-s2 enabled:hover:-translate-y-px",
-  ghost: "bg-transparent text-ink-soft border-transparent enabled:hover:bg-s2 enabled:hover:text-ink",
-  danger: "bg-surface text-bad border-bad/30 enabled:hover:bg-bad-tint enabled:hover:border-bad/50",
+  primary:
+    "bg-brand text-white border-brand shadow-[0_4px_12px_rgb(75_54_83/0.18)] enabled:hover:bg-brand-deep enabled:hover:border-brand-deep disabled:bg-s3 disabled:border-s3 disabled:text-ink-faint disabled:shadow-none",
+  secondary: "bg-surface text-ink border-line-strong enabled:hover:bg-s2 disabled:text-ink-faint disabled:bg-surface",
+  ghost: "bg-transparent text-ink-soft border-transparent enabled:hover:bg-s2 enabled:hover:text-ink disabled:text-ink-faint/70",
+  danger: "bg-surface text-bad border-bad/30 enabled:hover:bg-bad-tint disabled:text-ink-faint",
 };
 
 export function Button({ variant = "secondary", size = "md", icon: Icon, className, children, type = "button", ...props }: ButtonProps) {
@@ -28,15 +32,15 @@ export function Button({ variant = "secondary", size = "md", icon: Icon, classNa
     <button
       type={type}
       className={cx(
-        "inline-flex max-w-full shrink-0 items-center justify-center gap-1.5 rounded-full border text-center font-bold transition-[transform,box-shadow,background-color,border-color] duration-150 ease-out enabled:active:scale-[0.98]",
-        "disabled:cursor-not-allowed disabled:opacity-45",
-        size === "sm" ? "min-h-9 px-3.5 text-[0.8125rem]" : "min-h-11 px-5 text-[0.9375rem]",
+        "inline-flex max-w-full shrink-0 items-center justify-center gap-2 rounded-full border text-center text-sm font-semibold transition-colors duration-150 ease-out",
+        "disabled:cursor-not-allowed",
+        size === "sm" ? "min-h-8 px-3" : "min-h-10 px-4",
         BUTTON_VARIANT[variant],
         className,
       )}
       {...props}
     >
-      {Icon && <Icon aria-hidden className={size === "sm" ? "size-3.5" : "size-4"} />}
+      {Icon && <Icon aria-hidden className="size-4 shrink-0" />}
       {children}
     </button>
   );
@@ -51,12 +55,12 @@ const CHIP_TONE: Record<Tone, string> = {
   warn: "bg-warn-tint text-warn",
   bad: "bg-bad-tint text-bad",
   neutral: "bg-s2 text-ink-soft",
-  sample: "bg-info-tint text-info border border-dashed border-info/45",
+  sample: "bg-info-tint text-info outline outline-1 -outline-offset-1 outline-dashed outline-info/50",
 };
 
 export function Chip({ tone = "neutral", icon: Icon, children, title }: { tone?: Tone; icon?: LucideIcon; children: React.ReactNode; title?: string }) {
   return (
-    <span title={title} className={cx("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.8125rem] leading-4 font-semibold whitespace-nowrap", CHIP_TONE[tone])}>
+    <span title={title} className={cx("inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold whitespace-nowrap", CHIP_TONE[tone])}>
       {Icon && <Icon aria-hidden className="size-3.5 shrink-0" />}
       {children}
     </span>
@@ -66,32 +70,32 @@ export function Chip({ tone = "neutral", icon: Icon, children, title }: { tone?:
 // --- Form fields ---------------------------------------------------------------------------
 
 const INPUT =
-  "w-full rounded-[14px] border border-line bg-surface px-3.5 py-2.5 text-[0.9375rem] text-ink transition-[border-color,box-shadow] placeholder:text-ink-faint/75 hover:border-line-strong focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_rgb(201_85_159/0.18)] focus-visible:outline-none disabled:bg-s2 disabled:text-ink-faint";
+  "w-full rounded-lg border border-line-strong bg-surface px-3 text-base text-ink transition-[border-color,box-shadow] duration-150 placeholder:text-ink-faint/70 hover:border-ink-faint/40 focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_rgb(201_85_159/0.16)] focus-visible:outline-none disabled:bg-s2 disabled:text-ink-faint";
 
 export function Field({ label, hint, children, className }: { label: string; hint?: string; children: (id: string) => React.ReactNode; className?: string }) {
   const id = useId();
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-ink">
+      <label htmlFor={id} className="mb-2 block text-sm font-semibold text-ink">
         {label}
       </label>
       {children(id)}
-      {hint && <p className="mt-1.5 text-[0.8125rem] text-ink-faint">{hint}</p>}
+      {hint && <p className="mt-2 text-sm text-ink-soft">{hint}</p>}
     </div>
   );
 }
 
 export function TextInput({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cx(INPUT, className)} {...props} />;
+  return <input className={cx(INPUT, "h-10", className)} {...props} />;
 }
 
 export function TextArea({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cx(INPUT, "resize-y leading-relaxed", className)} {...props} />;
+  return <textarea className={cx(INPUT, "resize-y py-2 leading-relaxed", className)} {...props} />;
 }
 
 export function Select({ className, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={cx(INPUT, "pr-8", className)} {...props}>
+    <select className={cx(INPUT, "h-10 pr-8", className)} {...props}>
       {children}
     </select>
   );
@@ -109,8 +113,8 @@ const NOTICE_TONE: Record<Tone, string> = {
 
 export function Notice({ tone = "neutral", icon: Icon, children, className, role }: { tone?: Tone; icon?: LucideIcon; children: React.ReactNode; className?: string; role?: "status" | "alert" | "note" }) {
   return (
-    <div role={role} className={cx("flex gap-3 rounded-[18px] border px-4 py-3 text-[0.9375rem]", NOTICE_TONE[tone], className)}>
-      {Icon && <Icon aria-hidden className="mt-0.5 size-[18px] shrink-0" />}
+    <div role={role} className={cx("flex gap-3 rounded-xl border px-4 py-3 text-sm leading-relaxed", NOTICE_TONE[tone], className)}>
+      {Icon && <Icon aria-hidden className="mt-0.5 size-4 shrink-0" />}
       <div className="min-w-0 flex-1 text-ink">{children}</div>
     </div>
   );
@@ -118,22 +122,21 @@ export function Notice({ tone = "neutral", icon: Icon, children, className, role
 
 export function Empty({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
-    <div className="rounded-[22px] border border-dashed border-line-strong bg-canvas/60 px-6 py-10 text-center">
-      <span aria-hidden className="mx-auto mb-3 grid size-12 place-items-center rounded-[14px] bg-accent-soft text-accent-text">
+    <div className="rounded-xl border border-dashed border-line-strong px-6 py-12 text-center">
+      <span aria-hidden className="mx-auto mb-4 grid size-10 place-items-center rounded-xl bg-accent-soft text-accent-text">
         <Inbox className="size-5" />
       </span>
-      <p className="text-[1.0625rem] font-semibold text-ink">{title}</p>
-      {children && <div className="mx-auto mt-1.5 max-w-prose text-[0.9375rem] text-ink-soft">{children}</div>}
+      <p className="text-base font-semibold text-ink">{title}</p>
+      {children && <div className="mx-auto mt-2 max-w-prose text-sm leading-relaxed text-ink-soft">{children}</div>}
     </div>
   );
 }
 
-/* Mockup G SectionHead: display face, large and tight. */
 export function SectionTitle({ children, aside }: { children: React.ReactNode; aside?: React.ReactNode }) {
   return (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
-      <h2 className="font-display text-[1.3rem] leading-tight font-bold tracking-[-0.025em] text-ink sm:text-[1.45rem]">{children}</h2>
-      {aside && <div className="text-sm text-ink-faint">{aside}</div>}
+    <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <h2 className="text-xl font-bold tracking-[-0.02em] text-ink">{children}</h2>
+      {aside && <div className="text-sm text-ink-soft">{aside}</div>}
     </div>
   );
 }
@@ -182,7 +185,7 @@ export function ConfirmDialog({
   return (
     <dialog {...dialog} className="confirm" aria-labelledby={titleId}>
       <div className="p-5">
-        <h2 id={titleId} className="font-display text-base font-semibold tracking-[-0.01em]">
+        <h2 id={titleId} className="text-base font-semibold tracking-[-0.01em]">
           {title}
         </h2>
         <div className="mt-2 text-sm text-ink-soft">{children}</div>
@@ -203,15 +206,15 @@ export function ConfirmDialog({
   );
 }
 
-export function Drawer({ open, side, label, onClose, children }: { open: boolean; side: "left" | "right"; label: string; onClose: () => void; children: React.ReactNode }) {
+export function Drawer({ open, side, label, onClose, children, bare }: { open: boolean; side: "left" | "right"; label: string; onClose: () => void; children: React.ReactNode; bare?: boolean }) {
   const dialog = useDialog(open, onClose);
   return (
     <dialog {...dialog} className={cx("drawer", side)} aria-label={label}>
-      <div className={cx("sticky top-0 z-10 flex justify-end px-2 pt-2", "bg-surface/95")}>
+      {!bare && <div className="sticky top-0 z-10 flex justify-end bg-surface/95 px-2 pt-2">
         <Button variant="ghost" size="sm" icon={X} onClick={onClose}>
           Close
         </Button>
-      </div>
+      </div>}
       {open && children}
     </dialog>
   );

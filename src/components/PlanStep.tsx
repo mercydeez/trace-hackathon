@@ -6,7 +6,7 @@ import { isPlanApproved } from "@/lib/approvals";
 import { approvePlan, setPlan, setQuestion } from "@/lib/mutations";
 import { MAX_TERMS, suggestTerms } from "@/lib/plan";
 import { useProject, useStore } from "./store";
-import { Button, Field, Notice, SectionTitle, shortDate, TextArea, TextInput } from "./ui";
+import { Button, Field, shortDate, TextArea, TextInput } from "./ui";
 
 function yearOrNull(v: string): number | null {
   const n = Number(v);
@@ -30,91 +30,96 @@ export function PlanStep({ onApproved }: { onApproved: () => void }) {
   }
 
   return (
-    <div className="step-body space-y-5">
-      <section>
-        <SectionTitle>Your research question</SectionTitle>
-        <Field label="Question" hint="Write it as a question a source could answer.">
-          {(id) => (
-            <TextArea id={id} rows={2} maxLength={400} className="font-display text-lg" value={project.question} onChange={(e) => update((p) => setQuestion(p, e.target.value))} />
-          )}
-        </Field>
-      </section>
+    <div className="max-w-[720px]">
+      <div className="card divide-y divide-line">
+        <section className="p-6">
+          <h2 className="text-xl font-bold tracking-[-0.02em]">Question</h2>
+          <p className="mt-1 text-sm text-ink-soft">Write it as a question a source could answer.</p>
+          <label htmlFor="plan-question" className="sr-only">
+            Question
+          </label>
+          <TextArea id="plan-question" rows={2} maxLength={400} className="mt-4 text-lg" value={project.question} onChange={(e) => update((p) => setQuestion(p, e.target.value))} />
+        </section>
 
-      <section>
-        <SectionTitle aside="Suggested by a simple rule, not by AI. Edit freely.">Search plan</SectionTitle>
-        <div className="space-y-4">
-          <div>
-            <p className="mb-1 text-[0.8125rem] font-medium">Search terms</p>
-            <ul className="flex flex-wrap gap-1.5" aria-label="Search terms">
-              {plan.terms.map((t) => (
-                <li key={t} className="inline-flex items-center gap-1 rounded-sm border border-line-strong bg-surface py-0.5 pr-0.5 pl-2 text-sm">
-                  {t}
-                  <button type="button" aria-label={`Remove term ${t}`} className="rounded-sm p-0.5 text-ink-faint hover:bg-ink/10 hover:text-ink" onClick={() => update((p) => setPlan(p, { terms: p.plan.terms.filter((x) => x !== t) }))}>
-                    <X aria-hidden className="size-3.5" />
-                  </button>
-                </li>
-              ))}
-              {plan.terms.length === 0 && <li className="text-sm text-ink-faint">No terms yet. Add one, or suggest terms from the question.</li>}
-            </ul>
-            <form
-              className="mt-2 flex flex-wrap gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                addTerm();
-              }}
-            >
-              <TextInput aria-label="Add a search term" placeholder="Add a term" className="max-w-56" value={term} maxLength={40} onChange={(e) => setTerm(e.target.value)} />
-              <Button type="submit" size="sm" disabled={!term.trim() || plan.terms.length >= MAX_TERMS}>
-                Add term
-              </Button>
-              <Button size="sm" variant="ghost" icon={Wand2} disabled={!project.question.trim()} onClick={() => update((p) => setPlan(p, { terms: suggestTerms(p.question) }))}>
-                Suggest terms from the question
-              </Button>
-            </form>
-          </div>
+        <section className="p-6">
+          <h2 className="text-xl font-bold tracking-[-0.02em]">Search plan</h2>
+          <p className="mt-1 text-sm text-ink-soft">Suggested by a simple rule from your question, not by AI. Edit freely.</p>
 
-          <div className="flex flex-wrap gap-4">
-            <Field label="Published from (year)" className="w-40">
-              {(id) => <TextInput id={id} inputMode="numeric" placeholder="Any" defaultValue={plan.yearFrom ?? ""} key={`from-${plan.yearFrom}`} onBlur={(e) => update((p) => setPlan(p, { yearFrom: yearOrNull(e.target.value) }))} />}
-            </Field>
-            <Field label="Published to (year)" className="w-40">
-              {(id) => <TextInput id={id} inputMode="numeric" placeholder="Any" defaultValue={plan.yearTo ?? ""} key={`to-${plan.yearTo}`} onBlur={(e) => update((p) => setPlan(p, { yearTo: yearOrNull(e.target.value) }))} />}
-            </Field>
-          </div>
-
-          <Field label="Scope note" hint="What you will and will not look at. This stays in your project; it is not sent anywhere.">
-            {(id) => <TextArea id={id} rows={2} maxLength={500} placeholder="For example: studies with students; exclude animal research." value={plan.scopeNote} onChange={(e) => update((p) => setPlan(p, { scopeNote: e.target.value }))} />}
-          </Field>
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        {approved ? (
-          <Notice tone="ok" icon={Check} role="status">
-            You approved this plan on {shortDate(plan.approvedAt)}. Changing the question, terms or years will ask for approval again and mark the evidence set and claims for another look.
-          </Notice>
-        ) : everApproved ? (
-          <Notice tone="warn" icon={RotateCcw} role="status">
-            The question or scope changed after you approved the plan. Approve it again. Your evidence set and claims will also need another look.
-          </Notice>
-        ) : (
-          <p className="text-sm text-ink-soft">Searching and drafting use this plan. Approve it when the question and terms say what you mean.</p>
-        )}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="primary"
-            icon={Check}
-            disabled={approved || !canApprove}
-            onClick={() => {
-              update((p) => approvePlan(p, new Date().toISOString()), "Approved the search plan.");
-              onApproved();
+          <p className="mt-6 mb-2 text-sm font-semibold">Search terms</p>
+          <ul className="flex flex-wrap gap-2" aria-label="Search terms">
+            {plan.terms.map((t) => (
+              <li key={t} className="inline-flex h-8 items-center gap-1 rounded-full bg-s2 pr-1 pl-3 text-sm font-medium">
+                {t}
+                <button type="button" aria-label={`Remove term ${t}`} className="grid size-6 place-items-center rounded-full text-ink-soft hover:bg-s3 hover:text-ink" onClick={() => update((p) => setPlan(p, { terms: p.plan.terms.filter((x) => x !== t) }))}>
+                  <X aria-hidden className="size-3.5" />
+                </button>
+              </li>
+            ))}
+            {plan.terms.length === 0 && <li className="text-sm text-ink-soft">No terms yet. Add one, or suggest terms from the question.</li>}
+          </ul>
+          <form
+            className="mt-3 flex flex-wrap items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              addTerm();
             }}
           >
-            {approved ? "Plan approved" : "Approve plan"}
-          </Button>
-          {!canApprove && <span className="text-sm text-ink-faint">Add a question and at least one search term first.</span>}
+            <div className="w-56">
+              <TextInput aria-label="Add a search term" placeholder="Add a term" value={term} maxLength={40} onChange={(e) => setTerm(e.target.value)} />
+            </div>
+            <Button type="submit" disabled={!term.trim() || plan.terms.length >= MAX_TERMS}>
+              Add term
+            </Button>
+            <Button variant="ghost" icon={Wand2} disabled={!project.question.trim()} onClick={() => update((p) => setPlan(p, { terms: suggestTerms(p.question) }))}>
+              Suggest terms from the question
+            </Button>
+          </form>
+
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:max-w-sm">
+            <Field label="Published from">
+              {(id) => <TextInput id={id} inputMode="numeric" placeholder="Any year" defaultValue={plan.yearFrom ?? ""} key={`from-${plan.yearFrom}`} onBlur={(e) => update((p) => setPlan(p, { yearFrom: yearOrNull(e.target.value) }))} />}
+            </Field>
+            <Field label="Published to">
+              {(id) => <TextInput id={id} inputMode="numeric" placeholder="Any year" defaultValue={plan.yearTo ?? ""} key={`to-${plan.yearTo}`} onBlur={(e) => update((p) => setPlan(p, { yearTo: yearOrNull(e.target.value) }))} />}
+            </Field>
+          </div>
+
+          <Field label="Scope note" hint="What you will and will not look at. It stays in your project and is not sent anywhere." className="mt-6">
+            {(id) => <TextArea id={id} rows={2} maxLength={500} placeholder="For example: studies with students; exclude animal research." value={plan.scopeNote} onChange={(e) => update((p) => setPlan(p, { scopeNote: e.target.value }))} />}
+          </Field>
+        </section>
+      </div>
+
+      <div className="float sticky bottom-4 z-10 mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl px-6 py-4">
+        <div className="min-w-0 flex-1 basis-64 text-sm" role="status">
+          {approved ? (
+            <p className="flex items-start gap-2 text-ok">
+              <Check aria-hidden className="mt-0.5 size-4 shrink-0" />
+              <span>
+                You approved this plan on {shortDate(plan.approvedAt)}. <span className="text-ink-soft">Changing the question, terms or years asks for approval again.</span>
+              </span>
+            </p>
+          ) : everApproved ? (
+            <p className="flex items-start gap-2 text-warn">
+              <RotateCcw aria-hidden className="mt-0.5 size-4 shrink-0" />
+              <span>The question or scope changed after you approved the plan. Approve it again; your evidence set and claims will need another look.</span>
+            </p>
+          ) : (
+            <p className="text-ink-soft">{canApprove ? "Search and drafting use this plan. Approve it when it says what you mean." : "Add a question and at least one search term first."}</p>
+          )}
         </div>
-      </section>
+        <Button
+          variant="primary"
+          icon={Check}
+          disabled={approved || !canApprove}
+          onClick={() => {
+            update((p) => approvePlan(p, new Date().toISOString()), "Approved the search plan.");
+            onApproved();
+          }}
+        >
+          {approved ? "Plan approved" : "Approve plan"}
+        </Button>
+      </div>
     </div>
   );
 }

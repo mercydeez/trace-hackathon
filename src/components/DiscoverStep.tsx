@@ -34,15 +34,15 @@ function ResultRow({ work }: { work: WorkRecord }) {
   const r = work.record;
 
   return (
-    <li className="border-b border-line py-3.5 last:border-b-0">
+    <li className="border-b border-line py-4 last:border-b-0">
       <div className="flex items-start gap-4">
         <div className="min-w-0 flex-1">
-          <h3 className="font-display text-[0.975rem] leading-snug font-semibold text-ink">{r.title || "Untitled record"}</h3>
-          <p className="mt-0.5 text-sm text-ink-soft">
+          <h3 className="text-base leading-snug font-semibold text-ink">{r.title || "Untitled record"}</h3>
+          <p className="mt-1 text-sm text-ink-soft">
             {formatAuthorsShort(r.authors, r.year)}
             {r.container && <span>, {r.container}</span>}
           </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-ink-faint">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-ink-soft">
             {work.abstract ? (
               <Chip tone="ok" icon={FileText}>
                 Abstract available
@@ -52,18 +52,17 @@ function ResultRow({ work }: { work: WorkRecord }) {
                 No abstract in Crossref
               </Chip>
             )}
-            <a href={doiUrl(work.doi)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 break-all underline decoration-line-strong underline-offset-2 hover:text-ink">
+            <a href={doiUrl(work.doi)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 break-all text-accent-text underline decoration-accent/30 underline-offset-2 hover:decoration-accent">
               {work.doi}
               <ExternalLink aria-hidden className="size-3 shrink-0" />
             </a>
-            <span>From Crossref, just now</span>
             {work.abstract && (
-              <button type="button" className="underline decoration-line-strong underline-offset-2 hover:text-ink" aria-expanded={open} onClick={() => setOpen(!open)}>
+              <button type="button" className="font-semibold text-ink underline decoration-line-strong underline-offset-2 hover:decoration-ink" aria-expanded={open} onClick={() => setOpen(!open)}>
                 {open ? "Hide abstract" : "Read abstract"}
               </button>
             )}
           </div>
-          {open && work.abstract && <p className="mt-2 max-w-prose font-reading text-[0.9375rem] leading-relaxed whitespace-pre-line text-ink-soft">{work.abstract}</p>}
+          {open && work.abstract && <p className="mt-3 max-w-prose rounded-lg bg-s2 p-4 text-base leading-relaxed whitespace-pre-line text-ink">{work.abstract}</p>}
         </div>
         {saved ? (
           <Chip tone="neutral" icon={Check}>
@@ -107,9 +106,10 @@ function SearchPanel({ goToPlan }: { goToPlan: () => void }) {
 
   return (
     <section>
-      <SectionTitle aside="Live search of Crossref, a registry of scholarly publications.">Find sources</SectionTitle>
+      <SectionTitle>Find sources</SectionTitle>
+      <p className="-mt-2 mb-4 text-sm text-ink-soft">Live search of Crossref, a registry of scholarly publications.</p>
       {!planOk && (
-        <Notice tone="warn" className="mb-3">
+        <Notice tone="warn" className="mb-4">
           Approve your search plan before searching, so the search follows the question and scope you chose.{" "}
           <button type="button" className="font-medium underline underline-offset-2" onClick={goToPlan}>
             Go to the plan
@@ -129,11 +129,11 @@ function SearchPanel({ goToPlan }: { goToPlan: () => void }) {
           {busy ? "Searching…" : "Search Crossref"}
         </Button>
       </form>
-      <p className="mt-1.5 text-xs text-ink-faint">
+      <p className="mt-2 text-sm text-ink-soft">
         {yearFrom || yearTo ? `Limited to ${yearFrom ?? "any year"} to ${yearTo ?? "any year"}, from your plan.` : "No year limit in your plan."} Up to 10 results. Results are ordered by Crossref&rsquo;s relevance, not by quality.
       </p>
 
-      <div className="mt-4" aria-live="polite" aria-busy={busy}>
+      <div className="mt-6" aria-live="polite" aria-busy={busy}>
         {busy && <p className="py-6 text-sm text-ink-soft">Asking Crossref…</p>}
         {!busy && outcome === null && planOk && <Empty title="Nothing searched yet">Search with the terms from your plan, or change them here for this search only.</Empty>}
         {!busy && outcome && !outcome.ok && (
@@ -149,10 +149,10 @@ function SearchPanel({ goToPlan }: { goToPlan: () => void }) {
         )}
         {!busy && outcome?.ok && outcome.data.items.length > 0 && (
           <>
-            <p className="text-sm text-ink-soft">
+            <p className="border-b border-line pb-3 text-sm text-ink-soft">
               Showing {outcome.data.items.length} of about {outcome.data.total.toLocaleString("en-GB")} records for “{outcome.data.query}”.
             </p>
-            <ul className="mt-1">
+            <ul>
               {outcome.data.items.map((w) => (
                 <ResultRow key={w.doi} work={w} />
               ))}
@@ -253,14 +253,14 @@ function ByDoi() {
       <Field label="DOI" hint="Paste a DOI or a doi.org link. TRACE looks it up in Crossref.">
         {(id) => <TextInput id={id} required value={doi} maxLength={300} placeholder="10.1126/science.1152408" onChange={(e) => setDoi(e.target.value)} />}
       </Field>
-      <fieldset className="rounded border border-line p-3">
-        <legend className="px-1 text-[0.8125rem] font-medium">Checking a citation someone gave you? Enter its details to compare (optional)</legend>
-        <div className="grid gap-3 sm:grid-cols-[1fr_11rem_6rem]">
+      <fieldset className="rounded-lg bg-s2 p-4">
+        <legend className="float-left mb-3 w-full text-sm font-semibold">Checking a citation someone gave you? Add its details to compare (optional)</legend>
+        <div className="clear-both grid gap-3 @lg:grid-cols-[1fr_11rem_6rem]">
           <Field label="Title as given">{(id) => <TextInput id={id} value={title} maxLength={400} onChange={(e) => setTitle(e.target.value)} />}</Field>
           <Field label="First author's surname">{(id) => <TextInput id={id} value={author} maxLength={80} onChange={(e) => setAuthor(e.target.value)} />}</Field>
           <Field label="Year">{(id) => <TextInput id={id} inputMode="numeric" value={year} maxLength={4} onChange={(e) => setYear(e.target.value)} />}</Field>
         </div>
-        <p className="mt-2 text-xs text-ink-faint">TRACE saves the details as you give them and shows where they disagree with Crossref. It does not correct them for you.</p>
+        <p className="mt-3 text-sm text-ink-soft">TRACE saves the details as you give them and shows where they disagree with Crossref. It does not correct them for you.</p>
       </fieldset>
       <Button type="submit" variant="primary" disabled={busy || !doi.trim()}>
         {busy ? "Looking up…" : hasGiven ? "Look up and compare" : "Look up and save"}
@@ -330,7 +330,7 @@ function ByHand() {
       }}
     >
       <Notice tone="neutral">A reference you type in is saved exactly as entered and labelled “Entered by hand, not checked”. TRACE does not look it up or vouch for it.</Notice>
-      <div className="grid gap-3 sm:grid-cols-[12rem_1fr]">
+      <div className="grid gap-3 @lg:grid-cols-[12rem_1fr]">
         <Field label="Type">
           {(id) => (
             <Select id={id} value={type} onChange={(e) => setType(e.target.value)}>
@@ -344,13 +344,13 @@ function ByHand() {
         </Field>
         <Field label="Title">{(id) => <TextInput id={id} required value={title} maxLength={400} onChange={(e) => setTitle(e.target.value)} />}</Field>
       </div>
-      <div className="grid gap-3 sm:grid-cols-[1fr_6rem]">
+      <div className="grid gap-3 @lg:grid-cols-[1fr_6rem]">
         <Field label="Authors" hint="One per line, as Surname, Given names. An organisation goes on one line.">
           {(id) => <TextArea id={id} rows={2} value={authors} maxLength={600} onChange={(e) => setAuthors(e.target.value)} />}
         </Field>
         <Field label="Year">{(id) => <TextInput id={id} inputMode="numeric" value={year} maxLength={4} onChange={(e) => setYear(e.target.value)} />}</Field>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 @lg:grid-cols-2">
         <Field label="Journal, site or publisher">{(id) => <TextInput id={id} value={container} maxLength={200} onChange={(e) => setContainer(e.target.value)} />}</Field>
         <Field label="Web address">{(id) => <TextInput id={id} type="url" value={url} maxLength={500} placeholder="https://" onChange={(e) => setUrl(e.target.value)} />}</Field>
       </div>
@@ -369,18 +369,18 @@ function ByHand() {
 export function DiscoverStep({ goToPlan }: { goToPlan: () => void }) {
   const [mode, setMode] = useState<"doi" | "hand">("doi");
   return (
-    <div className="step-body space-y-5">
+    <div className="step-body grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_25rem]">
       <SearchPanel goToPlan={goToPlan} />
-      <section>
+      <section className="@container xl:sticky xl:top-6">
         <SectionTitle>Add a source you already have</SectionTitle>
-        <div role="tablist" aria-label="How to add a source" className="mb-4 inline-flex rounded border border-line-strong bg-surface p-0.5">
+        <div role="tablist" aria-label="How to add a source" className="mb-6 inline-flex rounded-full bg-s2 p-1">
           {(
             [
               ["doi", "By DOI"],
               ["hand", "By hand"],
             ] as const
           ).map(([id, label]) => (
-            <button key={id} type="button" role="tab" aria-selected={mode === id} className={cx("rounded-sm px-3 py-1 text-sm font-medium", mode === id ? "bg-brand-tint text-brand-deep" : "text-ink-soft hover:text-ink")} onClick={() => setMode(id)}>
+            <button key={id} type="button" role="tab" aria-selected={mode === id} className={cx("h-8 rounded-full px-4 text-sm font-semibold transition-colors", mode === id ? "bg-surface text-ink shadow-[0_1px_3px_rgb(75_54_83/0.15)]" : "text-ink-soft hover:text-ink")} onClick={() => setMode(id)}>
               {label}
             </button>
           ))}
