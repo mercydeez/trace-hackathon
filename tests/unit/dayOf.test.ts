@@ -57,6 +57,11 @@ describe("verdicts", () => {
     expect(judgeReference(rows[5]!, later.record, "search").verdict).toBe("uncertain");
     expect(judgeReference(rows[5]!, other.record, "search").verdict).toBe("no_close_match");
   });
+  it("a pasted subtitle the registry stores separately is not a different paper (unseen: Roediger & Karpicke, wrong year)", () => {
+    const p = parseReference("1) Roediger, H. L., & Karpicke, J. D. (2005). Test-enhanced learning: Taking memory tests improves long-term retention. Psychological Science, 17(3), 249–255. https://doi.org/10.1111/j.1467-9280.2006.01693.x");
+    expect(judgeReference(p, rec("Test-Enhanced Learning", "Roediger", 2006), "doi").verdict).toBe("needs_fix");
+    expect(judgeReference(p, rec("Test-Enhanced Teaching", "Roediger", 2006), "doi").verdict).toBe("mismatch");
+  });
   it("an unseen real DOI with a wrong year is Needs fix; with a wrong title it is Mismatch", () => {
     const p = parseReference("Smith, J. (2001). Learning in labs. Journal of Labs, 1, 1-2. https://doi.org/10.5555/unseen");
     expect(judgeReference(p, rec("Learning in labs", "Smith", 2003), "doi").verdict).toBe("needs_fix");

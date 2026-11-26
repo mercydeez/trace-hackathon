@@ -62,6 +62,12 @@ function checkTitle(cited: Biblio, reg: RegistryRecord): FieldCheck {
   if (a !== "" && jaccard(a, b) >= 0.8) {
     return { ...base, verdict: "note", message: "Title differs slightly from the registry. Check the wording." };
   }
+  // Registries often store the subtitle separately ("Test-Enhanced Learning" for "Test-enhanced learning: Taking
+  // memory tests…"). The same main title is a point to check, not a different paper.
+  const main = (s: string) => norm(s.split(/:\s/)[0] ?? s);
+  if (a !== "" && main(cited.title) !== "" && main(cited.title) === main(reg.title)) {
+    return { ...base, verdict: "note", message: "Main title agrees; the subtitle differs or is missing in the registry. Check the wording." };
+  }
   return { ...base, verdict: "mismatch", message: "Title does not match the registry record for this DOI." };
 }
 
