@@ -222,7 +222,7 @@ test("verification report: a blocked citation trap says so, from the same checks
   expect(download.suggestedFilename()).toMatch(/^trace-verification-TEST-COPY-.*\.md$/);
   const text = await readFile((await download.path())!, "utf8");
   expect(text).toContain("CITATION-TRAP TEST COPY");
-  expect(text).toContain("**Reviewed export: BLOCKED**");
+  expect(text).toMatch(/\*\*Review:\*\* blocked by \d+ open points/);
   expect(text).toContain("Excerpt not in stored text");
   expect(text).toContain("## AI-use statement");
 });

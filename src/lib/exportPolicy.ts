@@ -194,6 +194,35 @@ function textIssues(project: Project, cites: CitationMatch[]): Issue[] {
   return issues;
 }
 
+/** Where reference formatting stands for the export: not needed, running, failed, or done. */
+export type ReferenceState = "none" | "loading" | "failed" | "ready";
+
+export type ReadinessState = "empty" | "review_blocked" | "formatting" | "format_failed" | "ready";
+
+export interface ExportReadiness {
+  state: ReadinessState;
+  /** One line for the status bar and the verification report, e.g. "Review checks passed. Formatting references." */
+  label: string;
+  reviewedAvailable: boolean;
+  draftAvailable: boolean;
+}
+
+/**
+ * Review status and download readiness, kept apart: the review checks can pass while the references are
+ * still being formatted, or failed to format. The export controls and the verification report both read
+ * this, so they cannot disagree. `evaluateExport()` stays the gate; this only adds the formatting step.
+ */
+export function exportReadiness(evaluation: ExportEvaluation, refs: ReferenceState): ExportReadiness {
+  if (evaluation.counts.total === 0) return { state: "empty", label: "No claims yet, so there is nothing to export.", reviewedAvailable: false, draftAvailable: false };
+  if (!evaluation.eligible) {
+    const n = evaluation.blockers.length;
+    return { state: "review_blocked", label: `Review blocked by ${n} open point${n === 1 ? "" : "s"}. A draft can be downloaded.`, reviewedAvailable: false, draftAvailable: true };
+  }
+  if (refs === "loading") return { state: "formatting", label: "Review checks passed. Formatting references.", reviewedAvailable: false, draftAvailable: true };
+  if (refs === "failed") return { state: "format_failed", label: "Review checks passed. Reference formatting failed. Retry to download.", reviewedAvailable: false, draftAvailable: true };
+  return { state: "ready", label: "Review checks passed. The reviewed brief is ready to download.", reviewedAvailable: true, draftAvailable: true };
+}
+
 export interface ExportEvaluation {
   eligible: boolean;
   blockers: Issue[];

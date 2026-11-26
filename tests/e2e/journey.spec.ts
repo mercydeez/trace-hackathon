@@ -107,11 +107,21 @@ test("main journey: plan, discover, save, organise, reload, approve evidence, br
     : route.continue();
   await page.route("**/api/cite", failListFormatting);
   await page.getByLabel("Reference style").selectOption("harvard1");
-  await expect(page.getByText("Reference formatting failed", { exact: true })).toBeVisible();
+  // The status line, the disabled button and the verification report all say the same thing.
+  const status = page.getByRole("status", { name: "Export status" });
+  const failedLabel = "Review checks passed. Reference formatting failed. Retry to download.";
+  await expect(status).toContainText(failedLabel);
   await expect(reviewed).toBeDisabled();
+  const reportText = async () => {
+    const [d] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Download verification report" }).click()]);
+    return readFile((await d.path())!, "utf8");
+  };
+  expect(await reportText()).toContain(`**Download:** ${failedLabel}`);
   await page.unroute("**/api/cite", failListFormatting);
-  await page.getByRole("button", { name: "Retry reference formatting" }).click();
+  await status.getByRole("button", { name: "Retry" }).click();
   await expect(reviewed).toBeEnabled();
+  await expect(status).toContainText("Review checks passed. The reviewed brief is ready to download.");
+  expect(await reportText()).toContain("**Download:** Review checks passed. The reviewed brief is ready to download.");
 
   // Editing an approved claim makes the approval stale and closes the gate again.
   await inspector.getByText("Edit this claim").click();

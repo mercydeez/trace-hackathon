@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, FlaskConical, House, LayoutGrid, ShieldAlert, TriangleAlert } from "lucide-react";
+import { MotionConfig } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isEvidenceSetApproved, isPlanApproved } from "@/lib/approvals";
@@ -328,8 +329,11 @@ function Shell({ view }: { view: "app" | "home" }) {
 /** `view="home"` is the landing page at /home: always shown, with a way to resume the open project. */
 export function Workspace({ view = "app" }: { view?: "app" | "home" }) {
   return (
-    <StoreProvider>
-      <Shell view={view} />
-    </StoreProvider>
+    // reducedMotion="user": for visitors who ask for less motion, movement is dropped and only opacity changes remain.
+    <MotionConfig reducedMotion="user">
+      <StoreProvider>
+        <Shell view={view} />
+      </StoreProvider>
+    </MotionConfig>
   );
 }

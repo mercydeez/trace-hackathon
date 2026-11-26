@@ -1,14 +1,14 @@
 /**
  * A compact verification report, built from the same validators and state as the Claim Inspector and the
- * export gate (evaluateExport, sourceIdentity, the shared labels). It documents a project as it stands,
- * including a blocked one, and says plainly whether the reviewed export is allowed.
+ * export gate (evaluateExport, exportReadiness, sourceIdentity, the shared labels). It documents a project
+ * as it stands, including a blocked one, and states review status and download readiness separately.
  *
  * It never contains prompts, API payloads or complete source passages: claims are quoted, excerpts are
  * shortened, and evidence is described by where it came from.
  */
 import { aiUseStatement } from "./disclosure";
 import { citedSources } from "./exportMarkdown";
-import { evaluateExport, type ClaimInspection } from "./exportPolicy";
+import { evaluateExport, exportReadiness, type ClaimInspection, type ReferenceState } from "./exportPolicy";
 import { sourceIdentity } from "./identity";
 import { DECISION_LABEL, excerptLabel, trustLabel } from "./labels";
 import { formatAuthorsShort } from "./text";
@@ -44,8 +44,13 @@ function evidenceOrigin(i: ClaimInspection): string {
   return `abstract from ${p.provider === "openalex" ? "OpenAlex" : "Crossref"}, retrieved ${p.retrievedAt.slice(0, 10)}`;
 }
 
-export function buildVerificationReport(project: Project, now: string): { filename: string; text: string } {
+/**
+ * `references` is the formatting state the export controls see right now, so the report states the same
+ * readiness as the buttons beside it. Without it (tests, scripts) formatting is assumed to have finished.
+ */
+export function buildVerificationReport(project: Project, now: string, references: ReferenceState = "ready"): { filename: string; text: string } {
   const evaluation = evaluateExport(project);
+  const readiness = exportReadiness(evaluation, references);
   const out: string[] = [];
   const kind = project.kind === "trap" ? "CITATION-TRAP TEST COPY: two errors were planted on purpose." : project.kind === "demo" ? "DEMO PROJECT: real Crossref records saved for the demo; sample output is labelled." : null;
 
@@ -53,10 +58,11 @@ export function buildVerificationReport(project: Project, now: string): { filena
   out.push(`Generated ${now.slice(0, 16).replace("T", " ")} UTC from the checks TRACE runs in the browser. Project: ${project.name}.`);
   if (kind) out.push("", `> ${kind}`);
   out.push("", `**Question:** ${short(project.question, 300) || "(none yet)"}`, "");
+  // Two separate facts: whether the review checks pass, and whether the reviewed brief can be downloaded now.
   out.push(
-    evaluation.eligible
-      ? "**Reviewed export: ALLOWED.** Every included claim is approved and every check the export gate runs has passed."
-      : `**Reviewed export: BLOCKED** by ${evaluation.blockers.length} open point${evaluation.blockers.length === 1 ? "" : "s"} (listed below). Only a DRAFT can be exported now.`,
+    `**Review:** ${evaluation.counts.total === 0 ? "no claims to review yet." : evaluation.eligible ? "all checks passed and every included claim is approved." : `blocked by ${evaluation.blockers.length} open point${evaluation.blockers.length === 1 ? "" : "s"} (listed below).`}`,
+    "",
+    `**Download:** ${readiness.label}`,
     "",
   );
 
@@ -89,7 +95,7 @@ export function buildVerificationReport(project: Project, now: string): { filena
   }
 
   out.push("## Export blockers", "");
-  if (evaluation.blockers.length === 0) out.push("None. The reviewed export is allowed.");
+  if (evaluation.blockers.length === 0) out.push(evaluation.counts.total === 0 ? "None, but there are no claims yet." : "None. The review checks pass.");
   for (const b of evaluation.blockers) out.push(`- ${b.message}`);
   out.push("", "## AI-use statement", "", aiUseStatement(project, evaluation), "");
 

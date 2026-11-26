@@ -182,9 +182,10 @@ describe("export", () => {
     p = decideClaim(decideClaim(p, live[0]!.id, "approved"), mine.id, "approved");
 
     const d = buildDisclosure(p, evaluateExport(p)).join(" ");
-    expect(d).toContain("1 claim in this brief was drafted by a generative AI model (test-model-1)");
+    expect(d).toContain("A generative AI model (test-model-1) drafted one claim through TRACE.");
+    expect(d).toContain("The student approved and included one.");
     expect(d).toContain("5 passages that the student had approved");
-    expect(d).toContain("1 of these claims was then edited by the student");
+    expect(d).toContain("1 included claim was then edited by the student");
     expect(d).toContain("1 claim was written by the student without AI drafting");
     expect(d).toContain("TRACE rejected 1 AI-drafted item");
     expect(d).not.toContain("SAMPLE");

@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, ExternalLink, RotateCcw, TextSelect, Trash2, X } from "lucide-react";
+import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { sourceLink } from "@/lib/csl";
 import type { ExcerptCheck } from "@/lib/excerpt";
@@ -201,7 +202,8 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
   const link = source ? sourceLink(source.doi, source.cited) : null;
 
   return (
-    <div ref={root} className="flex flex-col">
+    // Opening a claim slides the inspector content in a few pixels, so the eye lands on the new evidence.
+    <motion.div ref={root} className="flex flex-col" initial={{ opacity: 0.4, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2, ease: "easeOut" }}>
       <header className="sticky top-0 z-10 border-b border-line bg-surface/95 px-6 pt-4 pb-4 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xl font-bold tracking-[-0.02em]">Claim {i.number}</h2>
@@ -361,7 +363,7 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
             <Check5 n={5} name="Your decision">
               <StatusChip badge={DECISION[decision]} />
               {decision === "stale" && <p>The claim, its passage or the research question changed after you approved it. Read it again and decide.</p>}
-              <p>You decide with the buttons at the top of this panel. TRACE never approves on your behalf.</p>
+              <p>Approve or reject with the buttons at the top of this panel. Only you can approve a claim.</p>
             </Check5>
           </ol>
         </section>
@@ -400,6 +402,6 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
       >
         The claim is removed from the brief. To keep a record that you considered it, reject it instead.
       </ConfirmDialog>
-    </div>
+    </motion.div>
   );
 }

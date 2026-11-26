@@ -21,7 +21,80 @@ export function passagesSentFor(project: Project, claims: Claim[]): number | nul
   return new Set(runs.flatMap((r) => r.evidenceIds)).size;
 }
 
-const modelsOf = (claims: Claim[]) => [...new Set(claims.map((c) => c.model).filter(Boolean))].join(", ") || "model not recorded";
+
+const WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+/** Small counts as words ("three claims"), larger ones as digits. */
+function count(n: number, one: string, many = `${one}s`): string {
+  return `${WORDS[n] ?? n} ${n === 1 ? one : many}`;
+}
+const word = (n: number) => WORDS[n] ?? String(n);
+
+function list(parts: string[]): string {
+  return parts.length <= 1 ? (parts[0] ?? "") : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+}
+
+/**
+ * What TRACE can substantiate about live AI drafting, from the recorded runs and each claim's decision.
+ * "Drafted" counts every claim a live run added, including ones the student later rejected or deleted;
+ * "included" counts the ones still in the work. Older projects whose claims are not linked to their run
+ * give a minimum ("at least"), never a guess.
+ */
+export interface DraftingRecord {
+  used: boolean;
+  drafted: number;
+  atLeast: boolean;
+  included: number;
+  approved: number;
+  rejected: number;
+  removed: number;
+  edited: number;
+  /** Items the model returned that TRACE discarded because they broke its output rules. */
+  discarded: number;
+  passages: number | null;
+  models: string;
+}
+
+export function draftingRecord(project: Project, evaluation: ExportEvaluation): DraftingRecord {
+  const runs = project.aiRuns.filter((r) => r.mode === "live");
+  const present = project.claims.filter((c) => c.origin === "live_ai");
+  const exact = runs.length > 0 && present.every((c) => c.runId && runs.some((r) => r.id === c.runId));
+  const drafted = exact ? runs.reduce((n, r) => n + r.accepted, 0) : present.length;
+  const includedIds = new Set(present.filter((c) => c.decision !== "rejected").map((c) => c.id));
+  const decisions = new Map(evaluation.inspections.map((i) => [i.claim.id, i.decision]));
+  const included = present.filter((c) => includedIds.has(c.id));
+  return {
+    used: runs.length > 0 || present.length > 0,
+    drafted,
+    atLeast: !exact && present.length > 0,
+    included: included.length,
+    approved: included.filter((c) => decisions.get(c.id) === "approved").length,
+    rejected: present.length - included.length,
+    removed: exact ? Math.max(0, drafted - present.length) : 0,
+    edited: included.filter((c) => c.edited).length,
+    discarded: runs.reduce((n, r) => n + r.rejected.length, 0),
+    // Passages behind the drafted claims: runs that produced at least one claim. A run whose output was all discarded drafted nothing.
+    passages: exact ? new Set(runs.filter((r) => r.accepted > 0).flatMap((r) => r.evidenceIds)).size : passagesSentFor(project, present),
+    models: [...new Set([...runs.map((r) => r.model), ...present.map((c) => c.model)].filter(Boolean))].join(", ") || "model not recorded",
+  };
+}
+
+/** "I approved and included two, rejected one" in the first person, or the same facts about "the student". */
+function decisionsSentence(d: DraftingRecord, who: "I" | "The student"): string {
+  const parts: string[] = [];
+  if (d.included) {
+    parts.push(
+      d.approved === d.included
+        ? `approved and included ${word(d.included)}`
+        : d.approved === 0
+          ? `included ${word(d.included)}, none approved yet`
+          : `included ${word(d.included)}, of which ${word(d.approved)} ${d.approved === 1 ? "is" : "are"} approved so far`,
+    );
+  }
+  if (d.rejected) parts.push(d.rejected === d.drafted && !d.atLeast ? `rejected ${d.drafted === 1 ? "it" : `all ${word(d.drafted)}`}` : `rejected ${word(d.rejected)}`);
+  if (d.removed) parts.push(`removed ${word(d.removed)}`);
+  if (!parts.length) return "";
+  return `${who} ${list(parts)}${d.included === 0 ? ", so none is included" : ""}.`;
+}
 
 /**
  * A short, paste-ready AI-use statement for the student's own submission. It states only what TRACE
@@ -36,22 +109,23 @@ export function aiUseStatement(project: Project, evaluation: ExportEvaluation): 
   const manual = claims.filter((c) => c.origin === "manual");
   const out: string[] = [];
 
-  if (claims.length === 0) out.push("This work contains no claims drafted or recorded in TRACE.");
-  if (live.length) {
-    const passages = passagesSentFor(project, live);
-    const edited = live.filter((c) => c.edited).length;
+  const d = draftingRecord(project, evaluation);
+  if (claims.length === 0 && !d.used) out.push("This work contains no claims drafted or recorded in TRACE.");
+  if (d.drafted > 0) {
+    const passages = d.passages === null ? "passages I had approved" : `${count(d.passages, "source passage")} I had approved`;
     out.push(
-      `I used TRACE with a generative AI model (${modelsOf(live)}) to draft ${plural(live.length, "claim")}` +
-        (passages === null ? ", from passages I had approved." : `, from ${plural(passages, "source passage")} I had approved; the model was sent the research question and those passages only.`) +
-        (edited ? ` I edited ${edited === live.length ? (live.length === 1 ? "it" : "all of them") : `${edited} of them`}.` : ""),
+      `AI (${d.models}) drafted ${d.atLeast ? "at least " : ""}${count(d.drafted, "claim")} in TRACE, from ${passages}; the model was sent the research question and those passages only.`,
     );
+    const decided = decisionsSentence(d, "I");
+    if (decided) out.push(decided);
+    if (d.edited) out.push(`I edited ${d.edited === d.included ? (d.included === 1 ? "the included claim" : `all ${word(d.included)} included claims`) : `${word(d.edited)} of the included claims`}.`);
+  } else if (d.used) {
+    out.push("AI drafting was used in this project, but none of its claims are included here.");
   }
+  if (d.discarded) out.push(`TRACE discarded ${count(d.discarded, "further item")} the model returned because ${d.discarded === 1 ? "it" : "they"} broke its output rules.`);
   if (sample.length) out.push(`${plural(sample.length, "claim")} ${sample.length === 1 ? "comes" : "come"} from TRACE's labelled SAMPLE brief, written during the tool's development; ${sample.length === 1 ? "it is" : "they are"} not the result of a live AI call.`);
   if (manual.length) out.push(`I wrote ${plural(manual.length, "claim")} myself, without AI drafting.`);
-  const usedLiveAi = project.aiRuns.some((r) => r.mode === "live");
-  if (claims.length && !live.length && !sample.length) {
-    out.push(usedLiveAi ? "AI drafting was used in this project, but none of its claims are included here." : "No generative AI drafted any claim.");
-  }
+  if (claims.length && !live.length && !sample.length && !d.used) out.push("No generative AI drafted any claim.");
   if (project.writing.trim()) out.push("I wrote the main text myself; TRACE did not generate it.");
   out.push(`References were formatted from registry records by Citation.js, not written by AI.`);
 
@@ -73,13 +147,13 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation, 
   const manual = included.filter((c) => c.origin === "manual");
   const lines: string[] = [];
 
-  if (live.length) {
-    const passages = passagesSentFor(project, live);
-    const edited = live.filter((c) => c.edited).length;
+  const d = draftingRecord(project, evaluation);
+  if (d.drafted > 0) {
     lines.push(
-      `${plural(live.length, "claim")} in this brief ${live.length === 1 ? "was" : "were"} drafted by a generative AI model (${modelsOf(live)}) ` +
-        `through TRACE. The model was sent the research question and ${passages === null ? "passages" : plural(passages, "passage")} that the student had approved, ` +
-        `and nothing else. ${edited ? `${plural(edited, "of these claims was", "of these claims were")} then edited by the student.` : "The student did not change their wording."}`,
+      `A generative AI model (${d.models}) drafted ${d.atLeast ? "at least " : ""}${count(d.drafted, "claim")} through TRACE. ` +
+        `The model was sent the research question and ${d.passages === null ? "passages" : plural(d.passages, "passage")} that the student had approved, and nothing else. ` +
+        `${decisionsSentence(d, "The student")} ` +
+        (d.included ? (d.edited ? `${plural(d.edited, "included claim was", "included claims were")} then edited by the student.` : "The student did not change the wording of the included claims.") : ""),
     );
   }
   if (sample.length) {
@@ -100,7 +174,7 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation, 
     );
   }
   if (!live.length && !sample.length) {
-    lines.push(project.aiRuns.some((r) => r.mode === "live") ? "TRACE's AI drafting was used in this project, but none of its claims are included." : "TRACE did not use generative AI to draft any included claims.");
+    lines.push(d.used ? (d.drafted > 0 ? "None of the AI-drafted claims is included in this brief." : "TRACE's AI drafting was used in this project, but none of its claims are included.") : "TRACE did not use generative AI to draft any included claims.");
   }
 
   // Only live runs: items rejected from the labelled sample brief were never AI-drafted.

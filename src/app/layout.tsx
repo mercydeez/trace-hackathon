@@ -3,7 +3,7 @@ import "@fontsource-variable/plus-jakarta-sans/wght.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TRACE — Research you can defend",
+  title: "TRACE | Research you can defend",
   description:
     "Find real sources, inspect the evidence, approve its use, and export a citation-backed brief with an honest AI-use disclosure.",
 };

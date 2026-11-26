@@ -1,13 +1,14 @@
 "use client";
 
 import { ArrowDown, Bot, Check, ClipboardCopy, Download, FileCheck2, Eye, FlaskConical, PenLine, Quote, RotateCcw, ScanSearch, TriangleAlert, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { callApi, type DraftResult } from "@/lib/api";
 import { evidenceSetFingerprint, isEvidenceSetApproved, isPlanApproved, selectedEvidence } from "@/lib/approvals";
 import { SAMPLE_RAW, sampleAvailable } from "@/lib/demo";
 import { aiUseStatement } from "@/lib/disclosure";
 import { buildBrief, citedSources, STYLE_LABEL } from "@/lib/exportMarkdown";
-import { evaluateExport, textCitations, type ClaimInspection, type ExportEvaluation } from "@/lib/exportPolicy";
+import { evaluateExport, exportReadiness, textCitations, type ClaimInspection, type ExportEvaluation, type ReferenceState } from "@/lib/exportPolicy";
 import { sourceIdentity } from "@/lib/identity";
 import { suffixOf, yearLetters } from "@/lib/inText";
 import { addClaims, approveEvidenceSet, claimsFromDraft, decideClaim, manualClaim, setCitationStyle, setWriting, toggleEvidence } from "@/lib/mutations";
@@ -433,7 +434,7 @@ function WritingPanel({ refs }: { refs: References }) {
     <section>
       <SectionTitle aside={`${words} word${words === 1 ? "" : "s"}`}>Your text</SectionTitle>
       <p className="-mt-2 mb-4 max-w-prose text-sm leading-relaxed text-ink-soft">
-        Write your paragraph or essay here and cite as you go. Every in-text citation is checked against the sources in this project as you type. TRACE never writes this text for you.
+        Write your text here and cite as you go. Each in-text citation is checked against this project&rsquo;s sources as you type. TRACE does not write this text.
       </p>
       <div className="flex flex-wrap items-end gap-2">
         <Field label="Source to cite" className="min-w-0 flex-1 basis-72">
@@ -543,7 +544,10 @@ function ExportPanel({ evaluation, refs, retryReferences, onInspect, goToPlan }:
   const cited = citedSources(project);
   const refsReady = cited.length === 0 || (refs.state === "ok" && cited.every((s) => refs.byId.has(s.id)));
   const refsFailed = refs.state === "error" || (refs.state === "ok" && !refsReady);
-  const canReview = evaluation.eligible && refsReady;
+  // One readiness state for the status line, both download buttons and the verification report.
+  const refState: ReferenceState = cited.length === 0 ? "none" : refsReady ? "ready" : refsFailed ? "failed" : "loading";
+  const readiness = exportReadiness(evaluation, refState);
+  const canReview = readiness.reviewedAvailable;
   const ordered = refsReady ? refs.ordered : null;
 
   function download(mode: "reviewed" | "draft") {
@@ -654,17 +658,31 @@ function ExportPanel({ evaluation, refs, retryReferences, onInspect, goToPlan }:
 
       <div className="float sticky bottom-2 z-10 rounded-xl px-3 py-3 sm:bottom-4 sm:px-5">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <p className="flex min-w-0 flex-1 basis-36 items-center gap-2 text-sm" role="status">
-            {canReview ? (
-              <span className="font-semibold text-ok">Ready to export as reviewed.</span>
-            ) : evaluation.eligible ? (
-              <a href="#export-review" className="font-semibold text-ink-soft underline-offset-4 hover:underline">{refsFailed ? "Reference formatting failed" : "Formatting references…"}</a>
-            ) : (
-              <a href="#export-review" className="inline-flex items-center gap-1.5 font-semibold text-warn underline-offset-4 hover:underline">
-                {blockers} to resolve <ArrowDown aria-hidden className="size-3.5" />
-              </a>
-            )}
-          </p>
+          <div className="min-w-0 flex-1 basis-36 text-sm" role="status" aria-label="Export status" data-readiness={readiness.state}>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.p
+                key={readiness.state}
+                className="flex flex-wrap items-center gap-2"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+              >
+                {readiness.state === "review_blocked" ? (
+                  <a href="#export-review" className="inline-flex items-center gap-1.5 font-semibold text-warn underline-offset-4 hover:underline">
+                    {blockers} to resolve <ArrowDown aria-hidden className="size-3.5" />
+                  </a>
+                ) : (
+                  <span className={cx("font-semibold", readiness.state === "ready" ? "text-ok" : readiness.state === "format_failed" ? "text-bad" : "text-ink-soft")}>{readiness.label}</span>
+                )}
+                {readiness.state === "format_failed" && (
+                  <Button size="sm" icon={RotateCcw} onClick={retryReferences}>
+                    Retry
+                  </Button>
+                )}
+              </motion.p>
+            </AnimatePresence>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button
               variant="ghost"
@@ -672,16 +690,16 @@ function ExportPanel({ evaluation, refs, retryReferences, onInspect, goToPlan }:
               aria-label="Download verification report"
               title="A short report of every check, the export blockers and the AI-use statement"
               onClick={() => {
-                const r = buildVerificationReport(project, new Date().toISOString());
+                const r = buildVerificationReport(project, new Date().toISOString(), refState);
                 downloadText(r.filename, r.text);
               }}
             >
               <span className="sm:hidden">Report</span><span className="hidden sm:inline">Verification report</span>
             </Button>
-            <Button icon={Download} disabled={project.claims.length === 0} aria-label="Download draft, marked as not reviewed" onClick={() => download("draft")}>
+            <Button icon={Download} disabled={!readiness.draftAvailable} aria-label="Download draft, marked as not reviewed" onClick={() => download("draft")}>
               <span className="sm:hidden">Draft</span><span className="hidden sm:inline">Download draft</span>
             </Button>
-            <Button variant="primary" icon={Download} aria-label="Download reviewed brief" disabled={!canReview} title={!evaluation.eligible ? "Resolve the points listed above first" : refsFailed ? "Retry reference formatting" : !refsReady ? "Waiting for the references to be formatted" : undefined} onClick={() => download("reviewed")}>
+            <Button variant="primary" icon={Download} aria-label="Download reviewed brief" disabled={!canReview} title={canReview ? undefined : readiness.label} onClick={() => download("reviewed")}>
               <span className="sm:hidden">Reviewed brief</span><span className="hidden sm:inline">Download reviewed brief</span>
             </Button>
           </div>

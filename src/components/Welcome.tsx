@@ -69,8 +69,17 @@ const WORKFLOW = [
 ];
 
 function Workflow() {
+  const reduce = useReducedMotion();
   return (
-    <section aria-labelledby="workflow-title" className="mt-20 border-t border-line-strong pt-10 lg:mt-28">
+    // One subtle reveal as the section scrolls into view. It starts mostly opaque, so it is readable throughout.
+    <motion.section
+      aria-labelledby="workflow-title"
+      className="mt-20 border-t border-line-strong pt-10 lg:mt-28"
+      initial={reduce ? false : { opacity: 0.55, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+    >
       <div className="grid gap-8 lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] lg:gap-16">
         <h2 id="workflow-title" className="text-3xl font-bold tracking-[-0.03em] text-balance text-brand-deep">Find, compare, approve, export.</h2>
         <ol className="grid gap-x-10 gap-y-8 sm:grid-cols-2">
@@ -83,7 +92,7 @@ function Workflow() {
           ))}
         </ol>
       </div>
-    </section>
+    </motion.section>
   );
 }
 

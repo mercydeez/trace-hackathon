@@ -95,8 +95,9 @@ describe("AI-use statement", () => {
   it("states live drafting, its model and passages, and does not claim approval before it happened", () => {
     const p = liveProject();
     const s = aiUseStatement(p, evaluateExport(p));
-    expect(s).toContain("generative AI model (gemini-x)");
-    expect(s).toContain("from 2 source passages I had approved");
+    expect(s).toContain("AI (gemini-x) drafted three claims in TRACE");
+    expect(s).toContain("from two source passages I had approved");
+    expect(s).toContain("I included three, none approved yet.");
     expect(s).toMatch(/I have approved 0 of \d+ claims so far/);
     expect(s).not.toContain("I reviewed and approved");
   });
@@ -108,7 +109,8 @@ describe("AI-use statement", () => {
     for (const c of p.claims) p = decideClaim(p, c.id, "approved");
     const s = aiUseStatement(p, evaluateExport(p));
     expect(s).toContain(`I reviewed and approved all ${p.claims.length} claims`);
-    expect(s).toContain("I edited 1 of them");
+    expect(s).toContain("I approved and included three.");
+    expect(s).toContain("I edited one of the included claims.");
   });
 
   it("labels sample output as sample, and says when no AI drafted anything", () => {
@@ -127,6 +129,8 @@ describe("AI-use statement", () => {
     const p = liveProject();
     const unlinked = { ...p, claims: p.claims.map(({ runId: _r, ...c }) => (void _r, c)) };
     expect(passagesSentFor(unlinked, unlinked.claims)).toBeNull();
-    expect(aiUseStatement(unlinked, evaluateExport(unlinked))).toContain("from passages I had approved.");
+    const s = aiUseStatement(unlinked, evaluateExport(unlinked));
+    // Without run records TRACE can only vouch for a minimum and cannot name the passages.
+    expect(s).toContain("AI (gemini-x) drafted at least three claims in TRACE, from passages I had approved;");
   });
 });

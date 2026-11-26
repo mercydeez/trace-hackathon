@@ -98,7 +98,10 @@ export function EvidencePreview({ onRunTrap }: { onRunTrap: () => void }) {
           <AnimatePresence mode="wait" initial={false}>
             <motion.div key={active} initial={{ opacity: 0, y: shift }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -shift }} transition={fade}>
               <p className={cx("flex items-start gap-2 text-sm font-bold", status.text)}>
-                <StatusIcon aria-hidden className="mt-0.5 size-4 shrink-0" />
+                {/* The verdict icon pops in when the result changes, so the switch from match to mismatch is noticed. */}
+                <motion.span aria-hidden className="mt-0.5 inline-flex shrink-0" initial={reduce ? false : { scale: 0.5 }} animate={{ scale: 1 }} transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 600, damping: 18 }}>
+                  <StatusIcon className="size-4" />
+                </motion.span>
                 {status.title}
               </p>
               <p className="mt-2 text-sm leading-relaxed">{status.note}</p>

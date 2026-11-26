@@ -10,22 +10,24 @@ describe("verification report", () => {
     const { filename, text } = buildVerificationReport(trap, NOW);
     expect(filename).toMatch(/^trace-verification-TEST-COPY-/);
     expect(text).toContain("CITATION-TRAP TEST COPY");
-    expect(text).toContain("**Reviewed export: BLOCKED**");
+    expect(text).toMatch(/\*\*Review:\*\* blocked by \d+ open points/);
+    expect(text).toMatch(/\*\*Download:\*\* Review blocked by \d+ open points\. A draft can be downloaded\./);
     for (const b of evaluateExport(trap).blockers) expect(text).toContain(b.message);
     expect(text).toContain("Excerpt not in stored text");
     expect(text).toContain("Details disagree with Crossref (Crossref record retrieved");
   });
 
-  it("says ALLOWED for a fully reviewed project, with each claim's origin, quote check and decision", () => {
+  it("says the review passed and the reviewed brief is ready, with each claim's origin, quote check and decision", () => {
     const p = reviewedDemo();
     const { text } = buildVerificationReport(p, NOW);
-    expect(text).toContain("**Reviewed export: ALLOWED.**");
+    expect(text).toContain("**Review:** all checks passed and every included claim is approved.");
+    expect(text).toContain("**Download:** Review checks passed. The reviewed brief is ready to download.");
     expect(text).toContain("DEMO PROJECT");
     expect(text).toContain("SAMPLE output, not a live AI call");
     expect(text).toContain("Quote check: Excerpt found in stored text");
     expect(text).toContain("Student decision: Student approved");
     expect(text).toContain("## AI-use statement");
-    expect(text).toContain("None. The reviewed export is allowed.");
+    expect(text).toContain("None. The review checks pass.");
   });
 
   it("never contains a complete source passage", () => {
