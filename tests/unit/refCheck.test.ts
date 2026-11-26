@@ -21,9 +21,9 @@ describe("judging a pasted reference against the registry", () => {
     expect(r.fields.map((f) => f.field).sort()).toEqual(["first_author", "title", "year"]);
   });
 
-  it("reports a real DOI paired with the wrong year or author as a mismatch", () => {
+  it("a real DOI with only the wrong year needs a fix; with the wrong first author it is a mismatch", () => {
     const wrongYear = APA.replace("(2011)", "(2006)");
-    expect(judgeReference(parseReference(`${wrongYear} https://doi.org/10.5555/test.fixture`), TEST_RECORD, "doi").verdict).toBe("mismatch");
+    expect(judgeReference(parseReference(`${wrongYear} https://doi.org/10.5555/test.fixture`), TEST_RECORD, "doi").verdict).toBe("needs_fix");
     const wrongAuthor = APA.replace("Okafor, A., & Lindqvist, B.", "Lindqvist, B., & Okafor, A.");
     expect(judgeReference(parseReference(`${wrongAuthor} https://doi.org/10.5555/test.fixture`), TEST_RECORD, "doi").verdict).toBe("mismatch");
   });

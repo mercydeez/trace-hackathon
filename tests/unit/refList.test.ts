@@ -10,7 +10,7 @@ const HARVARD =
 
 describe("parseReference", () => {
   it("parses an APA reference with a doi.org link", () => {
-    expect(parseReference(APA)).toEqual({
+    expect(parseReference(APA)).toMatchObject({
       raw: APA,
       doi: "10.1111/j.1467-9280.2006.01693.x",
       year: 2006,
@@ -44,7 +44,7 @@ describe("parseReference", () => {
 
   it("parses bare DOI lines and doi.org URLs", () => {
     for (const line of ["10.1126/science.1152408", "https://doi.org/10.1126/science.1152408", "doi:10.1126/SCIENCE.1152408."]) {
-      expect(parseReference(line)).toEqual({ raw: line, doi: "10.1126/science.1152408", year: null, firstAuthor: null, title: null, query: "" });
+      expect(parseReference(line)).toMatchObject({ raw: line, doi: "10.1126/science.1152408", year: null, firstAuthor: null, title: null, query: "" });
     }
   });
 

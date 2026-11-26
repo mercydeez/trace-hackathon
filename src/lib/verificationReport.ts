@@ -11,6 +11,7 @@ import { citedSources, ROLE_LABEL } from "./exportMarkdown";
 import { evaluateExport, exportReadiness, type ClaimInspection, type ReferenceState } from "./exportPolicy";
 import { sourceIdentity } from "./identity";
 import { DECISION_LABEL, excerptLabel, trustLabel } from "./labels";
+import { referenceListEligibility } from "./referenceList";
 import { formatAuthorsShort } from "./text";
 import type { Claim, Project, Source } from "./types";
 
@@ -72,6 +73,13 @@ export function buildVerificationReport(project: Project, now: string, reference
   for (const s of sources) out.push(`- ${formatAuthorsShort(s.cited.authors, s.cited.year)}, “${short(s.cited.title, 120)}”${s.doi ? `, doi:${s.doi}` : ""}: ${reference(s)}.`);
   const others = project.sources.length - sources.length;
   if (others > 0) out.push(`- ${others} other source${others === 1 ? "" : "s"} in the library ${others === 1 ? "is" : "are"} not used.`);
+  out.push("");
+
+  // Every saved reference that is not clean, with its warning, whether or not a claim uses it.
+  const { excluded } = referenceListEligibility(project.sources);
+  out.push(`## Excluded or unresolved references (${excluded.length})`, "");
+  if (excluded.length === 0) out.push("None. Every saved reference agrees with its registry record and has no retraction notice.");
+  for (const e of excluded) out.push(`- **${e.reason.toUpperCase()}:** ${formatAuthorsShort(e.source.cited.authors, e.source.cited.year)}, “${short(e.source.cited.title, 120)}”${e.source.doi ? `, doi:${e.source.doi}` : ""}. Kept out of the APA 7 reference list.`);
   out.push("");
 
   out.push(`## Claims (${evaluation.counts.total} included${evaluation.counts.rejected ? `, ${evaluation.counts.rejected} rejected` : ""})`, "");

@@ -31,21 +31,25 @@ test("check a reference list: a bare DOI is never 'confirmed', a wrong year is c
   await expect(results.locator(":scope > li")).toHaveCount(4);
   await expect(row(0)).toContainText("DOI found, nothing to compare");
   await expect(row(0).getByRole("button", { name: "Add to library" })).toBeVisible();
-  await expect(row(1)).toContainText("Details disagree with Crossref");
-  await expect(row(1)).toContainText(`Year: given “${year - 3}”`);
+  // The same work pasted again with a wrong year: Needs fix, and flagged as a duplicate of row 1 with a Merge.
+  await expect(row(1)).toContainText("Needs fix");
+  await expect(row(1)).toContainText("Duplicate of row 1");
+  await expect(row(1)).toContainText(`Year: pasted “${year - 3}”`);
   await expect(row(1).getByRole("button", { name: "Add to library" })).toHaveCount(0);
-  await expect(row(2)).toContainText("Possible match, check it");
-  await expect(row(2).getByRole("button", { name: "This is the paper: add Crossref’s record" })).toBeVisible();
-  // The fabricated reference: no close match, and nothing can be added from it.
-  await expect(row(3)).toContainText("No close match in Crossref");
+  await expect(row(2)).toContainText("Likely match · confirm it");
+  await expect(row(2)).toContainText("Duplicate of row 1");
+  // The fabricated reference: not found, and nothing can be added from it.
+  await expect(row(3)).toContainText("Not found · no matching record in Crossref search");
   await expect(row(3).getByRole("button")).toHaveCount(0);
   await expect(row(3)).toContainText("Nothing can be added from this result.");
   await expect(results).not.toContainText("confirmed");
   await shot(page, "12-check-a-list");
 
-  // A wrong year is added only by explicitly taking Crossref's details.
-  await row(1).getByRole("button", { name: "Use Crossref’s details and add" }).click();
-  await expect(row(1)).toContainText("In your library");
+  // Merging keeps one entry and saves nothing; adding is a separate, explicit action.
+  await row(1).getByRole("button", { name: "Merge into row 1" }).click();
+  await expect(row(1)).toContainText("Merged. One entry is kept");
+  await row(0).getByRole("button", { name: "Add to library" }).click();
+  await expect(row(0)).toContainText("In your library");
 
   // Editing the list hides results that no longer belong to it.
   await page.getByLabel("Reference list").fill("Something else entirely (2020).");

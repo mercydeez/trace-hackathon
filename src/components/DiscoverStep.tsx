@@ -7,7 +7,8 @@ import { isPlanApproved } from "@/lib/approvals";
 import { parseAuthors, SOURCE_TYPES } from "@/lib/csl";
 import { doiUrl, normaliseDoi } from "@/lib/doi";
 import type { FieldCheck } from "@/lib/identity";
-import { judgeReference, type ListVerdict } from "@/lib/refCheck";
+import { bestCandidate, dupKey, judgeReference, libraryDuplicate, sameWork, type DupKey, type ListVerdict } from "@/lib/refCheck";
+import { ResearchAssistant } from "./ResearchAssistant";
 import { MAX_REFERENCES, parseReference, splitReferences, type ParsedReference } from "@/lib/refList";
 import { addSource, findDuplicate, manualSource, sourceFromWork } from "@/lib/mutations";
 import { planQuery } from "@/lib/plan";
@@ -452,14 +453,20 @@ function ByHand() {
 
 // --- Check a pasted reference list ----------------------------------------------------------
 
-const VERDICT: Record<ListVerdict, { tone: "ok" | "warn" | "bad" | "neutral"; label: string }> = {
+type Tone = "ok" | "warn" | "bad" | "neutral";
+
+/** Verdict labels for the single-DOI check. */
+const VERDICT: Record<ListVerdict, { tone: Tone; label: string }> = {
   match: { tone: "ok", label: "Details match Crossref" },
   doi_only: { tone: "neutral", label: "DOI found, nothing to compare" },
   possible: { tone: "warn", label: "Possible match, check it" },
+  needs_fix: { tone: "warn", label: "Needs fix: the year differs from Crossref" },
   mismatch: { tone: "bad", label: "Details disagree with Crossref" },
+  uncertain: { tone: "warn", label: "Uncertain: no confirmed record" },
   no_close_match: { tone: "warn", label: "No close match in Crossref" },
   not_found: { tone: "warn", label: "Not found in Crossref" },
   could_not_check: { tone: "neutral", label: "Could not check" },
+  web: { tone: "neutral", label: "Web source · Not checked" },
 };
 
 interface ListRow {
@@ -471,20 +478,70 @@ interface ListRow {
 }
 
 async function checkOne(parsed: ParsedReference): Promise<ListRow> {
+  if (parsed.web) {
+    return { parsed, verdict: "web", work: null, fields: [], note: "A web page with no DOI, author or date. It was not checked in a scholarly database." };
+  }
   if (parsed.doi) {
     const r = await callApi<WorkRecord>(`/api/doi?doi=${encodeURIComponent(parsed.doi)}`);
-    if (!r.ok) return { parsed, verdict: r.kind === "not_found" ? "not_found" : "could_not_check", work: null, fields: [], note: r.kind === "not_found" ? "This does not show the paper is fake: it may be registered elsewhere, or the DOI may be mistyped." : r.message };
+    if (!r.ok) {
+      return r.kind === "not_found"
+        ? { parsed, verdict: "not_found", work: null, fields: [], note: "Looked in Crossref and DataCite: neither has a record for this DOI. TRACE does not swap in a similar paper." }
+        : { parsed, verdict: "could_not_check", work: null, fields: [], note: `${r.message} Nothing was concluded about this reference.` };
+    }
     const j = judgeReference(parsed, r.data.record, "doi");
     return { parsed, verdict: j.verdict, work: r.data, fields: j.fields, note: null };
   }
   if (parsed.query.length < 8) return { parsed, verdict: "could_not_check", work: null, fields: [], note: "Too little text to search for." };
-  const r = await callApi<SearchResult>(`/api/search?${new URLSearchParams({ q: parsed.query, rows: "1" })}`);
-  if (!r.ok) return { parsed, verdict: "could_not_check", work: null, fields: [], note: r.message };
-  const top = r.data.items[0];
-  if (!top) return { parsed, verdict: "not_found", work: null, fields: [], note: "Crossref returned nothing for this text. That is not evidence it was never published." };
+  const r = await callApi<SearchResult>(`/api/search?${new URLSearchParams({ q: parsed.query, rows: "5" })}`);
+  if (!r.ok) return { parsed, verdict: "could_not_check", work: null, fields: [], note: `${r.message} Nothing was concluded about this reference.` };
+  const top = bestCandidate(parsed, r.data.items);
+  if (!top) return { parsed, verdict: "not_found", work: null, fields: [], note: "Searched Crossref by title and authors: no record came back. With no DOI, that is not evidence it was never published." };
   const j = judgeReference(parsed, top.record, "search");
-  return { parsed, verdict: j.verdict, work: top, fields: j.fields, note: "No DOI was given, so this is Crossref's closest record. Confirm it is the work you meant." };
+  const note =
+    j.verdict === "possible"
+      ? "No DOI was given. Crossref's search found this record with the same title, first author and year. Confirm it is the work you meant."
+      : j.verdict === "uncertain"
+        ? "No DOI was given. The closest Crossref record has the same title and author but another year (perhaps a later record or reprint). It is not substituted."
+        : "Searched Crossref by title and authors (5 candidates): none has this title and first author. With no DOI, that does not show the work is fake.";
+  return { parsed, verdict: j.verdict, work: top, fields: j.fields, note };
 }
+
+/** The status shown for a row. Retraction outranks everything; web pages are never presented as checked. */
+function rowStatus(row: ListRow): { tone: Tone; label: string } {
+  const registry = row.work?.provider === "datacite" ? "DataCite" : "Crossref";
+  if (row.verdict === "web") return { tone: "neutral", label: "Web source · Not checked" };
+  if (row.work?.record.retraction && ["match", "doi_only", "possible", "needs_fix"].includes(row.verdict)) return { tone: "bad", label: `Retracted (${row.work.record.retraction.kind} notice in ${registry})` };
+  const partial = row.verdict === "match" && row.fields.some((f) => f.verdict === "note");
+  if (partial) return { tone: "warn", label: `Partial match: check details` };
+  const map: Record<ListVerdict, { tone: Tone; label: string }> = {
+    match: { tone: "ok", label: `Verified · details match ${registry}` },
+    doi_only: { tone: "neutral", label: "DOI found, nothing to compare" },
+    possible: { tone: "warn", label: "Likely match · confirm it" },
+    needs_fix: { tone: "warn", label: "Needs fix" },
+    mismatch: { tone: "bad", label: "Mismatch · the DOI points to another paper" },
+    uncertain: { tone: "warn", label: "Uncertain · no confirmed record" },
+    no_close_match: { tone: "bad", label: "Not found · no matching record in Crossref search" },
+    not_found: { tone: "bad", label: row.parsed.doi ? "Not found in Crossref or DataCite" : "Not found in Crossref search" },
+    could_not_check: { tone: "neutral", label: "Could not check · Retry" },
+    web: { tone: "neutral", label: "Web source · Not checked" },
+  };
+  return map[row.verdict];
+}
+
+const LIST_FIELD: Record<FieldCheck["field"], string> = { title: "Title", first_author: "First author", year: "Year", venue: "Venue" };
+
+/** Letter or number the student used ("A.", "3)"), else the row's position. */
+function rowName(row: ListRow, n: number): string {
+  return row.parsed.raw.trim().match(/^\[?([A-Z]|\d+)[.)\]]\s/)?.[1] ?? String(n + 1);
+}
+
+/** Identity key for duplicates: the pasted DOI, or the DOI of a confirmed search record, then title + first author + year. */
+function rowKey(row: ListRow): DupKey {
+  const doi = row.parsed.doi ?? (row.verdict === "possible" ? (row.work?.doi ?? null) : null);
+  return dupKey(doi, { title: row.parsed.title ?? "", authors: row.parsed.firstAuthor ? [{ family: row.parsed.firstAuthor }] : [], year: row.parsed.year });
+}
+
+type Decision = "fix_accepted" | "fix_rejected" | "merged";
 
 function CheckList() {
   const project = useProject();
@@ -492,6 +549,9 @@ function CheckList() {
   const [text, setText] = useState("");
   // Results belong to the text they were checked for: editing the list hides them, and a newer run drops an older one.
   const [checked, setChecked] = useState<{ text: string; rows: ListRow[] }>({ text: "", rows: [] });
+  const [decisions, setDecisions] = useState<Record<number, Decision>>({});
+  // Rows the student added from this review: they are the library entry, not duplicates of it.
+  const [added, setAdded] = useState<number[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const latest = useRef(0);
   const refs = splitReferences(text);
@@ -503,6 +563,8 @@ function CheckList() {
     const snapshot = text;
     const parsed = capped.map(parseReference);
     setChecked({ text: snapshot, rows: [] });
+    setDecisions({});
+    setAdded([]);
     setProgress({ done: 0, total: parsed.length });
     const out: ListRow[] = [];
     // One at a time: the server queues Crossref calls anyway, and results appear as they arrive.
@@ -516,84 +578,187 @@ function CheckList() {
     setProgress(null);
   }
 
-  function add(row: ListRow) {
-    if (!row.work) return;
-    // The library keeps Crossref's record. The reference as pasted is only compared, never saved over it.
-    const { source, evidence } = sourceFromWork(row.work, "citation_check", new Date().toISOString());
-    update((p) => addSource(p, source, evidence), `Added “${source.cited.title}” from a checked reference list, with Crossref's details.`);
+  async function retry(n: number) {
+    const row = rows[n];
+    if (!row) return;
+    const again = await checkOne(row.parsed);
+    setChecked((c) => (c.text === text ? { text, rows: c.rows.map((r, i) => (i === n ? again : r)) } : c));
   }
 
-  /** What, if anything, may be added for a verdict. Unrelated, missing and failed checks offer nothing. */
-  function addLabel(row: ListRow): string | null {
-    const partial = row.fields.some((f) => f.verdict === "note");
-    if (row.verdict === "match" || row.verdict === "doi_only") return partial ? "Use Crossref’s details and add" : "Add to library";
-    if (row.verdict === "possible") return "This is the paper: add Crossref’s record";
-    if (row.verdict === "mismatch") return "Use Crossref’s details and add";
-    return null;
+  const decide = (n: number, d: Decision | null) =>
+    setDecisions((all) => {
+      const next = { ...all };
+      if (d) next[n] = d;
+      else delete next[n];
+      return next;
+    });
+
+  function add(row: ListRow, how: "registry" | "flagged", n: number) {
+    if (!row.work) return;
+    setAdded((a) => [...a, n]);
+    // The library keeps the registry's record. With "flagged", the pasted year is kept as cited, so the
+    // identity check keeps showing the disagreement and the reviewed export stays blocked until it is fixed.
+    const { source, evidence } = sourceFromWork(row.work, "citation_check", new Date().toISOString());
+    const saved = how === "flagged" ? { ...source, cited: { ...source.cited, year: row.parsed.year } } : source;
+    update(
+      (p) => addSource(p, saved, evidence),
+      how === "flagged" ? `Kept “${saved.cited.title}” for review with its pasted year ${row.parsed.year}; it stays flagged.` : `Added “${saved.cited.title}” from a checked reference list, with the registry's details.`,
+    );
   }
+
+  const keys = rows.map(rowKey);
 
   return (
     <div className="space-y-4">
-      <Field label="Reference list" hint={`Paste up to ${MAX_REFERENCES} references, one per line or separated by blank lines. DOIs are used when present; otherwise TRACE searches Crossref.`}>
-        {(id) => <TextArea id={id} rows={6} value={text} maxLength={12000} onChange={(e) => setText(e.target.value)} placeholder="Roediger, H. L., & Karpicke, J. D. (2006). Test-enhanced learning… https://doi.org/10.1111/j.1467-9280.2006.01693.x" />}
+      <Field label="Reference list" hint={`Paste up to ${MAX_REFERENCES} references, one per line or separated by blank lines (A., 1., [1] markers are fine). DOIs are used when present; otherwise TRACE searches Crossref. Checking never changes your library.`}>
+        {(id) => <TextArea id={id} rows={8} value={text} maxLength={12000} onChange={(e) => setText(e.target.value)} placeholder="Roediger, H. L., & Karpicke, J. D. (2006). Test-enhanced learning… https://doi.org/10.1111/j.1467-9280.2006.01693.x" />}
       </Field>
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="primary" icon={ListChecks} disabled={capped.length === 0 || progress !== null} onClick={() => void run()}>
           {progress ? `Checking ${progress.done + 1} of ${progress.total}…` : `Check ${capped.length || ""} reference${capped.length === 1 ? "" : "s"}`.replace("  ", " ")}
         </Button>
         {refs.length > MAX_REFERENCES && <span className="text-sm text-warn">Only the first {MAX_REFERENCES} will be checked.</span>}
+        {rows.length > 0 && <span className="text-sm text-ink-soft">{rows.length} checked. Your library still has {project.sources.length} sources: nothing is saved until you choose an action.</span>}
       </div>
 
       {rows.length > 0 && (
         <ol className="divide-y divide-line rounded-lg border border-line" aria-live="polite" aria-label="Checked references">
           {rows.map((row, n) => {
-            const partial = row.verdict === "match" && row.fields.some((f) => f.verdict === "note");
-            const v0 = partial ? { tone: "warn" as const, label: "Partial match: check details" } : VERDICT[row.verdict];
-            // A record DataCite supplied (Crossref had none) is named as DataCite's.
-            const v = row.work?.provider === "datacite" ? { ...v0, label: v0.label.replace("Crossref", "DataCite") } : v0;
+            const name = rowName(row, n);
+            const status = rowStatus(row);
+            const decision = decisions[n];
             const disagree = row.fields.filter((f) => f.verdict !== "match");
-            const saved = row.work ? findDuplicate(project, { doi: row.work.doi, cited: row.work.record }) : undefined;
-            const label = addLabel(row);
+            const earlier = keys.slice(0, n).findIndex((k) => sameWork(keys[n]!, k) !== null);
+            const earlierKind = earlier >= 0 ? sameWork(keys[n]!, keys[earlier]!) : null;
+            const inLibrary = libraryDuplicate(row.verdict === "mismatch" ? { ...keys[n]!, doi: null } : keys[n]!, project.sources);
+            const record = row.work?.record;
+            const retracted = Boolean(record?.retraction) && status.tone === "bad" && status.label.startsWith("Retracted");
+            const duplicateOf = earlier >= 0 ? `row ${rowName(rows[earlier]!, earlier)}` : null;
+            const libDup = earlier < 0 && inLibrary && !added.includes(n) ? inLibrary : null;
+            const isSaved = added.includes(n) && inLibrary !== null;
             return (
-              <li key={n} className="p-4">
-                <p className="line-clamp-2 text-sm text-ink">{row.parsed.raw}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <Chip tone={v.tone} icon={v.tone === "ok" ? Check : v.tone === "bad" ? FileX2 : undefined}>
-                    {v.label}
+              <li key={n} className="p-4" aria-label={`Reference ${name}`}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="num grid size-7 place-items-center rounded-full bg-s2 text-sm font-bold text-ink-soft">{name}</span>
+                  <Chip tone={status.tone} icon={status.tone === "ok" ? Check : status.tone === "bad" ? FileX2 : undefined}>
+                    {status.label}
                   </Chip>
-                  {row.work?.record.retraction && <StatusChip badge={RETRACTED} />}
+                  {duplicateOf && <Chip tone="warn">{earlierKind === "possible" ? `Possible duplicate of ${duplicateOf}` : `Duplicate of ${duplicateOf}`}</Chip>}
+                  {libDup && !decision && <Chip tone="neutral">{libDup.kind === "possible" ? "Possibly already in your library" : "Already in your library"}</Chip>}
+                  {decision === "fix_accepted" && <Chip tone="ok">Fix accepted</Chip>}
+                  {decision === "fix_rejected" && <Chip tone="warn">Fix rejected · original kept</Chip>}
+                  {decision === "merged" && <Chip tone="neutral">Merged</Chip>}
                 </div>
+
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <div className="min-w-0 rounded-lg bg-s2/60 p-3 text-sm">
+                    <p className="text-xs font-semibold tracking-wide text-ink-faint uppercase">As pasted</p>
+                    <p className="mt-1 break-words text-ink">{row.parsed.raw}</p>
+                    <p className="mt-1 text-ink-soft">
+                      Read as: {row.parsed.firstAuthor ?? "author unclear"}, {row.parsed.year ?? "year missing"}, {row.parsed.title ? `“${row.parsed.title}”` : "title unclear"}
+                      {row.parsed.doi ? `, DOI ${row.parsed.doi}` : ", no DOI"}
+                    </p>
+                  </div>
+                  <div className="min-w-0 rounded-lg border border-line p-3 text-sm">
+                    <p className="text-xs font-semibold tracking-wide text-ink-faint uppercase">{row.work ? `${row.work.provider === "datacite" ? "DataCite" : "Crossref"} record${row.verdict === "no_close_match" ? " (closest, does not match)" : ""}` : "Registry record"}</p>
+                    {record ? (
+                      <>
+                        <p className="mt-1 break-words text-ink">“{record.title}”</p>
+                        <p className="text-ink-soft">
+                          {record.authors[0]?.family ?? "no author listed"}
+                          {record.authors.length > 1 ? " et al." : ""}, {record.year ?? "n.d."}
+                          {record.container ? `, ${record.container}` : ""}, doi:{row.work!.doi}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="mt-1 text-ink-soft">None.</p>
+                    )}
+                    {row.note && <p className="mt-1 text-ink-soft">{row.note}</p>}
+                  </div>
+                </div>
+
                 {disagree.length > 0 && (
                   <ul className="mt-2 space-y-1 text-sm">
                     {disagree.map((f) => (
                       <li key={f.field}>
-                        <span className="font-semibold">{f.field === "first_author" ? "First author's surname" : f.field === "title" ? "Title" : "Year"}:</span> given “{f.cited}”, Crossref has “{f.registry}”{f.verdict === "note" ? " (close, check it)" : ""}.
+                        <span className="font-semibold">{LIST_FIELD[f.field]}:</span> pasted “{f.cited}”, registry has “{f.registry}”{f.verdict === "note" ? " (close, check it)" : ""}.
                       </li>
                     ))}
                   </ul>
                 )}
-                {row.work && row.verdict !== "match" && (
-                  <p className="mt-2 text-sm text-ink-soft">
-                    {row.verdict === "no_close_match" ? "Closest Crossref record, which does not match: " : "Crossref record: "}
-                    {row.work.record.title} ({row.work.record.year ?? "n.d."})
-                  </p>
-                )}
-                {row.note && <p className="mt-1 text-sm text-ink-soft">{row.note}</p>}
-                {row.work && saved ? (
-                  <div className="mt-3">
+                {retracted && <p className="mt-2 rounded-lg bg-bad-tint px-3 py-2 text-sm text-ink">This paper has been retracted. Do not cite it as support. If you keep it, it stays marked Retracted and is kept out of the reviewed brief and the APA list.</p>}
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {decision === "merged" ? (
+                    <p className="text-sm text-ink-soft">
+                      Merged. One entry is kept ({duplicateOf ?? "the library entry"}), with its notes, tags and passages. This pasted copy is not saved and will not appear in the reference list.{" "}
+                      <button type="button" className="font-semibold text-accent-text underline" onClick={() => decide(n, null)}>
+                        Undo
+                      </button>
+                    </p>
+                  ) : duplicateOf || (libDup && row.verdict !== "match" && row.verdict !== "needs_fix") ? (
+                    <>
+                      <p className="w-full text-sm text-ink-soft">
+                        Merge keeps one entry: {duplicateOf ? `row ${duplicateOf.replace("row ", "")} (${rows[earlier]!.parsed.firstAuthor ?? ""} ${rows[earlier]!.parsed.year ?? ""}${rows[earlier]!.parsed.doi ? `, doi:${rows[earlier]!.parsed.doi}` : ""})` : `“${libDup!.source.cited.title}” already in your library`}. This row is not saved.
+                        {earlierKind === "possible" || libDup?.kind === "possible" ? " The titles match but the author or year differs: decide whether they are the same work." : ""}
+                      </p>
+                      <Button size="sm" onClick={() => decide(n, "merged")}>
+                        Merge into {duplicateOf ?? "library entry"}
+                      </Button>
+                    </>
+                  ) : isSaved || libDup ? (
                     <Chip tone="neutral" icon={Check}>
                       In your library
                     </Chip>
-                  </div>
-                ) : row.work && label ? (
-                  <div className="mt-3">
-                    <Button size="sm" icon={BookmarkPlus} onClick={() => add(row)}>
-                      {label}
+                  ) : row.verdict === "needs_fix" && row.work ? (
+                    decision === "fix_accepted" ? (
+                      <>
+                        <span className="text-sm text-ink-soft">Fix accepted: only the field shown changes. Adding is a separate choice.</span>
+                        <Button size="sm" icon={BookmarkPlus} onClick={() => add(row, "registry", n)}>
+                          {retracted ? "Add with retraction warning" : "Add to library"}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => decide(n, null)}>
+                          Undo
+                        </Button>
+                      </>
+                    ) : decision === "fix_rejected" ? (
+                      <>
+                        <span className="text-sm text-ink-soft">The pasted details stay as they are, with this warning.</span>
+                        <Button size="sm" onClick={() => add(row, "flagged", n)}>
+                          Keep for review (flagged)
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => decide(n, null)}>
+                          Undo
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="primary" icon={Check} onClick={() => decide(n, "fix_accepted")}>
+                          Accept fix
+                        </Button>
+                        <Button size="sm" onClick={() => decide(n, "fix_rejected")}>
+                          Reject fix
+                        </Button>
+                      </>
+                    )
+                  ) : row.work && (row.verdict === "match" || row.verdict === "doi_only" || row.verdict === "possible") ? (
+                    <Button size="sm" icon={BookmarkPlus} onClick={() => add(row, "registry", n)}>
+                      {retracted ? "Add with retraction warning" : row.verdict === "possible" ? "This is the paper: add Crossref’s record" : status.tone === "warn" ? "Use Crossref’s details and add" : "Add to library"}
                     </Button>
-                  </div>
-                ) : (
-                  <p className="mt-2 text-sm text-ink-soft">Nothing can be added from this result. Add the source by its DOI once you have one, or enter it by hand as Not yet verified.</p>
-                )}
+                  ) : row.verdict === "could_not_check" ? (
+                    <Button size="sm" onClick={() => void retry(n)}>
+                      Retry
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-ink-soft">
+                      {row.verdict === "mismatch"
+                        ? "Nothing is swapped in. Check the DOI against the paper you meant, or find that paper and add it on its own."
+                        : row.verdict === "web"
+                          ? "Not a scholarly record. If you need it, enter it by hand: it stays labelled Not yet verified."
+                          : "Nothing can be added from this result. Add the source by its DOI once you have one, or enter it by hand as Not yet verified."}
+                    </p>
+                  )}
+                </div>
               </li>
             );
           })}
@@ -602,19 +767,23 @@ function CheckList() {
     </div>
   );
 }
+
 export function DiscoverStep({ goToPlan }: { goToPlan: () => void }) {
-  const [mode, setMode] = useState<"doi" | "list" | "hand">("doi");
+  const [mode, setMode] = useState<"doi" | "list" | "hand" | "ask">("doi");
+  // Checking a list and the assistant need the width for pasted text beside the registry record.
+  const wide = mode === "list" || mode === "ask";
   return (
-    <div className="step-body grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_25rem]">
+    <div className={cx("step-body grid items-start gap-6", !wide && "xl:grid-cols-[minmax(0,1fr)_25rem]")}>
       <SearchPanel goToPlan={goToPlan} />
-      <section className="@container xl:sticky xl:top-6">
+      <section className={cx("@container", wide ? "order-first" : "xl:sticky xl:top-6")}>
         <SectionTitle>Add a source you already have</SectionTitle>
-        <div role="tablist" aria-label="How to add a source" className="mb-6 inline-flex rounded-full bg-s2 p-1">
+        <div role="tablist" aria-label="How to add a source" className="mb-6 inline-flex flex-wrap rounded-full bg-s2 p-1">
           {(
             [
               ["doi", "By DOI"],
               ["list", "Check a list"],
               ["hand", "By hand"],
+              ["ask", "Research assistant"],
             ] as const
           ).map(([id, label]) => (
             <button key={id} type="button" role="tab" aria-selected={mode === id} className={cx("h-8 rounded-full px-4 text-sm font-semibold transition-colors", mode === id ? "bg-surface text-ink shadow-[0_1px_3px_rgb(75_54_83/0.15)]" : "text-ink-soft hover:text-ink")} onClick={() => setMode(id)}>
@@ -622,7 +791,7 @@ export function DiscoverStep({ goToPlan }: { goToPlan: () => void }) {
             </button>
           ))}
         </div>
-        <div role="tabpanel">{mode === "doi" ? <ByDoi /> : mode === "list" ? <CheckList /> : <ByHand />}</div>
+        <div role="tabpanel">{mode === "doi" ? <ByDoi /> : mode === "list" ? <CheckList /> : mode === "hand" ? <ByHand /> : <ResearchAssistant />}</div>
       </section>
     </div>
   );

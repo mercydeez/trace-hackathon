@@ -73,14 +73,14 @@ test("check by DOI is read-only: duplicate, not found, could not check, wrong de
   await page.getByLabel("First author's surname").fill("Okafor");
   await page.getByLabel("Year", { exact: true }).fill("2025");
   await check.click();
-  await expect(panel.getByText("Details disagree with Crossref", { exact: true })).toBeVisible();
+  await expect(panel.getByText("Needs fix: the year differs from Crossref", { exact: true })).toBeVisible();
   await expect(panel.getByRole("status").getByText("First author's surname", { exact: true })).toBeVisible();
   await expect(panel.getByRole("button", { name: "Add to library" })).toHaveCount(0);
   await libraryCount(7);
 
   // Editing the input hides the stale result until it is checked again.
   await page.getByLabel("Year", { exact: true }).fill("2024");
-  await expect(panel.getByText("Details disagree with Crossref", { exact: true })).toHaveCount(0);
+  await expect(panel.getByText("Needs fix: the year differs from Crossref", { exact: true })).toHaveCount(0);
   await page.getByLabel("Year", { exact: true }).fill("2025");
   await check.click();
 

@@ -10,6 +10,7 @@ import { sourceLink } from "./csl";
 import { buildDisclosure } from "./disclosure";
 import { evaluateExport, textCitations, type ClaimInspection } from "./exportPolicy";
 import { suffixOf } from "./inText";
+import { referenceListEligibility } from "./referenceList";
 import { newId, formatAuthorsShort, inTextShort } from "./text";
 import { ProjectSchema, SCHEMA_VERSION, type Claim, type Evidence, type Project, type Source } from "./types";
 
@@ -154,13 +155,16 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
   if (cited.length === 0) out.push("No sources are cited.", "");
   const ordered = refs ? refs.filter((r) => cited.some((s) => s.id === r.id)) : [];
   const unformatted = cited.filter((s) => !refById.has(s.id));
+  // Warnings travel with the reference: anything not clean is marked beside its entry.
+  const warning = new Map(referenceListEligibility(cited).excluded.map((e) => [e.source.id, e.reason.toUpperCase()]));
   for (const r of ordered) {
     const s = cited.find((x) => x.id === r.id);
     out.push(`- ${referenceMarkdown(r)}`);
+    if (s && warning.has(s.id)) out.push(`  - **WARNING: ${warning.get(s.id)}.**`);
     if (s?.testCorruption) out.push(`  - ${s.testCorruption}`);
   }
   for (const s of unformatted) {
-    out.push(`- UNFORMATTED: ${formatAuthorsShort(s.cited.authors, s.cited.year)}. ${s.cited.title}. ${sourceLink(s.doi, s.cited) ?? ""}`);
+    out.push(`- UNFORMATTED: ${formatAuthorsShort(s.cited.authors, s.cited.year)}. ${s.cited.title}. ${sourceLink(s.doi, s.cited) ?? ""}${warning.has(s.id) ? ` **WARNING: ${warning.get(s.id)}.**` : ""}`);
   }
   if (ordered.length) {
     out.push(

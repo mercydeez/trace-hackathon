@@ -24,9 +24,9 @@ describe("reference checks compare only what was supplied", () => {
     expect(r.verdict).toBe("no_close_match");
   });
 
-  it("a search hit with an agreeing title but a wrong year stays a correctable mismatch", () => {
+  it("a search hit with an agreeing title but a wrong year is uncertain, never substituted", () => {
     const r = judgeReference(parseReference(`Okafor, A. (1999). ${TEST_RECORD.title}.`), TEST_RECORD, "search");
-    expect(r.verdict).toBe("mismatch");
+    expect(r.verdict).toBe("uncertain");
   });
 
   it("a registry record with no title is a point to check, not a title mismatch", () => {

@@ -13,6 +13,8 @@ export interface ParsedReference {
   firstAuthor: string | null;
   title: string | null;
   query: string;
+  /** A web page (a URL, no DOI, no year): shown as "Web source · Not checked", never looked up as a paper. */
+  web?: boolean;
 }
 
 export const MAX_REFERENCES = 15;
@@ -20,7 +22,8 @@ export const MAX_REFERENCES = 15;
 const DOI_IN_TEXT = /10\.\d{4,9}\/\S+/;
 const URL = /\b(?:https?:\/\/|www\.|(?:dx\.)?doi\.org\/)\S+/gi;
 const DOI_LINE = /^(?:(?:https?:\/\/)?(?:dx\.)?doi\.org\/|doi:\s*)?10\.\d{4,9}\/\S+$/i;
-const LIST_MARKER = /^(?:\[\d+\]|\d+[.)])\s+/;
+// "[1]", "1." / "1)", and letter markers "A." / "B)" (a single capital, so "Kahneman, D." is not one).
+const LIST_MARKER = /^(?:\[\d+\]|\d+[.)]|[A-Z][.)])\s+/;
 // "Roediger, H. L." / "Van Gogh, V." / "Roediger H.L." / "Roediger HL,". Organisations do not match.
 const AUTHOR_START = /^(\p{Lu}[\p{L}'’-]+(?: \p{Lu}[\p{L}'’-]+)?)(?:,\s*\p{Lu}\.|\s+\p{Lu}\.(?:\s?\p{Lu}\.)*|\s+\p{Lu}{1,3},)/u;
 
@@ -85,21 +88,38 @@ function findTitle(afterYear: string): string | null {
   return title.length >= 3 ? title : null;
 }
 
-export function parseReference(raw: string): ParsedReference {
-  const query = raw.replace(URL, " ").replace(/\bdoi:\s*/gi, " ").replace(new RegExp(DOI_IN_TEXT, "g"), " ").replace(/\s+/g, " ").trim().slice(0, 300);
-  const text = query.replace(LIST_MARKER, "");
+// Vancouver-style compact form: "LECUN Y, BENGIO Y, HINTON G. Deep Learning. Nature 2015;521:436-44."
+const COMPACT_YEAR = /\b((?:19|20)\d{2});/;
+const COMPACT_AUTHORS = /^(?:\p{Lu}[\p{L}'’-]+ \p{Lu}{1,3}(?:, |\. ))+/u;
 
-  const yearMatch = text.match(YEAR);
-  const yearValue = Number(yearMatch?.[1] ?? yearMatch?.[2]);
+export function parseReference(raw: string): ParsedReference {
+  const doi = findDoi(raw);
+  const text = raw.trim().replace(LIST_MARKER, "");
+  const clean = text.replace(URL, " ").replace(/\bdoi:\s*/gi, " ").replace(new RegExp(DOI_IN_TEXT, "g"), " ").replace(/\s+/g, " ").trim();
+  const query = clean.slice(0, 300);
+
+  const yearMatch = clean.match(YEAR);
+  let yearValue = Number(yearMatch?.[1] ?? yearMatch?.[2]);
+  let title: string | null = null;
+  if (yearMatch && yearValue >= 1900 && yearValue <= 2099) {
+    title = findTitle(clean.slice((yearMatch.index ?? 0) + yearMatch[0].length).trim());
+  } else {
+    const compact = clean.match(COMPACT_YEAR);
+    const authors = clean.match(COMPACT_AUTHORS);
+    if (compact && authors) {
+      yearValue = Number(compact[1]);
+      title = findTitle(clean.slice(authors[0].length).trim());
+    }
+  }
   const year = yearValue >= 1900 && yearValue <= 2099 ? yearValue : null;
-  const title = yearMatch && year !== null ? findTitle(text.slice((yearMatch.index ?? 0) + yearMatch[0].length).trim()) : null;
 
   return {
     raw,
-    doi: findDoi(raw),
+    doi,
     year,
-    firstAuthor: text.match(AUTHOR_START)?.[1] ?? null,
+    firstAuthor: clean.match(AUTHOR_START)?.[1] ?? null,
     title,
     query,
+    web: !doi && year === null && /\b(?:https?:\/\/|www\.)/i.test(raw),
   };
 }

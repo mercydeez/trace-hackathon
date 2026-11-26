@@ -409,3 +409,10 @@ The owner asked for the presenter guide PDF to be updated for the final release 
 - **Model:** Claude Opus 5.5 (Claude Code)
 
 The owner pasted the prompt saved unchanged in [claude-code-second-passage.md](claude-code-second-passage.md). Released as app commit `edc2895` (Vercel deployment `Cu7VqquvRtYuAgdEWNnPrWN1M1ny`, https://trace-hackathon.vercel.app). Rollback target: `3FRKisLLjuBWwYkLWBd5YheF8zMK` (`fba2a71`). Observed results: 226/226 unit, 23/23 browser journeys locally; on the public site 6/6 journeys and the phone scenario. The commit that records this is the freeze point. Details are in [the QA report](qa-report.md).
+
+## 23 — Day-of requirements: messy reference list and three assistant requests
+
+- **Date:** 26 November 2026, about 13:40–14:30 Dubai time (during the Phase 2 build window)
+- **Model:** Claude Opus 5.5 (Claude Code)
+
+The organisers released the day-of requirements at the event: a pasted list of eight references (A–H) and three typed requests, with six required cases (Not found, Mismatch, Needs fix, Retracted, Duplicate, No source exists). The owner attached the brief and pasted the prompt saved unchanged in [claude-code-day-of.md](claude-code-day-of.md). Claude Code planned the change in plan mode; the owner approved the plan. Results, the release commit, the rollback target and the pass/fail table for A–H and requests 1–3 are in [the QA report](qa-report.md).
