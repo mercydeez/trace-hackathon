@@ -42,6 +42,9 @@
   .link { font-weight: 700; font-size: 12pt; color: var(--accent-text); }
   .toc { padding-left: 26px; }
   .toc li { margin-bottom: 5px; }
+  .pagebreak { break-before: page; }
+  table.compact td { padding: 4px 6px; font-size: 9pt; line-height: 1.35; }
+  table.compact th { padding: 4px 6px; }
 </style>
 </head>
 <body>
@@ -51,6 +54,7 @@
     <div class="eyebrow">AI Club Hackathon 2026 · SP Jain · Presenter guide</div>
     <h1>TRACE<br>Research you can defend.</h1>
     <p class="lead">Everything you need to understand TRACE, run the demo and answer the judges, without reading the code.</p>
+    <p class="small" style="margin-top:6px">Updated 26 November 2026 for the final release. Section 2 lists what is new since the first version.</p>
     <div class="box tint" style="margin-top:18px">
       <p><b>Team:</b> Atharva, Maitrayee, Shirley</p>
       <p><b>Live site:</b> <span class="link">{{LIVE_LINK}}</span></p>
@@ -65,11 +69,12 @@
     <h3>Contents</h3>
     <ol class="toc">
       <li>The 60-second version</li>
+      <li>New in the final release</li>
       <li>The problem we were given, and how we are scored</li>
-      <li>The big idea: five questions, kept separate</li>
+      <li>The big idea: five questions and the trust labels</li>
       <li>A tour of the app</li>
       <li>How it works underneath (plain language)</li>
-      <li>The eight guardrails</li>
+      <li>The guardrails</li>
       <li>The demo, minute by minute, with a suggested speaker split</li>
       <li>Judges’ questions and good answers</li>
       <li>What we never say, before you walk up, if something breaks</li>
@@ -87,13 +92,13 @@
   <div class="box tint">
     <p><b>The student’s journey, in four steps</b></p>
     <p><span class="num">1</span><b>Plan</b>: write the question; TRACE suggests search terms (by a simple rule, not AI); the student approves.</p>
-    <p><span class="num">2</span><b>Discover</b>: search Crossref (the official registry of scholarly papers), add a paper by DOI, or check a reference list.</p>
-    <p><span class="num">3</span><b>Library and evidence</b>: organise sources with tags and notes; tick the passages the AI may use; approve that evidence set.</p>
-    <p style="margin:0"><span class="num">4</span><b>Brief and export</b>: AI drafts up to five claims (or the student writes them); every claim is checked; the student approves each one; the student writes their own text with citations checked as they type; export the brief in APA 7 or Harvard with an honest AI-use statement.</p>
+    <p><span class="num">2</span><b>Discover</b>: search Crossref (the official registry of scholarly papers), check a DOI, or check a pasted reference list. Checking never changes the library: only an <b>Add</b> button does.</p>
+    <p><span class="num">3</span><b>Library and evidence</b>: organise sources with tags and notes; copy the whole library as an APA 7 reference list; tick the passages the AI may use; approve that evidence set.</p>
+    <p style="margin:0"><span class="num">4</span><b>Brief and export</b>: AI drafts up to five claims (or the student writes them); every claim is checked; the student approves each one; the student writes their own text with citations checked as they type; export the brief in APA 7 or Harvard, copy a short AI-use statement, and download a verification report.</p>
   </div>
   <h3>Why judges should care</h3>
   <ul>
-    <li>The checks are tested automatically. <b>207 unit tests and 22 production browser journeys</b> passed.</li>
+    <li>The checks are tested automatically. <b>214 unit tests and 22 production browser journeys</b> passed on the final release.</li>
     <li>The “citation trap” in the demo is not scripted. It is a copy of the project with two planted mistakes, and the same checks catch them live.</li>
     <li>It is honest about its limits: it reads abstracts, not full papers, and says so everywhere.</li>
   </ul>
@@ -101,31 +106,51 @@
 
 <section>
   <div class="eyebrow">2</div>
+  <h2>New in the final release (26 November)</h2>
+  <p>If you read the first version of this guide, these are the changes. Each one is live on the site and covered by automated tests.</p>
+  <table>
+    <tr><th>What</th><th>Where to see it</th><th>What to say</th></tr>
+    <tr><td><b>Checking is read-only</b></td><td>Welcome → <b>Check a reference</b>, or Discover → By DOI / Check a list</td><td class="say">“Checking only reads the registry. Nothing reaches the library until I click Add. A fake DOI or an unrelated match has no Add button at all.”</td></tr>
+    <tr><td><b>Wrong details need a deliberate fix</b></td><td>Check a real DOI with the wrong year</td><td class="say">“The only way to add it is <i>Use Crossref’s details and add</i>. What I typed is never saved over the registry.”</td></tr>
+    <tr><td><b>Trust labels and a legend</b></td><td>“What the labels mean” in Discover, Library and Brief</td><td class="say">“Every reference and claim carries labels. Each one is evidence about one check only.”</td></tr>
+    <tr><td><b>DataCite fallback</b></td><td>Check DOI <b>10.5061/dryad.8515</b> (a dataset)</td><td class="say">“Crossref is asked first. If it has no record, TRACE asks DataCite and says <i>Found in DataCite</i>.”</td></tr>
+    <tr><td><b>APA 7 reference list</b></td><td>Library → <b>Copy APA 7 reference list</b> or Download</td><td class="say">“The whole library as an APA 7 list. Unverified references are left out and counted.”</td></tr>
+    <tr><td><b>AI-use statement</b></td><td>Brief → <b>Copy AI-use statement</b></td><td class="say">“It counts what AI drafted and what I kept separately: <i>AI drafted three claims. I approved and included two and rejected one.</i>”</td></tr>
+    <tr><td><b>Verification report</b></td><td>Brief → <b>Verification report</b>, beside the export buttons</td><td class="say">“One page from the same checks as the export gate: each reference, quote check and decision, and whether the reviewed brief can be downloaded.”</td></tr>
+    <tr><td><b>Clear export status</b></td><td>The bar at the bottom of Brief</td><td class="say">“It says exactly why the reviewed brief isn’t ready: open points, references still formatting, or formatting failed with a Retry.”</td></tr>
+    <tr><td><b>Inspector shows why</b></td><td>Citation trap → Inspect claim 1</td><td class="say">“A red box says what blocks the export, and my quote sits beside the real sentence with the wrong word highlighted.”</td></tr>
+    <tr><td><b>Home and Resume</b></td><td><b>Home</b> link or the TRACE logo, then <b>Resume project</b></td><td class="say">“Home is always one click away, and Resume brings back the same project and step.”</td></tr>
+  </table>
+  <p class="small">Some labels were renamed: <b>AI suggestion</b> (was “AI draft”), <b>Student approved</b> (was “Approved by you”), <b>Not yet verified</b> (was “Entered by hand, not checked”). The browser tab now reads “TRACE | Research you can defend”, with a TRACE icon.</p>
+</section>
+
+<section>
+  <div class="eyebrow">3</div>
   <h2>The problem we were given, and how we are scored</h2>
   <p>The organisers asked for a website that helps researchers <b>manage references and cite honestly</b>, and that also works as an <b>AI research assistant</b>: the organisation of a reference manager plus the speed of AI, without invented references. The student must be able to trust that every reference is real and every claim traces to its source, and must stay in charge of final decisions.</p>
   <h3>What the judges score on the day (Phase 2, 65 points)</h3>
   <table>
     <tr><th>Criterion</th><th>Points</th><th>Where TRACE earns it</th></tr>
     <tr><td>Working MVP</td><td>15</td><td>The whole journey runs end to end on the live site: plan → search → library → evidence → claims → inspect → export.</td></tr>
-    <tr><td>Research and citation features</td><td>12</td><td>Live Crossref search, add by DOI, check a pasted reference list, tags/notes/filters, writing space with citation checks, APA 7 or Harvard, retraction flags.</td></tr>
-    <tr><td>Honesty and verification in action</td><td>10</td><td>The citation trap: a changed number in a quote and wrong reference details are both caught and block export.</td></tr>
-    <tr><td>Day-of requirements</td><td>8</td><td>“Rules in force” and one-file-per-feature design make new requirements quick to add. See section 9.</td></tr>
-    <tr><td>User experience</td><td>8</td><td>Four numbered steps, the status of each step shown in the sidebar, every blocked button says why.</td></tr>
+    <tr><td>Research and citation features</td><td>12</td><td>Live Crossref search with a DataCite fallback, check a DOI or a pasted reference list, tags/notes/filters, a Library APA 7 reference list, writing space with citation checks, APA 7 or Harvard, retraction flags, a verification report.</td></tr>
+    <tr><td>Honesty and verification in action</td><td>10</td><td>A fake DOI gets no Add button. The citation trap: a changed number in a quote and wrong reference details are both caught and block export. The AI-use statement counts what AI drafted and what was kept.</td></tr>
+    <tr><td>Day-of requirements</td><td>8</td><td>“Rules in force” and one-file-per-feature design make new requirements quick to add. See section 10.</td></tr>
+    <tr><td>User experience</td><td>8</td><td>Four numbered steps with live status; a legend for every label; Home and Resume; an export bar that says exactly why the reviewed brief isn’t ready yet.</td></tr>
     <tr><td>Presentation and Q&amp;A</td><td>12</td><td>Clear demo, strong answers, <b>every member speaks</b>.</td></tr>
   </table>
   <p class="small">Also scored: the Phase 1 deck (30 points, judged before the event) and a team AI quiz (5 points, 3:15 PM).</p>
   <div class="box accent">
-    <p style="margin:0"><b>“Every member contributes”</b> is part of the 12 presentation points. Both of you speak in the demo and both of you take questions. Be honest about roles if asked (see section 8).</p>
+    <p style="margin:0"><b>“Every member contributes”</b> is part of the 12 presentation points. Both of you speak in the demo and both of you take questions. Be honest about roles if asked (see section 9).</p>
   </div>
 </section>
 
 <section>
-  <div class="eyebrow">3</div>
-  <h2>The big idea: five questions, kept separate</h2>
+  <div class="eyebrow">4</div>
+  <h2>The big idea: five questions and the trust labels</h2>
   <p>A typical checker gives one “Verified” badge. That hides the real problem: a paper can be real and still not say what the student claims. TRACE answers five different questions for every claim and shows each one on its own.</p>
   <table>
     <tr><th>#</th><th>Question</th><th>How TRACE answers it</th><th>Who decides</th></tr>
-    <tr><td>1</td><td><b>Reference identity</b>: is this the paper we say it is?</td><td>Compares the cited title, first author and year with Crossref’s record for that DOI. Shows each disagreement.</td><td>Code</td></tr>
+    <tr><td>1</td><td><b>Reference identity</b>: is this the paper we say it is?</td><td>Compares the cited title, first author’s surname and year with the registry record for that DOI (Crossref, or DataCite when Crossref has none). Shows each disagreement.</td><td>Code</td></tr>
     <tr><td>2</td><td><b>Evidence access</b>: what text do we actually have?</td><td>Abstract, a passage the student pasted, or nothing. Always labelled.</td><td>Code</td></tr>
     <tr><td>3</td><td><b>Excerpt integrity</b>: is the quoted sentence really in that text?</td><td>Exact text match. Numbers and “not” must match too. The real passage is highlighted.</td><td>Code</td></tr>
     <tr><td>4</td><td><b>Support</b>: does the quote back up the claim?</td><td>Only the AI’s suggestion, labelled “AI-suggested, can be wrong”. TRACE never scores it itself.</td><td>AI (fallible)</td></tr>
@@ -138,36 +163,54 @@
     <li><b>Approvals expire when content changes.</b> TRACE stores a fingerprint of what was approved. Edit one word and the approval becomes stale, so nothing stays approved by accident.</li>
   </ul>
   <div class="box tint">
-    <p style="margin:0"><b>“Not found” is not “fake”.</b> If Crossref has no record, TRACE says “Not found in Crossref. This does not show the paper is fake.” If the internet is slow, it says “Could not check”, never “Not found”. Being precise about what we know is the whole point.</p>
+    <p style="margin:0"><b>“Not found” is not “fake”.</b> If neither Crossref nor DataCite has a record, TRACE says “Not found in Crossref. This does not show the paper is fake.” If a registry is slow or down, it says “Could not check”, never “Not found”. Being precise about what we know is the whole point.</p>
   </div>
-</section>
-
-<section>
-  <div class="eyebrow">4</div>
-  <h2>A tour of the app</h2>
-  <p>The left sidebar shows the four steps; the line under each step is its live status. Click any step to go there.</p>
-  <img class="shot" src="../../docs/screenshots/02-plan.png" alt="Plan step">
-  <p class="cap"><b>Plan.</b> The question, search terms suggested by a simple rule (not AI), year range, and “Rules in force” (AI drafting on/off, oldest year, block retracted papers). Nothing can be searched until the plan is approved.</p>
-  <img class="shot" src="../../docs/screenshots/03-discover.png" alt="Discover step">
-  <p class="cap"><b>Discover.</b> Live Crossref search. Each result says whether an abstract exists. You can also add a paper by DOI, enter one by hand (labelled “not checked”), or paste a whole reference list to check it.</p>
-</section>
-
-<section>
-  <img class="shot" src="../../docs/screenshots/04-library.png" alt="Library step">
-  <p class="cap"><b>Library and evidence.</b> A list on the left, details on the right: the source text, the formatted reference, a table comparing what you cite with what Crossref records, tags and notes. Tick “Use in the evidence set” for passages the AI may use, then approve the set (you can see exactly what would be sent to the AI).</p>
-  <img class="shot" src="../../docs/screenshots/05-claim-inspector.png" alt="Claim Inspector">
-  <p class="cap"><b>Brief and the Claim Inspector.</b> Each claim shows its quote, its source and its status chips. “Inspect evidence” opens the inspector on the right: the real source text with the quote highlighted, the five checks, and the only Approve / Reject buttons.</p>
-</section>
-
-<section>
-  <img class="shot" src="../../docs/screenshots/14-writing-space.png" alt="Writing space">
-  <p class="cap"><b>Your text (writing space).</b> A recognised author–date citation with no matching source, such as “(Smith &amp; Jones, 2020)”, is flagged and blocks reviewed export.</p>
-  <img class="shot" src="../../docs/screenshots/07-trap-quote-mismatch.png" alt="Citation trap">
-  <p class="cap"><b>The citation trap.</b> A labelled test copy with planted errors. Claim 1 quotes “1 month”; the real abstract says “1 week”. The paper is real, but the claim is not supported, and the export is blocked until it is fixed.</p>
+  <h3 class="pagebreak">The labels you will see (open “What the labels mean” in the app)</h3>
+  <table>
+    <tr><th>Label</th><th>What it means</th></tr>
+    <tr><td><b>Found in Crossref</b> / <b>Found in DataCite</b></td><td>The DOI exists in that registry. Nothing anyone cites has been compared yet.</td></tr>
+    <tr><td><b class="ok">Details match Crossref</b></td><td>Title, first author’s surname and year agree with the record.</td></tr>
+    <tr><td><b>Partial match: check details</b></td><td>Nothing disagrees, but the wording, author count or year needs a look.</td></tr>
+    <tr><td><b class="bad">Details disagree with Crossref</b></td><td>At least one of those details differs. Can only be added by taking Crossref’s details.</td></tr>
+    <tr><td><b>Not found in Crossref</b> · <b>Could not check</b></td><td>No record (not proof of fake) · the registry didn’t answer (no evidence either way).</td></tr>
+    <tr><td><b>Not yet verified</b></td><td>Typed in by hand. Kept out of reviewed exports and the APA 7 list.</td></tr>
+    <tr><td><b>AI suggestion</b> · <b>Sample, not live AI</b> · <b>Written by you</b></td><td>Who wrote the claim.</td></tr>
+    <tr><td><b>Excerpt found in stored text</b> · <b>Inference</b> · <b>Student approved</b></td><td>The quote check, a claim with no source passage, and the student’s decision. Separate chips, never merged.</td></tr>
+  </table>
 </section>
 
 <section>
   <div class="eyebrow">5</div>
+  <h2>A tour of the app</h2>
+  <img class="shot" src="../../docs/screenshots/01-welcome.png" alt="Welcome page">
+  <p class="cap"><b>Welcome (also at /home).</b> Three ways in: <b>Open the demo project</b>, <b>Check a reference</b> (a read-only DOI check), and <b>Run the citation trap</b>. The excerpt-check card switches between the real quote and the altered one. With a project saved, /home also shows <b>Resume project</b>.</p>
+  <img class="shot" src="../../docs/screenshots/02-plan.png" alt="Plan step">
+  <p class="cap"><b>Plan.</b> The left sidebar shows the four steps with their live status, plus <b>Home</b>. The question, search terms suggested by a simple rule (not AI), year range, and “Rules in force” (AI drafting on/off, oldest year, block retracted papers). Nothing can be searched until the plan is approved.</p>
+</section>
+
+<section>
+  <img class="shot" src="../../docs/screenshots/03-discover.png" alt="Discover step">
+  <p class="cap"><b>Discover.</b> Live Crossref search, each result labelled <b>Found in Crossref</b> with its abstract state. On the right: <b>By DOI</b> (press <b>Check DOI</b>; it compares only the details you typed), <b>Check a list</b> (paste references) and <b>By hand</b> (added as Not yet verified). Checking never adds anything; only an Add button does.</p>
+  <img class="shot" src="../../docs/screenshots/04-library.png" alt="Library step">
+  <p class="cap"><b>Library and evidence.</b> A list on the left, details on the right: the source text, the formatted reference, a table comparing what you cite with the registry record, tags and notes. Tick “Use in the evidence set” for passages the AI may use, then approve the set (you can see exactly what would be sent to the AI).</p>
+</section>
+
+<section>
+  <img class="shot" src="../../docs/screenshots/15-apa-list.png" alt="APA 7 reference list">
+  <p class="cap"><b>APA 7 reference list (bottom of the Library).</b> Every verified reference, formatted by Citation.js, with <b>Copy</b> and <b>Download</b>. References that are not yet verified, disagree, could not be checked or are retracted are left out and counted.</p>
+  <img class="shot" src="../../docs/screenshots/06-review-and-export.png" alt="Brief and export">
+  <p class="cap"><b>Brief and export.</b> Each claim carries separate chips: who wrote it, the reference label, the quote check, and the student’s decision. The bar at the bottom says exactly where the export stands (here “Review checks passed. The reviewed brief is ready to download.”), next to <b>Verification report</b>, <b>Download draft</b> and <b>Download reviewed brief</b>. Scroll to “Review and export” for the references and the <b>AI-use statement</b> with its Copy button.</p>
+</section>
+
+<section>
+  <img class="shot" src="../../docs/screenshots/07-trap-quote-mismatch.png" alt="Citation trap">
+  <p class="cap"><b>The citation trap.</b> A labelled test copy with planted errors. Claim 1 quotes “1 month”; the real abstract says “1 week”. The inspector’s red box says what blocks the export, the quote sits beside the real sentence with “month” highlighted, and the real wording is marked in the source text.</p>
+  <img class="shot" src="../../docs/screenshots/14-writing-space.png" alt="Writing space">
+  <p class="cap"><b>Your text (writing space).</b> A recognised author–date citation with no matching source, such as “(Smith &amp; Jones, 2020)”, is flagged and blocks reviewed export.</p>
+</section>
+
+<section>
+  <div class="eyebrow">6</div>
   <h2>How it works underneath (plain language)</h2>
   <div class="grid2">
     <div class="box tint">
@@ -182,6 +225,7 @@
       <p><b>On our server (only to talk to outside services)</b></p>
       <ul>
         <li><b>Crossref</b>: search and DOI lookups.</li>
+        <li><b>DataCite</b>: asked only when Crossref has no record of a DOI.</li>
         <li><b>OpenAlex</b>: an abstract when Crossref has none.</li>
         <li><b>Google Gemini</b>: one AI call to draft claims. The key stays on the server.</li>
         <li><b>Citation.js</b>: formats references in APA 7 or Harvard.</li>
@@ -189,7 +233,7 @@
     </div>
   </div>
   <h3>What leaves the student’s browser</h3>
-  <p>Search terms and DOIs go to Crossref and OpenAlex. The question and the approved passages go to Gemini, only when the student presses “Draft with AI”. Nothing else. On Gemini’s free tier Google may use what is sent, which the app tells the student.</p>
+  <p>Search terms and DOIs go to Crossref, DataCite and OpenAlex. The question and the approved passages go to Gemini, only when the student presses “Draft with AI”. Nothing else. On Gemini’s free tier Google may use what is sent, which the app tells the student. The server also checks Gemini’s answer before passing it on, and the browser checks it again.</p>
   <h3>Built with</h3>
   <p>Next.js and React (website), TypeScript (code), Tailwind (styling), Vitest and Playwright (automated tests), Citation.js (references), Gemini 3.5 Flash-Lite (AI, free tier). Hosted on Vercel.</p>
   <h3>Why it is easy to change on the day</h3>
@@ -204,18 +248,19 @@
 </section>
 
 <section>
-  <div class="eyebrow">6</div>
-  <h2>The eight guardrails</h2>
+  <div class="eyebrow">7</div>
+  <h2>The guardrails</h2>
   <table>
     <tr><th>What could go wrong</th><th>What TRACE does</th></tr>
-    <tr><td>An invented reference</td><td>Citation.js formats stored source records. TRACE rejects model-supplied reference fields and labels hand-entered records.</td></tr>
+    <tr><td>An invented reference</td><td>Citation.js formats stored source records. TRACE rejects model-supplied reference fields. A fake DOI or an unrelated search match has no Add button. Hand-entered records are labelled Not yet verified and kept out of reviewed exports and the APA 7 list.</td></tr>
     <tr><td>Citing a source the student never approved</td><td>The AI may only return IDs from the approved evidence set. Anything else is rejected and shown.</td></tr>
     <tr><td>A quote that is not in the source</td><td>Exact text match against the stored text. Curly quotes, spacing and capitals are tolerated; numbers, “not” and punctuation are not.</td></tr>
     <tr><td>A claim that says more than its quote</td><td>Every number and negation in the claim must also be in its quote, or export is blocked.</td></tr>
-    <tr><td>A real DOI with the wrong details, or a retracted paper</td><td>Title, first author and year are compared with Crossref; differences are shown, never fixed silently. Retracted papers get their own “Retracted” label and are blocked by default.</td></tr>
+    <tr><td>A real DOI with the wrong details, or a retracted paper</td><td>Title, first author’s surname and year are compared with the registry; differences are shown, never fixed silently, and the paper can only be added by taking the registry’s details. Retracted papers get their own “Retracted” label and are blocked by default.</td></tr>
     <tr><td>A guess stated as fact</td><td>Points without a source passage are marked “inference”. No confidence scores, no “Verified” badge.</td></tr>
     <tr><td>A stale approval, or unreviewed work leaving the tool</td><td>Approvals expire on any edit. One export gate re-checks everything; otherwise the file is marked DRAFT.</td></tr>
-    <tr><td>A failure dressed up as success</td><td>“Not found” and “Could not check” are different. Sample output is labelled everywhere, including in the exported file.</td></tr>
+    <tr><td>A failure dressed up as success</td><td>“Not found” and “Could not check” are different. Sample output is labelled everywhere, including in the exported file. The export bar and the verification report give the same status, including “Reference formatting failed. Retry to download.”</td></tr>
+    <tr><td>Hiding how AI was used</td><td>The AI-use statement counts what AI drafted separately from what the student kept, for example “AI drafted three claims. I approved and included two and rejected one.” It says “approved” only once every included claim is approved, and it is the same in the copied text, the report and the brief.</td></tr>
   </table>
   <div class="box accent">
     <p style="margin:0"><b>Sample vs live.</b> The “Load sample brief” button loads claims we wrote during development, labelled “Sample, not live AI” on every claim and in the export. It is a separate button. If a live AI call fails, TRACE never quietly substitutes the sample.</p>
@@ -223,28 +268,28 @@
 </section>
 
 <section>
-  <div class="eyebrow">7</div>
+  <div class="eyebrow">8</div>
   <h2>The demo, minute by minute</h2>
   <p class="small">Suggested split: <b>Maitrayee</b> opens and walks the journey; <b>Shirley</b> runs the trap and the checks; <b>Atharva</b> drives the laptop and covers the day-of change and technical questions. Swap freely; just make sure each person speaks. Rehearse twice with a stopwatch.</p>
-  <table>
+  <table class="compact">
     <tr><th>Time</th><th>Who</th><th>Do</th><th>Say (in your own words)</th></tr>
-    <tr><td class="t">0:00</td><td class="who">Maitrayee</td><td>Point at the welcome comparison. Click Run the citation trap.</td><td class="say">“One changed word can make a citation misleading. This labelled test copy uses the same checks as a normal project.”</td></tr>
-    <tr><td class="t">0:30</td><td class="who">Shirley</td><td>Inspect claim 1. Fix the quote first, then the timing in the claim. Approve it.</td><td class="say">“TRACE found the corrected quote. I still had to fix the claim that said one month.”</td></tr>
-    <tr><td class="t">1:30</td><td class="who">Shirley</td><td>Inspect claim 2. Use Crossref’s year and first author. Download the reviewed test copy.</td><td class="say">“The DOI resolves. The cited details differ from the registry. Correcting both lets me download the reviewed test copy.”</td></tr>
-    <tr><td class="t">2:15</td><td class="who">Maitrayee</td><td>In Projects and tools, open the normal demo. Approve the plan, then search Crossref.</td><td class="say">“I choose the search terms. Results show whether there is text I can use.”</td></tr>
-    <tr><td class="t">3:15</td><td class="who">Maitrayee</td><td>In Library, show a reference, add a tag, and select four passages.</td><td class="say">“I can organise the library and see the record and passage behind a citation.”</td></tr>
-    <tr><td class="t">4:15</td><td class="who">Shirley</td><td>Preview the model request, approve the evidence set and draft.</td><td class="say">“I approve the passages. Both live Gemini and the labelled sample go through the same checks.”</td></tr>
-    <tr><td class="t">5:15</td><td class="who">Shirley</td><td>Inspect and approve claims. Show the brief’s provenance and disclosure.</td><td class="say">“The file shows what we kept, where it came from and what TRACE’s AI did.”</td></tr>
-    <tr><td class="t">6:20</td><td class="who">Shirley</td><td>If time allows, edit an approved claim and show stale approval.</td><td class="say">“An edit asks me to approve the claim again.”</td></tr>
-    <tr><td class="t">7:00</td><td class="who">Atharva</td><td>Show the day-of change if required.</td><td class="say">“We were asked for ___. Here’s where it changes the workflow.”</td></tr>
-    <tr><td class="t">7:30</td><td class="who">Maitrayee</td><td>Close on limits.</td><td class="say">“This demo uses abstracts. Text matching checks the stored words. The student interprets the evidence and approves the brief.”</td></tr>
+    <tr><td class="t">0:00</td><td class="who">Maitrayee</td><td>Welcome → <b>Check a reference</b>. DOI <b>10.1234/trace-smoke-test-no-such-doi</b> → <b>Check DOI</b>.</td><td class="say">“An invented DOI: not found, and there is no Add button. Not found isn’t proof it’s fake, so we don’t call it fake. We just don’t trust it.”</td></tr>
+    <tr><td class="t">0:30</td><td class="who">Maitrayee</td><td>DOI <b>10.1126/science.1152408</b>, Year <b>2025</b> → Check DOI. Point at the sidebar: still 7 sources.</td><td class="say">“A real paper cited with the wrong year: details disagree, field by field. Checking never changes the library.”</td></tr>
+    <tr><td class="t">1:00</td><td class="who">Maitrayee</td><td><b>Home</b> → <b>Run the citation trap</b>.</td><td class="say">“This labelled test copy has two planted errors and uses the same checks as a normal project.”</td></tr>
+    <tr><td class="t">1:15</td><td class="who">Shirley</td><td>Inspect claim 1. Point at the red box and “month”. Fix the quote first: still blocked. Then fix the claim to one week. Approve.</td><td class="say">“The paper is real; the quote isn’t. Fixing the quote alone isn’t enough, because the claim still says one month.”</td></tr>
+    <tr><td class="t">2:15</td><td class="who">Shirley</td><td>Inspect claim 2. Use Crossref’s year and first author. Download the reviewed test copy.</td><td class="say">“Real DOI, wrong details. Correcting both opens the gate.”</td></tr>
+    <tr><td class="t">3:00</td><td class="who">Maitrayee</td><td>Projects and tools → open the demo. Approve the plan. In Library, show a reference and its comparison table, select four passages, then scroll to <b>Copy APA 7 reference list</b>.</td><td class="say">“The library gives the record behind every citation, and the whole list as APA 7 from Citation.js, never from AI.”</td></tr>
+    <tr><td class="t">4:00</td><td class="who">Shirley</td><td>Review and approve the evidence set. <b>Draft with AI</b> (or Load sample brief). Reject one claim, approve the others.</td><td class="say">“I choose what the AI sees, and every claim needs my decision.”</td></tr>
+    <tr><td class="t">5:15</td><td class="who">Shirley</td><td><b>Copy AI-use statement</b>, then <b>Verification report</b>, then <b>Download reviewed brief</b>.</td><td class="say">“The statement says what AI drafted and what I kept, for example three drafted, two included. The report and the brief say the same.”</td></tr>
+    <tr><td class="t">6:15</td><td class="who">Atharva</td><td><b>Home</b> → <b>Resume project</b>. Then the day-of change, if any.</td><td class="say">“Home is one click away and Resume brings back the same step. We were asked for ___; here’s where it changes.”</td></tr>
+    <tr><td class="t">7:15</td><td class="who">Maitrayee</td><td>Close on limits.</td><td class="say">“TRACE reads abstracts. A text match checks the stored words, not the science. The student interprets the evidence and approves the brief.”</td></tr>
   </table>
-  <p class="small"><b>Short on time?</b> Skip the stale-approval example and show the reviewed test copy you downloaded at 1:30. If search is slow, use the preloaded library.</p>
+  <p class="small"><b>Short on time?</b> Skip 0:30 and the APA list. Never skip the trap (1:00–3:00). If search or Gemini is slow, use the preloaded library and <b>Load sample brief (not live AI)</b>; with the sample, say “sample” and don’t claim AI drafted it.</p>
   <p class="small"><b>Sample passages:</b> Test-Enhanced Learning, The Critical Importance of Retrieval for Learning, Rethinking the Use of Tests, and Improving Students’ Learning With Effective Learning Techniques.</p>
 </section>
 
 <section class="qa">
-  <div class="eyebrow">8</div>
+  <div class="eyebrow">9</div>
   <h2>Judges’ questions and good answers</h2>
   <h3>“The DOI resolves. Isn’t that verified?”</h3>
   <p>It shows the reference exists and whether its details match the registry. It says nothing about whether the claim is in the paper. That is why identity and the quote check are separate, and why the trap uses a real DOI.</p>
@@ -254,6 +299,12 @@
   <p>Zotero already looks up DOIs and Elicit already links claims to quotes; we don’t claim those are new. ChatGPT can invent references. What we show is a small workflow where the checks are visible, five statuses stay separate, approvals expire when content changes, and one gate enforces it at export.</p>
   <h3>“How do you stop the AI inventing a reference?”</h3>
   <p>It has no way to write one. Its answer may only contain an approved evidence ID, a claim, a quote and limitations. Anything else is rejected. References come from registry data through Citation.js.</p>
+  <h3>“What if Crossref doesn’t have the paper?”</h3>
+  <p>TRACE then asks DataCite, which registers many datasets and repository items, and labels the result “Found in DataCite”. If neither has it, it says “Not found”, never “fake”. If a registry is down, it says “Could not check”.</p>
+  <h3>“If I reject an AI claim, does the disclosure hide that AI wrote it?”</h3>
+  <p>No. The statement counts what AI drafted separately from what you kept: “AI drafted three claims. I approved and included two and rejected one.” Even if you reject them all, it still says AI drafted them.</p>
+  <h3>“What is the verification report?”</h3>
+  <p>A one-page Markdown file built from the same checks as the export gate: each reference and the registry that confirmed it, each quote check and decision, any blockers, whether the reviewed brief can be downloaded, and the AI-use statement. It contains no prompts or full passages.</p>
   <h3>“What if the AI or the internet is down?”</h3>
   <p>Search says “Could not check”, never “not found”. Without AI the student writes claims by hand; the checks and export work the same. The sample is a separate, labelled button and never replaces a failed call.</p>
   <h3>“What does the student control?”</h3>
@@ -269,11 +320,11 @@
   <h3>“Who built what?”</h3>
   <p>Atharva built the application with Claude Code and Codex. The main prompts are in the prompt log. Each presenter should describe the code, testing, rehearsal or presentation work they actually did.</p>
   <h3>“How did you test it?”</h3>
-  <p>207 unit tests and 22 production browser tests passed, including the trap and an invalid model answer. A separate smoke test checked live Crossref, OpenAlex and Gemini.</p>
+  <p>214 unit tests and 22 production browser tests passed, including the trap, an invalid model answer and a reference-formatting failure. A live smoke test on the public site passed all 9 checks, including Crossref, DataCite, OpenAlex and a real Gemini draft.</p>
 </section>
 
 <section>
-  <div class="eyebrow">9</div>
+  <div class="eyebrow">10</div>
   <h2>What we never say</h2>
   <div class="box" style="border-color:var(--bad-soft)">
     <ul style="margin:0">
@@ -286,7 +337,7 @@
   </div>
   <h3>Before you walk up</h3>
   <ol>
-    <li>Open the submitted URL in a fresh browser profile so the welcome screen shows.</li>
+    <li>Open the submitted URL in a fresh browser profile so the welcome screen shows. Use <b>one tab only</b>: a second open tab keeps its own saved copy and will bring it back.</li>
     <li>Run the live smoke test before presenting. Use the labelled sample if live drafting is unavailable.</li>
     <li>Prepare a local production server on the presentation laptop as a backup.</li>
     <li>Laptop charged, charger, browser zoom at 100%, notifications off. Formal dress.</li>
@@ -296,18 +347,20 @@
     <li><b>Internet down:</b> use the running local server for the demo sources, sample brief, citation trap and export.</li>
     <li><b>AI says it is busy or out of allowance:</b> press Load sample brief and say “this is our labelled sample”.</li>
     <li><b>Page looks wrong:</b> switch to the local demo or open the submitted link in a fresh browser profile.</li>
-    <li><b>Lost your place:</b> click the step in the sidebar; each step starts at its top.</li>
+    <li><b>Lost your place:</b> click the step in the sidebar (each step starts at its top), or click <b>Home</b> and then <b>Resume project</b>.</li>
+    <li><b>Reviewed brief button greyed out:</b> read the bar beside it. “Formatting references” means wait a moment; “Reference formatting failed” means press <b>Retry</b>.</li>
   </ul>
   <h3>If the organisers announce a new requirement on the day</h3>
   <p>Atharva builds it; the rest of the team keeps rehearsing. Write one sentence for the 7:00 slot: what was asked, what changed, and that the design from our deck is unchanged.</p>
 </section>
 
 <section>
-  <div class="eyebrow">10</div>
+  <div class="eyebrow">11</div>
   <h2>Glossary</h2>
   <table>
     <tr><td><b>DOI</b></td><td>Digital Object Identifier: a permanent ID for a paper, like 10.1126/science.1152408.</td></tr>
     <tr><td><b>Crossref</b></td><td>The main official registry of DOIs and their details (title, authors, year, sometimes abstract).</td></tr>
+    <tr><td><b>DataCite</b></td><td>The second big DOI registry, mostly datasets and repository items. TRACE asks it only when Crossref has no record.</td></tr>
     <tr><td><b>OpenAlex</b></td><td>A free open catalogue of research; we use it only for an abstract when Crossref has none.</td></tr>
     <tr><td><b>Abstract</b></td><td>The short summary at the top of a paper. TRACE’s evidence is usually the abstract.</td></tr>
     <tr><td><b>Excerpt</b></td><td>The exact sentence a claim quotes from the source.</td></tr>
@@ -317,6 +370,8 @@
     <tr><td><b>Retraction</b></td><td>When a journal withdraws a paper (for example for misconduct). Crossref publishes retraction notices.</td></tr>
     <tr><td><b>Stale</b></td><td>An approval that no longer applies because something changed after it was given.</td></tr>
     <tr><td><b>Export gate</b></td><td>The single check that decides whether a “reviewed” brief can be downloaded.</td></tr>
+    <tr><td><b>Trust label</b></td><td>A chip showing the result of one check, such as “Details match Crossref”. Never a general “verified”.</td></tr>
+    <tr><td><b>Verification report</b></td><td>A one-page summary of every check, the blockers and the AI-use statement, downloaded beside the export buttons.</td></tr>
     <tr><td><b>Gemini</b></td><td>Google’s AI model; we use the free Flash-Lite version through its API.</td></tr>
   </table>
   <h3>AI quiz revision (team quiz, 3:15 PM, 5 minutes)</h3>
