@@ -28,7 +28,7 @@ The log is chronological and includes the build prompt, the set-up answers, the 
 https://trace-hackathon.vercel.app
 ```
 
-Final release, verified on the public site on 26 Nov 2026 at about 13:40: app commit `edc2895` (Vercel deployment `Cu7VqquvRtYuAgdEWNnPrWN1M1ny`). This is the freeze point; see the QA report. The landing page is also at https://trace-hackathon.vercel.app/home. Rollback: Vercel → Deployments → Instant Rollback to `3FRKisLLjuBWwYkLWBd5YheF8zMK` (commit `fba2a71`, app release `6428a91`).
+Day-of release, verified on the public site on 26 Nov 2026 at about 14:15: app commit `ca0df83` (Vercel deployment `3rUEF2JmVvLfrBVPVhmNhZ6XGPtP`). This is the freeze point; see the QA report. The landing page is also at https://trace-hackathon.vercel.app/home. Rollback: Vercel → Deployments → Instant Rollback to `9uKEiTXwej1ooSyaseT8hrCcwfFb` (commit `218df18`, app `edc2895`).
 
 ### The five judging requirements: demo action and evidence
 
@@ -90,9 +90,21 @@ State this plainly if asked, and keep it accurate.
 
 ## Day-of requirements
 
-```
-[List each requirement given at 1:15 PM and, for each, one line on what was changed and where.]
-```
+Given at the event: handle a messy, partly false reference list (eight references, A–H) and three typed requests. The six required cases are below, each with the step that handles it. The full pass/fail table is in `docs/qa-report.md`.
+
+1. **Invented reference (C):** CHECK → Discover → Check a list. The row reads **Not found in Crossref or DataCite**; nothing is substituted.
+2. **Real DOI, wrong paper (E):** CHECK. The row reads **Mismatch**, with the Crossref record (Silver et al., 2017) shown beside the paste. There is no swap action.
+3. **Small error (A):** CHECK, then the student decides. The row reads **Needs fix** (1981 → 1979) with **Accept fix** / **Reject fix**; adding is a separate click.
+4. **Retracted (D):** CHECK. **Retracted** is shown first, with a warning. It is kept out of the APA list and is listed as RETRACTED in the verification report.
+5. **Duplicate (B/G):** CHECK. G is flagged **Duplicate of row B** and offers **Merge into row B**, so one entry is kept and appears once in the reference list.
+6. **No source exists (request 1):** FIND → Discover → Research assistant. The answer is **Not found**, naming Crossref and the 20 records examined; nothing is invented.
+
+Bonus:
+- Request 2: the quote is checked against stored text only. It gives "Could not check" when no text is stored.
+- Request 3: the note is stored verbatim as text, flagged, and changes no status.
+- A rate limit gives "Could not check · Retry".
+- DOI-less F gives "Uncertain"; it is not called fake.
+- H gives "Web source · Not checked". It is not APA-formatted.
 
 ## Known limits (say these before you are asked)
 

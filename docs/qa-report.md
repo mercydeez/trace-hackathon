@@ -2,7 +2,62 @@
 
 Results of checks that were actually run. Each line is **passed**, **failed** or **not run**. Nothing is listed as passed without a run behind it.
 
-## Final feature: qualifying or challenging passage · 26 November 2026, about 13:05–13:40 Dubai time · FREEZE POINT
+## Day-of requirements · 26 November 2026, about 13:40–14:15 Dubai time · FREEZE POINT
+
+**Release:** app commit `ca0df83`, Vercel deployment `3rUEF2JmVvLfrBVPVhmNhZ6XGPtP`, https://trace-hackathon.vercel.app. **Rollback target:** `9uKEiTXwej1ooSyaseT8hrCcwfFb` (`218df18`, the previous production build: app `edc2895`). This reopened the earlier freeze for the organisers' day-of requirements; the documentation commit that records this section is the new freeze point.
+
+### What changed, by Phase 1 step
+
+- **FIND.** Discover → **Research assistant** → *Find studies* searches Crossref (20 records) and answers only with records whose title or abstract contains every specific term of the request; otherwise **Not found**, naming Crossref and the number of records examined. Never padded. Related records, if any, are labelled "Related only · not an answer".
+- **CHECK.** Discover → **Check a list** reads one paste into one row per reference (letter, number or `[n]` markers; APA; compact Vancouver), with the pasted text beside the registry record. Statuses:
+  - **Verified**;
+  - **Needs fix**, when only the year differs (shows pasted and registry values);
+  - **Mismatch**, when the DOI's title or first author differs; nothing is swapped in;
+  - **Retracted**, shown first even when every detail matches;
+  - **Not found in Crossref or DataCite**, or **Not found in Crossref search**;
+  - **Could not check · Retry**, for a timeout or rate limit;
+  - **Uncertain**, when a search hit has the same title and author but another year; never substituted;
+  - **Web source · Not checked**;
+  - **Duplicate of row X**, or already in the library (normalised DOI, then title + first author + year; a title-only match is a "possible duplicate").
+
+  *Check a quote* compares the quote with stored text only. *Save a note* stores the quoted note verbatim as text.
+- **The student decides.** Checking never changes the library. **Accept fix** / **Reject fix**, then a separate **Add to library** or **Keep for review (flagged)**; **Merge** keeps one entry; **Add with retraction warning**; **Save note**.
+- **DRAFT.** Unchanged: Gemini sees approved evidence only. Notes never reach a prompt.
+- **EXPORT.** The verification report has an **Excluded or unresolved references** section with each reason (RETRACTED, DETAILS DISAGREE…). The brief marks a flagged reference beside its entry. The Library APA list still lists only clean references and counts the excluded ones with reasons.
+
+### Test pack results (public site, real registries, desktop 1440 px)
+
+| Item | Required behaviour | Observed on https://trace-hackathon.vercel.app | Result |
+| --- | --- | --- | --- |
+| A Kahneman & Tversky (1981) | Small error | **Needs fix**: year pasted 1981, Crossref 1979. Accept fix → Add to library. Reject fix (separate run) → original kept, "Keep for review (flagged)" → Library shows "Details disagree with Crossref", APA list excludes it with that reason | **Pass** |
+| B LeCun et al. (2015) | Correct | **Verified · details match Crossref**; added explicitly | **Pass** |
+| C Sharma & Al-Mansoori (2023) | Invented | **Not found in Crossref or DataCite**, no add, no substitute | **Pass** |
+| D Wakefield et al. (1998) | Retracted | **Retracted (retraction notice in Crossref)** with a warning; only "Add with retraction warning"; then excluded from the APA list and listed as RETRACTED in the report | **Pass** |
+| E Hinton & Bengio (2017) | Real DOI, wrong paper | **Mismatch · the DOI points to another paper**: Crossref record (Silver et al., 2017) beside the paste; no swap action | **Pass** |
+| F Vaswani et al. (2017), no DOI | Bonus B1 | **Uncertain · no confirmed record**: the closest Crossref record is not substituted and the paper is not called fake | **Pass** |
+| G LECUN Y… 2015 (compact) | Duplicate of B | **Likely match · Duplicate of row B** → **Merge into row B**; library 7 → 10 after adding A, B and D, with G not saved | **Pass** |
+| H WHO web page | Bonus B2 | **Web source · Not checked**, no add. APA 7 formatting with "n.d." was **not done** | **Partial** |
+| Request 1 (hackathon studies) | No source exists | **Not found**: Crossref searched, 20 records examined, none contains all terms; nothing invented | **Pass** |
+| Request 2 (LeCun quote) | Bonus B3 | **Could not check**: no stored text for LeCun et al. (2015) (Crossref has no abstract), so the full text was not available and the quote is not confirmed | **Pass** |
+| Request 3 (SYSTEM note) | Bonus B5 | Note previewed verbatim on LeCun et al. (2015) with a warning that it reads like an instruction; saved as text, and no status changed | **Pass** |
+| Simulated rate limit on `/api/doi` (local, route intercept) | Bonus B4 | A–E **Could not check · Retry**, never Not found; C was not reported as missing | **Pass** |
+
+### Checks
+
+| Check | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck`, `npm run build` | **Passed** |
+| `npm test` | **Passed**, 242 of 242 in 20 files. New: `tests/unit/dayOf.test.ts` (16), covering <br>• the pack splitting into eight rows; <br>• the compact and web parses; <br>• Needs fix versus Mismatch, including an unseen DOI; <br>• search never substituting; <br>• duplicates; <br>• request routing, the strict term filter, quote and note handling. <br>Two older expectations now read Needs fix and Uncertain instead of mismatch. |
+| `npm run test:e2e` (local production build) | **Passed**, 23 of 23 (the list and DOI journeys were updated for the new statuses, the duplicate flag and Merge) |
+| Public site, existing journeys | **Passed**, 4 of 4: main journey, citation trap, second passage, Library APA list |
+
+**Not verified or not done:**
+- APA 7 formatting of the WHO page.
+- Warnings inside the AI-use statement. It lists no references, so there is nothing to mark.
+- Phone layout of the new review table (desktop was the target).
+- Unseen references were tested by unit tests, not on the live site.
+
+## Final feature: qualifying or challenging passage · 26 November 2026, about 13:05–13:40 Dubai time
 
 **Release:** app commit `edc2895`, Vercel deployment `Cu7VqquvRtYuAgdEWNnPrWN1M1ny`, https://trace-hackathon.vercel.app. **Rollback target:** `3FRKisLLjuBWwYkLWBd5YheF8zMK` (`fba2a71`, the previous production build: app release `6428a91` plus a guide update). The documentation commit that records this section is the freeze point. No feature work or polish follows it. If a release-blocking regression appears, roll back to the target above and report the blocker.
 
