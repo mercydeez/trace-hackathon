@@ -31,7 +31,7 @@ function EvidenceBlock({ evidence }: { evidence: Evidence }) {
   const [all, setAll] = useState(false);
   const selected = project.evidenceSet.ids.includes(evidence.id);
   const long = evidence.text.length > 480;
-  const cited = project.claims.filter((c) => c.evidenceId === evidence.id).length;
+  const cited = project.claims.filter((c) => c.evidenceId === evidence.id || c.second?.evidenceId === evidence.id).length;
 
   return (
     <div className={cx("rounded-lg border p-4 transition-colors", selected ? "border-ok/30 bg-ok-tint/40" : "border-line bg-s2/60")}>

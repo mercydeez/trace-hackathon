@@ -7,7 +7,7 @@
  * shortened, and evidence is described by where it came from.
  */
 import { aiUseStatement } from "./disclosure";
-import { citedSources } from "./exportMarkdown";
+import { citedSources, ROLE_LABEL } from "./exportMarkdown";
 import { evaluateExport, exportReadiness, type ClaimInspection, type ReferenceState } from "./exportPolicy";
 import { sourceIdentity } from "./identity";
 import { DECISION_LABEL, excerptLabel, trustLabel } from "./labels";
@@ -36,8 +36,8 @@ function reference(s: Source): string {
   return `${label} (${registry})${retraction}`;
 }
 
-function evidenceOrigin(i: ClaimInspection): string {
-  if (i.claim.kind === "inference") return "none: marked as an inference";
+function evidenceOrigin(i: { kind: Claim["kind"]; evidence: ClaimInspection["evidence"] }): string {
+  if (i.kind === "inference") return "none: marked as an inference";
   if (!i.evidence) return "missing: the passage is no longer in the project";
   if (i.evidence.scope === "user_pasted") return "passage pasted by the student, not checked against the publication";
   const p = i.evidence.provenance;
@@ -83,12 +83,20 @@ export function buildVerificationReport(project: Project, now: string, reference
     out.push(`- Origin: ${origin(c)}`);
     if (c.kind === "evidence") {
       out.push(`- Reference: ${i.source ? reference(i.source) : "missing"}`);
-      out.push(`- Evidence: ${evidenceOrigin(i)}`);
+      out.push(`- Evidence: ${evidenceOrigin({ kind: c.kind, evidence: i.evidence })}`);
       out.push(`- Quote check: ${excerptLabel(i.excerpt)}${c.excerpt ? ` (“${short(c.excerpt, 120)}”)` : ""}`);
       if (i.details.length) out.push(`- Claim details: ${i.details.map((d) => d.message).join(" ")}`);
       out.push(`- AI-suggested support: ${c.support ? `the excerpt ${SUPPORT[c.support] ?? c.support} the claim (a suggestion, can be wrong)` : "none recorded"}`);
+      const s = i.second;
+      if (s && c.second) {
+        // The second passage, checked like the first. Its role is the student's judgement, not a TRACE check.
+        out.push(`- Second passage, role: ${ROLE_LABEL[s.role]} (the student's judgement, not checked by TRACE)`);
+        out.push(`  - Reference: ${s.source ? reference(s.source) : "missing"}`);
+        out.push(`  - Evidence: ${evidenceOrigin({ kind: "evidence", evidence: s.evidence })}`);
+        out.push(`  - Quote check: ${excerptLabel(s.excerpt)}${c.second.excerpt ? ` (“${short(c.second.excerpt, 120)}”)` : ""}`);
+      }
     } else {
-      out.push(`- Evidence: ${evidenceOrigin(i)}`);
+      out.push(`- Evidence: ${evidenceOrigin({ kind: c.kind, evidence: i.evidence })}`);
     }
     out.push(`- Student decision: ${DECISION_LABEL[i.decision]}`);
     out.push("");

@@ -10,7 +10,7 @@ import { checkClaimDetails, type DetailIssue } from "./claimNumbers";
 import { checkExcerpt, type ExcerptCheck } from "./excerpt";
 import { sourceIdentity, type Identity } from "./identity";
 import { findCitations, matchCitations, type CitationMatch } from "./inText";
-import type { Claim, Evidence, Project, Source } from "./types";
+import type { Claim, Evidence, Project, SecondPassage, Source } from "./types";
 
 export type IssueCode =
   | "plan_unapproved"
@@ -59,7 +59,58 @@ export interface ClaimInspection {
   /** 5. Student decision. */
   decision: EffectiveDecision;
   inApprovedSet: boolean;
+  /** The student's qualifying or challenging passage, checked like the supporting one. Null when there is none. */
+  second: SecondInspection | null;
   issues: Issue[];
+}
+
+export interface SecondInspection {
+  role: SecondPassage["role"];
+  /** "qualifying" or "challenging", for messages and exports. */
+  noun: string;
+  evidence: Evidence | null;
+  source: Source | null;
+  identity: Identity | null;
+  excerpt: ExcerptCheck;
+  inSet: boolean;
+}
+
+export const ROLE_NOUN: Record<SecondPassage["role"], string> = { qualifies: "qualifying", challenges: "challenging" };
+
+function inspectSecond(project: Project, second: SecondPassage): SecondInspection {
+  const evidence = second.evidenceId ? (project.evidence.find((e) => e.id === second.evidenceId) ?? null) : null;
+  const source = evidence ? (project.sources.find((s) => s.id === evidence.sourceId) ?? null) : null;
+  return {
+    role: second.role,
+    noun: ROLE_NOUN[second.role],
+    evidence,
+    source,
+    identity: source ? sourceIdentity(source) : null,
+    excerpt: checkExcerpt(second.excerpt, evidence?.text),
+    inSet: evidence !== null && project.evidenceSet.ids.includes(evidence.id),
+  };
+}
+
+/** The same evidence, quote and reference checks as the supporting passage, worded for the second one. */
+function secondIssues(project: Project, s: SecondInspection, add: (code: IssueCode, message: string, sourceId?: string) => void) {
+  const what = `its ${s.noun} passage`;
+  if (!s.evidence) {
+    add("evidence_missing", `${what} has no stored passage (none chosen yet, or its source was removed from the project). Choose a passage, or remove the ${s.noun} passage.`);
+    return;
+  }
+  if (!s.source) add("source_missing", `${what} is missing its source record. Choose another passage, or remove the ${s.noun} passage.`);
+  if (!s.inSet) add("evidence_unapproved", `${what} is not in the evidence set.`);
+  if (s.excerpt.status === "mismatch") add("quote_mismatch", `the excerpt of ${what} is not in the stored source text.`);
+  if (s.excerpt.status === "not_checkable") add("quote_not_checkable", `the excerpt of ${what} cannot be checked because ${NOT_CHECKABLE_TEXT[s.excerpt.reason]}.`);
+  const id = s.identity;
+  if (id?.status === "mismatch") add("identity_mismatch", `the reference details of ${what} disagree with ${id.registry ?? "the registry"}.`, s.source?.id);
+  else if (s.source?.doi && id?.status !== "matched") add("identity_unconfirmed", `the DOI of ${what} has not been confirmed with Crossref.`, s.source.id);
+  else if (s.source && !s.source.doi) add("identity_unverified", `the reference of ${what} is Not yet verified (entered by hand). A reviewed export uses verified references only.`, s.source.id);
+  if (id?.retraction && project.rules.blockRetracted) add("source_retracted", `the source of ${what} has a ${id.retraction.kind} notice in Crossref.`, s.source?.id);
+  const minYear = project.rules.minYear;
+  if (minYear !== null && s.source && (s.source.cited.year === null || s.source.cited.year < minYear)) {
+    add("rule_min_year", `the source of ${what} is from ${s.source.cited.year ?? "an unknown year"}, but the rules in force require ${minYear} or later.`, s.source.id);
+  }
 }
 
 const NOT_CHECKABLE_TEXT: Record<string, string> = {
@@ -83,6 +134,8 @@ export function inspectClaim(project: Project, claim: Claim): ClaimInspection {
 
   // Numbers and negations in the claim must appear in the excerpt it quotes. Deterministic; see claimNumbers.ts.
   const details = claim.kind === "evidence" && claim.excerpt.trim() ? checkClaimDetails(claim.text, claim.excerpt) : [];
+
+  const second = claim.kind === "evidence" && claim.second ? inspectSecond(project, claim.second) : null;
 
   const issues: Issue[] = [];
   const add = (code: IssueCode, message: string, sourceId?: string) =>
@@ -120,6 +173,7 @@ export function inspectClaim(project: Project, claim: Claim): ClaimInspection {
           );
         }
       }
+      if (second) secondIssues(project, second, add);
     }
     const retraction = identity?.retraction;
     if (retraction && project.rules.blockRetracted) {
@@ -152,6 +206,7 @@ export function inspectClaim(project: Project, claim: Claim): ClaimInspection {
     details,
     decision,
     inApprovedSet,
+    second,
     issues,
   };
 }

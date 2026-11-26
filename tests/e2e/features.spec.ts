@@ -157,6 +157,58 @@ test("writing space: insert a citation, catch an invented one, and export the te
   expect(md).toContain("Rowland, C. A. (2014).");
   expect(md).toContain("TRACE did not generate any of it");
 });
+test("second passage: Qualifies or Challenges, fresh approval on every change, both passages in the brief and report", async ({ page }) => {
+  await mockStatus(page, false);
+  await demoWithApprovedEvidence(page);
+  await page.getByRole("button", { name: "Load sample brief (not live AI)" }).click();
+  for (const n of [1, 2, 3, 4, 5]) await page.getByRole("button", { name: `Approve claim ${n}` }).click();
+  const reviewed = page.getByRole("button", { name: "Download reviewed brief" });
+  await expect(reviewed).toBeEnabled();
+
+  await page.getByRole("button", { name: "Inspect claim 1" }).click();
+  const inspector = page.getByRole("complementary", { name: "Claim Inspector" });
+  await inspector.getByRole("button", { name: "Add qualifying or challenging passage" }).click();
+  // Added but not chosen yet: the approval is stale and the empty passage is a blocker.
+  await expect(reviewed).toBeDisabled();
+  await expect(inspector.getByText("Before approving: its qualifying passage has no stored passage")).toBeVisible();
+
+  await inspector.getByLabel("Qualifies passage").selectOption("ev_demo_2"); // Karpicke & Roediger (2008), a real demo source
+  const stored = inspector.getByLabel("Stored source text").nth(1);
+  const sentence = ((await stored.textContent()) ?? "").match(/[^.]{40,}\./)![0].trim();
+  await inspector.getByLabel("Excerpt that qualifies the claim").fill(sentence);
+  const cards = inspector.getByRole("region", { name: "Supporting and second passages" });
+  await expect(cards.getByText("Excerpt found in stored text")).toHaveCount(2);
+  await expect(cards.getByText("Your judgement: it limits where or when the claim applies")).toBeVisible();
+
+  await inspector.getByRole("button", { name: "Approve again" }).click();
+  await expect(reviewed).toBeEnabled();
+
+  // Changing only the student's label makes the approval stale again.
+  await inspector.getByLabel(/^Challenges:/).check();
+  await expect(reviewed).toBeDisabled();
+  await expect(page.getByText("Claim 1: changed after you approved it.")).toBeVisible();
+  await inspector.getByRole("button", { name: "Approve again" }).click();
+  await expect(reviewed).toBeEnabled();
+  await shot(page, "16-second-passage");
+
+  const [download] = await Promise.all([page.waitForEvent("download"), reviewed.click()]);
+  const md = await readFile(await download.path(), "utf8");
+  expect(md).toContain(`**Challenges** (the student's judgement): “${sentence}” (Karpicke & Roediger, 2008)`);
+  expect(md).toContain("- Claim 1, challenging passage (labelled Challenges by the student) → Karpicke & Roediger (2008): abstract only, from Crossref");
+  expect(md).toContain("Karpicke, J. D., & Roediger, H. L. (2008).");
+  expect(md.match(/Karpicke, J\. D\., & Roediger, H\. L\. \(2008\)\./g)).toHaveLength(1);
+
+  const [report] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Download verification report" }).click()]);
+  const text = await readFile((await report.path())!, "utf8");
+  expect(text).toContain("- Second passage, role: Challenges (the student's judgement, not checked by TRACE)");
+  expect(text).toContain("  - Quote check: Excerpt found in stored text");
+
+  // Removing the passage is a change too, and single-passage claims keep working as before.
+  await inspector.getByRole("button", { name: "Remove challenging passage" }).click();
+  await expect(reviewed).toBeDisabled();
+  await inspector.getByRole("button", { name: "Approve again" }).click();
+  await expect(reviewed).toBeEnabled();
+});
 test("welcome: 'Check a reference' opens straight at a read-only DOI check", async ({ page }) => {
   await mockStatus(page, false);
   await page.route("**/api/doi**", (r) => r.fulfill(reply.fail(404, "not_found", "Crossref has no record for this DOI.")));

@@ -51,15 +51,23 @@ export function selectedEvidence(p: EvidenceBits): Evidence[] {
 
 type ClaimBits = EvidenceBits & Pick<Project, "sources">;
 
-export function claimFingerprint(p: ClaimBits, c: Claim): string {
-  const evidence = c.evidenceId ? p.evidence.find((e) => e.id === c.evidenceId) : undefined;
-  const version = c.evidenceId ? (evidence?.version ?? "missing") : null;
+/** What an approval covers about one passage: its stored text version and, without a DOI, its source's cited details. */
+function passageBits(p: ClaimBits, evidenceId: string | null): [string | null, unknown] {
+  const evidence = evidenceId ? p.evidence.find((e) => e.id === evidenceId) : undefined;
+  const version = evidenceId ? (evidence?.version ?? "missing") : null;
   // A source without a DOI has no registry check, so its cited details are part of what was approved:
   // editing its title, authors or year makes the approval stale. Sources with a DOI are compared with
   // Crossref on every render instead (identity check), so correcting them does not reset approvals.
   const source = evidence ? p.sources.find((s) => s.id === evidence.sourceId) : undefined;
-  const cited = source && !source.doi ? source.cited : null;
-  return hashText(JSON.stringify([planFingerprint(p), c.text.trim(), c.kind, c.evidenceId, c.excerpt.trim(), version, c.limitations.trim(), cited]));
+  return [version, source && !source.doi ? source.cited : null];
+}
+
+export function claimFingerprint(p: ClaimBits, c: Claim): string {
+  const [version, cited] = passageBits(p, c.evidenceId);
+  // A second passage adds to the fingerprint only when present, so claims without one (and every
+  // approval saved before second passages existed) keep exactly the fingerprint they had.
+  const second = c.second ? [[c.second.role, c.second.evidenceId, c.second.excerpt.trim(), ...passageBits(p, c.second.evidenceId)]] : [];
+  return hashText(JSON.stringify([planFingerprint(p), c.text.trim(), c.kind, c.evidenceId, c.excerpt.trim(), version, c.limitations.trim(), cited, ...second]));
 }
 
 export type EffectiveDecision = "pending" | "approved" | "rejected" | "stale";

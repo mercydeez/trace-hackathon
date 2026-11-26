@@ -7,7 +7,7 @@ import { callApi, type DraftResult } from "@/lib/api";
 import { evidenceSetFingerprint, isEvidenceSetApproved, isPlanApproved, selectedEvidence } from "@/lib/approvals";
 import { SAMPLE_RAW, sampleAvailable } from "@/lib/demo";
 import { aiUseStatement } from "@/lib/disclosure";
-import { buildBrief, citedSources, STYLE_LABEL } from "@/lib/exportMarkdown";
+import { buildBrief, citedSources, ROLE_LABEL, STYLE_LABEL } from "@/lib/exportMarkdown";
 import { evaluateExport, exportReadiness, textCitations, type ClaimInspection, type ExportEvaluation, type ReferenceState } from "@/lib/exportPolicy";
 import { sourceIdentity } from "@/lib/identity";
 import { suffixOf, yearLetters } from "@/lib/inText";
@@ -352,6 +352,13 @@ function ClaimRow({ i, refs, active, onInspect }: { i: ClaimInspection; refs: Re
             <span aria-hidden className="font-bold text-accent">“</span>
             {claim.excerpt.length > 240 ? `${claim.excerpt.slice(0, 240).trimEnd()}…` : claim.excerpt}
             <span aria-hidden className="font-bold text-accent">”</span>
+          </p>
+        )}
+        {claim.kind === "evidence" && i.second && claim.second && (
+          <p className="mt-2 border-l-2 border-line-strong pl-3 text-sm leading-relaxed text-ink-soft">
+            <span className="font-semibold text-ink">{ROLE_LABEL[i.second.role]}</span> (your judgement):{" "}
+            {claim.second.excerpt.trim() ? `“${claim.second.excerpt.length > 200 ? `${claim.second.excerpt.slice(0, 200).trimEnd()}…` : claim.second.excerpt}”` : "no excerpt yet"}
+            {i.second.source && ` ${refs.byId.get(i.second.source.id)?.inText ?? inTextShort(i.second.source.cited.authors, i.second.source.cited.year)}`}
           </p>
         )}
         {claim.testCorruption && <p className="mt-3 hidden rounded-lg bg-bad-tint px-3 py-2 text-sm text-ink sm:block">{claim.testCorruption}</p>}

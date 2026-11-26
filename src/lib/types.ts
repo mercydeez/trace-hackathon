@@ -98,6 +98,18 @@ export type Evidence = z.infer<typeof EvidenceSchema>;
 export const SupportSchema = z.enum(["supports", "partial", "insufficient"]);
 export type Support = z.infer<typeof SupportSchema>;
 
+/**
+ * A second passage the student attaches to a claim, with the student's own label: it qualifies the claim
+ * (limits where or when it applies) or challenges it (points against it). Always manual; never drafted.
+ */
+export const SecondPassageSchema = z.object({
+  role: z.enum(["qualifies", "challenges"]),
+  /** Null until the student chooses a passage. */
+  evidenceId: z.string().nullable(),
+  excerpt: z.string(),
+});
+export type SecondPassage = z.infer<typeof SecondPassageSchema>;
+
 export const ClaimSchema = z.object({
   id: z.string(),
   text: z.string(),
@@ -105,6 +117,8 @@ export const ClaimSchema = z.object({
   kind: z.enum(["evidence", "inference"]),
   evidenceId: z.string().nullable(),
   excerpt: z.string(),
+  /** Optional qualifying or challenging passage. Absent on older saved projects, which keeps their approvals intact. */
+  second: SecondPassageSchema.optional(),
   /** Suggested by the model (or by the sample). Fallible; never computed by TRACE. */
   support: SupportSchema.nullable(),
   limitations: z.string(),

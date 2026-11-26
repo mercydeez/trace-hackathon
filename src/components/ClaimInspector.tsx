@@ -1,15 +1,17 @@
 "use client";
 
-import { Check, ExternalLink, RotateCcw, TextSelect, Trash2, X } from "lucide-react";
+import { Check, ExternalLink, Plus, RotateCcw, TextSelect, Trash2, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { sourceLink } from "@/lib/csl";
 import type { ExcerptCheck } from "@/lib/excerpt";
 import { inspectClaim, type ClaimInspection } from "@/lib/exportPolicy";
-import { decideClaim, removeClaim, updateClaim } from "@/lib/mutations";
+import { sourceIdentity } from "@/lib/identity";
+import { decideClaim, removeClaim, setSecondPassage, updateClaim } from "@/lib/mutations";
 import { formatAuthorsShort } from "@/lib/text";
 import { IdentityPanel } from "./IdentityPanel";
-import { ACCESS, DECISION, excerptBadge, originBadge, StatusChip, SUPPORT_LABEL } from "./status";
+import type { Evidence, Project, Source } from "@/lib/types";
+import { ACCESS, DECISION, excerptBadge, originBadge, StatusChip, SUPPORT_LABEL, trustBadge } from "./status";
 import { useProject, useReferences, useStore } from "./store";
 import { Button, Chip, ConfirmDialog, Field, Notice, ReferenceText, Select, shortDate, TextArea } from "./ui";
 
@@ -21,7 +23,7 @@ const NOT_CHECKABLE = {
 } as const;
 
 /** The stored passage, with the matched excerpt (or, on a mismatch, the closest real wording) marked. */
-function Passage({ text, check, onSelection }: { text: string; check: ExcerptCheck; onSelection: (selected: string) => void }) {
+function Passage({ text, check, onSelection, follow = true }: { text: string; check: ExcerptCheck; onSelection: (selected: string) => void; follow?: boolean }) {
   const box = useRef<HTMLParagraphElement>(null);
   const range = check.status === "matched" ? { start: check.start, end: check.end, cls: "match" } : check.status === "mismatch" && check.nearest ? { ...check.nearest, cls: "near" } : null;
   const anchor = range ? `${range.start}-${range.end}-${range.cls}` : "";
@@ -30,14 +32,14 @@ function Passage({ text, check, onSelection }: { text: string; check: ExcerptChe
     // Bring the marked words into view by scrolling the inspector panel itself (never the page behind it).
     // Deferred one frame: inside a drawer, the dialog is not laid out until after this effect runs.
     const frame = requestAnimationFrame(() => {
-      const mark = box.current?.querySelector("mark");
+      const mark = follow ? box.current?.querySelector("mark") : null;
       const panel = box.current?.closest("aside, dialog");
       if (!mark || !panel) return;
       const offset = mark.getBoundingClientRect().top - panel.getBoundingClientRect().top;
       if (offset > panel.clientHeight * 0.6) panel.scrollTop += offset - panel.clientHeight * 0.4;
     });
     return () => cancelAnimationFrame(frame);
-  }, [anchor]);
+  }, [anchor, follow]);
 
   function readSelection() {
     const sel = window.getSelection();
@@ -121,6 +123,125 @@ function Editor({ i }: { i: ClaimInspection }) {
       )}
       <Field label="Limits of this claim">{(id) => <TextArea id={id} rows={2} maxLength={600} value={claim.limitations} placeholder="What the passage does not establish." onChange={(e) => update((p) => updateClaim(p, claim.id, { limitations: e.target.value }))} />}</Field>
     </div>
+  );
+}
+
+const ROLE = {
+  qualifies: { label: "Qualifies", hint: "limits where or when the claim applies" },
+  challenges: { label: "Challenges", hint: "points against the claim" },
+} as const;
+
+const shortSource = (project: Project, sourceId: string) => {
+  const s = project.sources.find((x) => x.id === sourceId);
+  return s ? formatAuthorsShort(s.cited.authors, s.cited.year) : "Source removed";
+};
+
+/** One passage in the side-by-side view: its source, where the text came from, the excerpt and its checks. */
+function PassageCard({ heading, note, source, evidence, check, quote }: { heading: string; note: string; source: Source | null; evidence: Evidence | null; check: ExcerptCheck; quote: string }) {
+  const identity = source ? sourceIdentity(source) : null;
+  return (
+    <div className="min-w-0 rounded-lg border border-line bg-s2/60 p-3 text-sm">
+      <p className="font-bold text-ink">{heading}</p>
+      <p className="text-xs text-ink-soft">{note}</p>
+      <p className="mt-2 font-semibold break-words text-ink">{source ? formatAuthorsShort(source.cited.authors, source.cited.year) : "No source"}</p>
+      <p className="text-ink-soft">{evidence ? `${evidence.locator}, ${evidence.provenance.provider === "user" ? "pasted by you" : `from ${PROVIDER[evidence.provenance.provider]}`}` : "No stored passage"}</p>
+      {/* The cards are narrow beside each other, so a chip's label wraps instead of spilling out of its card. */}
+      <div className="mt-2 flex flex-wrap gap-1.5 [&>span]:h-auto [&>span]:min-h-6 [&>span]:py-0.5 [&>span]:whitespace-normal">
+        {identity && <StatusChip badge={trustBadge(identity)} />}
+        <StatusChip badge={excerptBadge(check)} />
+      </div>
+      <p className="mt-2 font-reading break-words text-ink">{quote.trim() ? `“${quote.trim()}”` : <span className="text-ink-faint">No excerpt yet.</span>}</p>
+    </div>
+  );
+}
+
+/**
+ * The student's optional second passage: one that qualifies the claim or challenges it. The label is the
+ * student's judgement; TRACE checks the quote and the reference exactly as it does for the supporting passage.
+ */
+function SecondPassageSection({ i }: { i: ClaimInspection }) {
+  const project = useProject();
+  const { update } = useStore();
+  const [selection, setSelection] = useState("");
+  const { claim, second } = i;
+  if (claim.kind !== "evidence") return null;
+
+  if (!claim.second || !second) {
+    return (
+      <section>
+        <h3 className="text-base font-bold">Qualifying or challenging passage</h3>
+        <p className="mt-1 mb-3 text-sm text-ink-soft">Optional. Attach a passage from a saved source that limits this claim or points against it. You choose the label, and TRACE checks the quote.</p>
+        <Button size="sm" icon={Plus} onClick={() => update((p) => setSecondPassage(p, claim.id, {}), `Added a qualifying or challenging passage to claim ${i.number}.`)}>
+          Add qualifying or challenging passage
+        </Button>
+      </section>
+    );
+  }
+
+  const current = claim.second;
+  const options = project.evidence.filter((e) => project.evidenceSet.ids.includes(e.id) || e.id === current.evidenceId);
+  const name = ROLE[current.role].label;
+
+  return (
+    <section aria-label="Supporting and second passages">
+      <h3 className="text-base font-bold">Supporting and {second.noun} passages</h3>
+      <p className="mt-1 mb-3 text-sm text-ink-soft">“{name}” is your judgement, not a TRACE check. TRACE checks only that each excerpt is in its stored text and that each reference matches its registry record.</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <PassageCard heading="Supports" note="The passage the claim relies on" source={i.source} evidence={i.evidence} check={i.excerpt} quote={claim.excerpt} />
+        <PassageCard heading={name} note={`Your judgement: it ${ROLE[current.role].hint}`} source={second.source} evidence={second.evidence} check={second.excerpt} quote={current.excerpt} />
+      </div>
+
+      <div className="mt-4 space-y-3">
+        <fieldset>
+          <legend className="mb-2 text-sm font-semibold">Your label for this passage</legend>
+          <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+            {(["qualifies", "challenges"] as const).map((role) => (
+              <label key={role} className="inline-flex items-center gap-2">
+                <input type="radio" className="accent-[#c9559f]" name={`role-${claim.id}`} checked={current.role === role} onChange={() => update((p) => setSecondPassage(p, claim.id, { role }), `Labelled the second passage of claim ${i.number} “${ROLE[role].label}”.`)} />
+                {ROLE[role].label}: {ROLE[role].hint}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <Field label={`${name} passage`} hint={options.length === 0 ? "No passages are in the evidence set. Add some in the Library." : undefined}>
+          {(id) => (
+            <Select id={id} value={current.evidenceId ?? ""} onChange={(e) => update((p) => setSecondPassage(p, claim.id, { evidenceId: e.target.value || null }))}>
+              <option value="">Choose a passage</option>
+              {options.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {shortSource(project, e.sourceId)}, {e.scope === "abstract" ? "abstract" : "pasted passage"}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <Field label={`Excerpt that ${current.role === "qualifies" ? "qualifies" : "challenges"} the claim`} hint="The exact words from the passage. Select them in the source text below, or paste them here.">
+          {(id) => <TextArea id={id} rows={3} maxLength={600} className="font-reading" value={current.excerpt} onChange={(e) => update((p) => setSecondPassage(p, claim.id, { excerpt: e.target.value }))} />}
+        </Field>
+        {second.evidence && (
+          <>
+            <Passage text={second.evidence.text} check={second.excerpt} onSelection={setSelection} follow={false} />
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                size="sm"
+                icon={TextSelect}
+                disabled={selection.length < 12}
+                onClick={() => {
+                  update((p) => setSecondPassage(p, claim.id, { excerpt: selection }), `Set the ${second.noun} excerpt of claim ${i.number} from the stored text.`);
+                  setSelection("");
+                  window.getSelection()?.removeAllRanges();
+                }}
+              >
+                Use selected text as this excerpt
+              </Button>
+            </div>
+          </>
+        )}
+        <Button size="sm" variant="ghost" icon={Trash2} onClick={() => update((p) => setSecondPassage(p, claim.id, null), `Removed the ${second.noun} passage from claim ${i.number}.`)}>
+          Remove {second.noun} passage
+        </Button>
+      </div>
+    </section>
   );
 }
 
@@ -240,7 +361,7 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
             <p className="text-xs font-semibold tracking-wide text-bad uppercase">Blocks the reviewed export</p>
             <ul className="mt-1 space-y-1 text-sm text-ink">
               {blocking.map((b) => (
-                <li key={b.code}>{b.message.replace(/^Claim \d+: /, decision === "approved" ? "Still open: " : "Before approving: ")}</li>
+                <li key={`${b.code}-${b.message}`}>{b.message.replace(/^Claim \d+: /, decision === "approved" ? "Still open: " : "Before approving: ")}</li>
               ))}
             </ul>
           </div>
@@ -284,6 +405,8 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
             </div>
           </section>
         )}
+
+        <SecondPassageSection i={i} />
 
         <details open={editing} onToggle={(e) => setEditing(e.currentTarget.open)}>
           <summary className="text-base font-bold">Edit this claim</summary>

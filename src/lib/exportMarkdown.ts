@@ -11,7 +11,7 @@ import { buildDisclosure } from "./disclosure";
 import { evaluateExport, textCitations, type ClaimInspection } from "./exportPolicy";
 import { suffixOf } from "./inText";
 import { newId, formatAuthorsShort, inTextShort } from "./text";
-import { ProjectSchema, SCHEMA_VERSION, type Claim, type Project, type Source } from "./types";
+import { ProjectSchema, SCHEMA_VERSION, type Claim, type Evidence, type Project, type Source } from "./types";
 
 export type ExportMode = "reviewed" | "draft";
 
@@ -32,11 +32,20 @@ function originLabel(c: Claim): string {
   return "Written by the student";
 }
 
-function quoteCheck(i: ClaimInspection): string {
+function quoteCheck(i: { excerpt: ClaimInspection["excerpt"] }): string {
   if (i.excerpt.status === "matched") return "excerpt found in the stored text";
   if (i.excerpt.status === "mismatch") return "EXCERPT NOT FOUND in the stored text";
   return "excerpt could not be checked";
 }
+
+/** Where a stored passage came from, for the provenance section. */
+function passageOrigin(ev: Evidence | null): string {
+  if (!ev) return "no stored text";
+  return `${ev.scope === "abstract" ? "abstract only" : "passage pasted by the student, not checked against the publication"}, from ${ev.provenance.provider === "user" ? "the student" : ev.provenance.provider === "crossref" ? "Crossref" : "OpenAlex"} on ${day(ev.provenance.retrievedAt)}`;
+}
+
+/** "Qualifies" / "Challenges", the student's label for a second passage. */
+export const ROLE_LABEL = { qualifies: "Qualifies", challenges: "Challenges" } as const;
 
 function slug(s: string): string {
   return (
@@ -51,9 +60,12 @@ function slug(s: string): string {
 export function citedSources(project: Project): Source[] {
   const ids = new Set<string>();
   for (const c of project.claims) {
-    if (c.decision === "rejected" || !c.evidenceId) continue;
-    const ev = project.evidence.find((e) => e.id === c.evidenceId);
-    if (ev) ids.add(ev.sourceId);
+    if (c.decision === "rejected" || c.kind !== "evidence") continue;
+    // The supporting passage and any qualifying or challenging passage; a source used by both is listed once.
+    for (const evId of [c.evidenceId, c.second?.evidenceId]) {
+      const ev = evId ? project.evidence.find((e) => e.id === evId) : undefined;
+      if (ev) ids.add(ev.sourceId);
+    }
   }
   // Sources cited in the student's own text are part of the reference list too.
   for (const c of textCitations(project)) if (c.sourceId) ids.add(c.sourceId);
@@ -123,7 +135,12 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
     if (c.kind === "inference") {
       out.push("   - **Inference.** No source passage states this. It is the writer's own reasoning.");
     } else {
-      out.push(`   - Excerpt: “${oneLine(c.excerpt)}”${i.evidence ? ` (${i.evidence.locator})` : ""}`);
+      out.push(`   - ${i.second ? "Supporting excerpt" : "Excerpt"}: “${oneLine(c.excerpt)}”${i.evidence ? ` (${i.evidence.locator})` : ""}`);
+      if (i.second && c.second) {
+        const s = i.second;
+        const sRef = s.source ? (refById.get(s.source.id)?.inText ?? inTextShort(s.source.cited.authors, s.source.cited.year)) : "(source missing)";
+        out.push(`   - **${ROLE_LABEL[s.role]}** (the student's judgement): “${oneLine(c.second.excerpt)}” ${sRef}${s.evidence ? ` (${s.evidence.locator})` : ""}`);
+      }
     }
     if (c.limitations.trim()) out.push(`   - Limits: ${oneLine(c.limitations)}`);
     const support = c.kind === "evidence" && c.support ? `; ${c.origin === "sample" ? "sample" : "model"}-suggested support: ${c.support} (can be wrong)` : "";
@@ -156,19 +173,20 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
   out.push("## Evidence and provenance", "");
   for (const i of included.filter((x) => x.claim.kind === "evidence")) {
     const src = i.source ? formatAuthorsShort(i.source.cited.authors, i.source.cited.year) : "source missing";
-    const ev = i.evidence;
-    const where = ev
-      ? `${ev.scope === "abstract" ? "abstract only" : "passage pasted by the student, not checked against the publication"}, from ${ev.provenance.provider === "user" ? "the student" : ev.provenance.provider === "crossref" ? "Crossref" : "OpenAlex"} on ${day(ev.provenance.retrievedAt)}`
-      : "no stored text";
     // A retracted source can only reach a reviewed brief when the project's rules allow it, and then it is flagged here.
-    const retraction = i.identity?.retraction ? ` **RETRACTION NOTICE:** the registry lists a ${i.identity.retraction.kind} notice${i.identity.retraction.date ? ` (${i.identity.retraction.date.slice(0, 10)})` : ""} for this source.` : "";
-    out.push(`- Claim ${i.number} → ${src}: ${where}; ${quoteCheck(i)}. Reference identity: ${i.identity?.summary ?? "not applicable."}${retraction}`);
+    const retraction = (id: ClaimInspection["identity"]) => (id?.retraction ? ` **RETRACTION NOTICE:** the registry lists a ${id.retraction.kind} notice${id.retraction.date ? ` (${id.retraction.date.slice(0, 10)})` : ""} for this source.` : "");
+    out.push(`- Claim ${i.number}${i.second ? ", supporting passage" : ""} → ${src}: ${passageOrigin(i.evidence)}; ${quoteCheck(i)}. Reference identity: ${i.identity?.summary ?? "not applicable."}${retraction(i.identity)}`);
+    const s = i.second;
+    if (s) {
+      const sSrc = s.source ? formatAuthorsShort(s.source.cited.authors, s.source.cited.year) : "source missing";
+      out.push(`- Claim ${i.number}, ${s.noun} passage (labelled ${ROLE_LABEL[s.role]} by the student) → ${sSrc}: ${passageOrigin(s.evidence)}; ${quoteCheck(s)}. Reference identity: ${s.identity?.summary ?? "not applicable."}${retraction(s.identity)}`);
+    }
   }
   if (!included.some((x) => x.claim.kind === "evidence")) out.push("No claim cites a stored passage.");
   out.push("");
 
   out.push("## Limitations", "");
-  const scopes = new Set(included.flatMap((i) => (i.evidence ? [i.evidence.scope] : [])));
+  const scopes = new Set(included.flatMap((i) => [i.evidence?.scope, i.second?.evidence?.scope].filter((x) => x !== undefined)));
   if (scopes.has("abstract")) out.push("- Evidence was limited to abstracts. Methods, results tables and caveats in the full papers were not read by TRACE.");
   if (scopes.has("user_pasted")) out.push("- Some passages were pasted by the student and were not checked against the publication.");
   out.push("- A matched excerpt shows that the quoted words are in the stored text. It does not show that the paper is right or that the claim follows from the words.");

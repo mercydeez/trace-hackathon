@@ -9,7 +9,7 @@ import { sameDoi } from "./doi";
 import type { IdentityField } from "./identity";
 import { suggestPlan } from "./plan";
 import { hashText, newId } from "./text";
-import { DEFAULT_RULES, type AiRun, type Biblio, type Claim, type Evidence, type Lookup, type Plan, type Project, type RegistrySnapshot, type Source, type Rules } from "./types";
+import { DEFAULT_RULES, type AiRun, type Biblio, type Claim, type Evidence, type Lookup, type Plan, type Project, type RegistrySnapshot, type SecondPassage, type Source, type Rules } from "./types";
 import type { AcceptedDraftClaim } from "./validateDraft";
 
 export const MAX_ACTIVITY = 200;
@@ -289,10 +289,27 @@ export function updateClaim(p: Project, id: string, patch: Partial<Pick<Claim, "
       if (next.kind === "inference") {
         next.evidenceId = null;
         next.excerpt = "";
+        next.second = undefined;
       }
       // A hand-written claim is "edited" from the start in the sense that matters: it is the student's wording.
       next.edited = c.origin === "manual" ? false : true;
       return next;
+    }),
+  };
+}
+
+/**
+ * Adds, changes or (with null) removes a claim's qualifying or challenging passage. The student's own
+ * evidence, so it does not mark the claim's wording as edited; the approval goes stale through the fingerprint.
+ */
+export function setSecondPassage(p: Project, id: string, patch: Partial<SecondPassage> | null): Project {
+  return {
+    ...p,
+    claims: p.claims.map((c) => {
+      if (c.id !== id) return c;
+      if (patch === null) return { ...c, second: undefined };
+      const base: SecondPassage = c.second ?? { role: "qualifies", evidenceId: null, excerpt: "" };
+      return { ...c, second: { ...base, ...patch } };
     }),
   };
 }

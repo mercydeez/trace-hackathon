@@ -396,3 +396,16 @@ Results are in [the QA report](qa-report.md) and [the Phase 2 submission notes](
 - **Model:** Claude Code (session model switched by the owner to Claude Fable 5.2 with `/model`; commits carry that attribution)
 
 The owner pasted the prompt saved unchanged in [claude-code-polish.md](claude-code-polish.md). Results are in [the QA report](qa-report.md).
+## 21 — Presenter guide update and teaching session
+
+- **Date:** 26 November 2026, early afternoon Dubai time
+- **Model:** Claude Opus 5.5 (Claude Code)
+
+The owner asked for the presenter guide PDF to be updated for the final release (commit `fba2a71`). Then the owner asked for short emails to the two presenters, and for a teaching session that explains the problem, a click-by-click walkthrough of the live app and the backend flows. It also covers preparation for a college adoption conversation and a mock Q&A. The teaching session changes no code and no deployment.
+
+## 22 — Final feature: qualifying or challenging passage, then freeze
+
+- **Date:** 26 November 2026, about 13:05 Dubai time onwards
+- **Model:** Claude Opus 5.5 (Claude Code)
+
+The owner pasted the prompt saved unchanged in [claude-code-second-passage.md](claude-code-second-passage.md). Results, the release commit, the rollback target and the freeze point are in [the QA report](qa-report.md).
