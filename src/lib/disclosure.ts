@@ -133,7 +133,7 @@ export function aiUseStatement(project: Project, evaluation: ExportEvaluation): 
   if (claims.length) {
     out.push(
       approved === claims.length
-        ? `I reviewed and approved ${claims.length === 1 ? "the claim" : `all ${claims.length} claims`} against the stored source text and remain responsible for the work.`
+        ? `I reviewed and approved ${claims.length === 1 ? "the claim" : claims.length === 2 ? "both claims" : `all ${word(claims.length)} claims`} against the stored source text and remain responsible for the work.`
         : `I have approved ${approved} of ${plural(claims.length, "claim")} so far; the rest are not yet reviewed. I remain responsible for the work.`,
     );
   }

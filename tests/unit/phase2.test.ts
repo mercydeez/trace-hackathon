@@ -108,7 +108,7 @@ describe("AI-use statement", () => {
     p = updateClaim(p, first.id, { text: `${first.text} (edited)` });
     for (const c of p.claims) p = decideClaim(p, c.id, "approved");
     const s = aiUseStatement(p, evaluateExport(p));
-    expect(s).toContain(`I reviewed and approved all ${p.claims.length} claims`);
+    expect(s).toContain("I reviewed and approved all three claims");
     expect(s).toContain("I approved and included three.");
     expect(s).toContain("I edited one of the included claims.");
   });

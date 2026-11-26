@@ -41,6 +41,7 @@ describe("AI-use statement: drafted and included are separate counts", () => {
     expect(statement).toContain("AI (gemini-x) drafted three claims in TRACE");
     expect(statement).toContain("I approved and included two and rejected one.");
     expect(statement).not.toContain("drafted two");
+    expect(statement).toContain("I reviewed and approved both claims");
 
     // The same counts in the verification report and in the downloaded brief.
     expect(buildVerificationReport(p, NOW).text).toContain(statement);
