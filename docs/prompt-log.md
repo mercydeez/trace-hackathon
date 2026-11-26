@@ -390,3 +390,9 @@ The owner pasted the release prompt saved unchanged in [claude-code-final-releas
 - deployed through the GitHub-to-Vercel workflow.
 
 Results are in [the QA report](qa-report.md) and [the Phase 2 submission notes](../submissions/phase-2-submission.md).
+## 20 — AI-use counts, report readiness, favicon and polish
+
+- **Date:** 26 November 2026, about 11:50–12:15 Dubai time
+- **Model:** Claude Code (session model switched by the owner to Claude Fable 5.2 with `/model`; commits carry that attribution)
+
+The owner pasted the prompt saved unchanged in [claude-code-polish.md](claude-code-polish.md). Results are in [the QA report](qa-report.md).

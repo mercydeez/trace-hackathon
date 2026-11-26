@@ -2,6 +2,48 @@
 
 Results of checks that were actually run. Each line is **passed**, **failed** or **not run**. Nothing is listed as passed without a run behind it.
 
+## AI-use counts, report readiness, favicon and polish · 26 November 2026, about 11:50–12:15 Dubai time
+
+**Release:** commit `6428a91` (feature commit `9f9491c` plus a one-line wording fix found on the live site), Vercel deployment `FXRWhgUVndm8ffzzvbL3FAeB4vwt`, https://trace-hackathon.vercel.app. **Rollback target:** `ExQLWp9XoWZpi8GmNz4QaDASAGmW` (`ae65b11`).
+
+### What changed
+
+- **AI-use statement.** Drafted and included are now separate counts, from the recorded runs and each claim's decision. Previously "drafted" counted only included claims, so three drafted with one rejected read as "drafted two".
+  - Handles several runs, rejected and deleted drafts, all-rejected drafts, edits, manual and sample claims.
+  - Older projects without run links give "at least N".
+  - Output discarded by validation is reported separately.
+  - The copyable statement, the verification report and the brief's disclosure read one record (`draftingRecord`).
+- **Export readiness.** `exportReadiness()` has five states: empty, review blocked, formatting, formatting failed and ready. One state drives the status line, both download buttons and the report.
+  - The report now gives **Review** and **Download** separately, never "ALLOWED".
+  - With no claims it does not promise a draft.
+  - The status bar offers **Retry** when formatting fails.
+- **Favicon and title.** A TRACE favicon (`src/app/icon.svg`, brand purple) and the tab title "TRACE | Research you can defend" on `/` and `/home`.
+- **Copy and motion.**
+  - Two lines of copy were tightened. A scan found no marketing filler, and there were no em dashes beyond the old title.
+  - Motion: a pop on the hero's verdict icon, an inspector slide-in, an export-status cross-fade and one reveal for the workflow section. All of it is under `MotionConfig reducedMotion="user"`.
+
+### Checks
+
+| Check | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | **Passed** |
+| `npm test` | **Passed**, 214 of 214 in 18 files. New: three drafted with one rejected ("drafted three … approved and included two and rejected one", identical in statement, report and brief); all rejected; several runs with a deleted and a discarded item; older data gives "at least"; the five readiness states; the report never promises a draft with no claims. |
+| `npm run build`, `npm run test:e2e` (production build, Edge) | **Passed**, 22 of 22, run on both commits. The formatter-failure journey now downloads the report while formatting has failed, compares it with the status line and the disabled button, retries from the status bar, and checks that all three show ready. |
+| `npm run smoke:live` against `6428a91` | **9 of 9 passed**, including the DataCite fallback, the OpenAlex abstract fallback (not rate-limited this run) and a live Gemini draft |
+
+### On the public site (fresh browser session, no Vercel login)
+
+| Check | Result |
+| --- | --- |
+| Favicon and title | **Passed.** `/` and `/home` both serve `/icon.svg` (200, image/svg+xml) and the title "TRACE &#124; Research you can defend" |
+| Live Gemini through the UI | **Passed.** Draft with AI on 4 demo passages returned 3 claims on the first attempt. Rejected claim 1, approved claims 2 and 3. Statement: "AI (gemini-3.5-flash-lite) drafted three claims … I approved and included two and rejected one." The report contains the identical statement. The reviewed brief says "drafted three claims through TRACE … The student approved and included two and rejected one." The copied text was identical to the text shown (read from the copy fallback box, because the browser pane blocks clipboard access). |
+| Wording found and fixed live | The first deployment said "I reviewed and approved all 2 claims". Fixed in `6428a91` to "both claims", then re-checked on the same project. |
+| **Simulated** formatting failure | **Passed.** A `fetch` override in the test tab only (not a production outage) made `/api/cite` return 502. Status line, disabled button tooltip and report all read "Review checks passed. Reference formatting failed. Retry to download." After removing the override and pressing **Retry**, all three read "…ready to download" and the button was enabled. During the 0.18 s cross-fade the old line is briefly visible; the settled text matched. |
+| Home and Resume | **Passed.** Home went to `/home`, showing "Continue Demo: retrieval practice"; all three entry points were present. Resume returned to the same project and Brief step, still ready. |
+| Citation trap and final export | **Passed.** "month" highlighted; fixing only the quote still blocked on "one month"; after correcting and approving, the reviewed test copy downloaded with its banner and AI-use disclosure. |
+
+**Observed while testing:** with two tabs open on the site, clearing storage in one tab brought the other tab's project back, because that tab wrote its newer copy back. This is the intended cross-tab protection, not a defect; rehearsals should use one tab.
+
 ## Final release · 26 November 2026, about 09:30–11:40 Dubai time
 
 Built and verified by Claude Code (Claude Opus 5.5) from `docs/claude-code-final-release.md`.

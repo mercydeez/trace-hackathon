@@ -28,7 +28,7 @@ The log is chronological and includes the build prompt, the set-up answers, the 
 https://trace-hackathon.vercel.app
 ```
 
-Verified signed out on 26 Nov 2026 at about 11:30, final release commit `ae65b11` (Vercel deployment `ExQLWp9XoWZpi8GmNz4QaDASAGmW`). The landing page is also at https://trace-hackathon.vercel.app/home. Rollback: Vercel → Deployments → Instant Rollback to `7XwGQBch4yTtDofvqfEBjEfYUQp8` (commit `a1aa7c4`).
+Verified signed out on 26 Nov 2026 at about 12:15, release commit `6428a91` (Vercel deployment `FXRWhgUVndm8ffzzvbL3FAeB4vwt`). The landing page is also at https://trace-hackathon.vercel.app/home. Rollback: Vercel → Deployments → Instant Rollback to `ExQLWp9XoWZpi8GmNz4QaDASAGmW` (commit `ae65b11`).
 
 ### The five judging requirements: demo action and evidence
 
