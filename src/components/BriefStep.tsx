@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, Bot, Check, ClipboardCopy, Download, Eye, FlaskConical, PenLine, Quote, RotateCcw, ScanSearch, TriangleAlert, X } from "lucide-react";
+import { ArrowDown, Bot, Check, ClipboardCopy, Download, FileCheck2, Eye, FlaskConical, PenLine, Quote, RotateCcw, ScanSearch, TriangleAlert, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { callApi, type DraftResult } from "@/lib/api";
 import { evidenceSetFingerprint, isEvidenceSetApproved, isPlanApproved, selectedEvidence } from "@/lib/approvals";
@@ -15,6 +15,7 @@ import { buildDraftPayload, LIMITS, type DraftEvidenceInput } from "@/lib/prompt
 import { formatAuthorsShort, inTextShort, newId } from "@/lib/text";
 import type { Project, Source } from "@/lib/types";
 import { validateDraft } from "@/lib/validateDraft";
+import { buildVerificationReport } from "@/lib/verificationReport";
 import { DECISION, excerptBadge, INFERENCE, RETRACTED, originBadge, StatusChip, trustBadge, TrustLegend } from "./status";
 import { useProject, useReferences, useStore, type References } from "./store";
 import { Button, copyText, CopyFallback, cx, downloadText, Empty, Field, Notice, ReferenceText, SectionTitle, Select, shortDate, TextArea } from "./ui";
@@ -665,6 +666,18 @@ function ExportPanel({ evaluation, refs, retryReferences, onInspect, goToPlan }:
             )}
           </p>
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="ghost"
+              icon={FileCheck2}
+              aria-label="Download verification report"
+              title="A short report of every check, the export blockers and the AI-use statement"
+              onClick={() => {
+                const r = buildVerificationReport(project, new Date().toISOString());
+                downloadText(r.filename, r.text);
+              }}
+            >
+              <span className="sm:hidden">Report</span><span className="hidden sm:inline">Verification report</span>
+            </Button>
             <Button icon={Download} disabled={project.claims.length === 0} aria-label="Download draft, marked as not reviewed" onClick={() => download("draft")}>
               <span className="sm:hidden">Draft</span><span className="hidden sm:inline">Download draft</span>
             </Button>

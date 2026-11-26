@@ -160,7 +160,9 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
     const where = ev
       ? `${ev.scope === "abstract" ? "abstract only" : "passage pasted by the student, not checked against the publication"}, from ${ev.provenance.provider === "user" ? "the student" : ev.provenance.provider === "crossref" ? "Crossref" : "OpenAlex"} on ${day(ev.provenance.retrievedAt)}`
       : "no stored text";
-    out.push(`- Claim ${i.number} → ${src}: ${where}; ${quoteCheck(i)}. Reference identity: ${i.identity?.summary ?? "not applicable."}`);
+    // A retracted source can only reach a reviewed brief when the project's rules allow it, and then it is flagged here.
+    const retraction = i.identity?.retraction ? ` **RETRACTION NOTICE:** the registry lists a ${i.identity.retraction.kind} notice${i.identity.retraction.date ? ` (${i.identity.retraction.date.slice(0, 10)})` : ""} for this source.` : "";
+    out.push(`- Claim ${i.number} → ${src}: ${where}; ${quoteCheck(i)}. Reference identity: ${i.identity?.summary ?? "not applicable."}${retraction}`);
   }
   if (!included.some((x) => x.claim.kind === "evidence")) out.push("No claim cites a stored passage.");
   out.push("");

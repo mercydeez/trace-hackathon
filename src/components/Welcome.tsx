@@ -8,7 +8,8 @@ import { emptyProject } from "@/lib/mutations";
 import { buildTrapProject } from "@/lib/trap";
 import { EvidencePreview } from "./EvidencePreview";
 import { useStore } from "./store";
-import { Brand, Button, shortDate, TextArea } from "./ui";
+import type { Project } from "@/lib/types";
+import { Brand, Button, LinkButton, shortDate, TextArea } from "./ui";
 
 const now = () => new Date().toISOString();
 
@@ -122,12 +123,35 @@ function StartProject() {
   );
 }
 
-export function Welcome({ onOpenTools, onCheckReference }: { onOpenTools: () => void; onCheckReference: () => void }) {
+/** On /home with a saved project: the way back to it, with everything the browser has saved. */
+function ResumePanel({ project }: { project: Project }) {
+  const claims = project.claims.filter((c) => c.decision !== "rejected").length;
+  const kind = project.kind === "trap" ? "Citation-trap test copy" : project.kind === "demo" ? "Demo project" : "Your project";
+  return (
+    <section aria-labelledby="resume-title" className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line-strong bg-surface px-5 py-4">
+      <div className="min-w-0 flex-1 basis-64">
+        <p className="text-xs font-semibold tracking-wide text-ink-soft uppercase">{kind} · saved in this browser</p>
+        <h2 id="resume-title" className="mt-1 truncate text-lg font-bold text-ink">
+          Continue {project.name}
+        </h2>
+        <p className="mt-0.5 text-sm text-ink-soft">
+          {project.sources.length} source{project.sources.length === 1 ? "" : "s"}, {claims} claim{claims === 1 ? "" : "s"}. Your decisions, notes and edits are kept.
+        </p>
+      </div>
+      <LinkButton href="/" variant="primary" icon={ArrowRight}>
+        Resume project
+      </LinkButton>
+    </section>
+  );
+}
+
+export function Welcome({ onOpenTools, onCheckReference, resume = null }: { onOpenTools: () => void; onCheckReference: () => void; resume?: Project | null }) {
   return (
     <MotionConfig reducedMotion="user">
       <div className="welcome min-h-dvh">
         <WelcomeHeader onOpenTools={onOpenTools} />
         <main className="mx-auto max-w-6xl px-5 pb-20 sm:px-8">
+          {resume && <ResumePanel project={resume} />}
           <Hero onCheckReference={onCheckReference} />
           <Workflow />
           <StartProject />

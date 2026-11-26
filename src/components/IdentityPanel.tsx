@@ -29,6 +29,7 @@ export function IdentityPanel({ source, compact, readOnly }: { source: Source; c
   const { update } = useStore();
   const [busy, setBusy] = useState(false);
   const identity = sourceIdentity(source);
+  const reg = identity.registry ?? "Crossref";
 
   async function recheck() {
     if (!source.doi) return;
@@ -39,7 +40,7 @@ export function IdentityPanel({ source, compact, readOnly }: { source: Source; c
     if (outcome.ok) {
       const w = outcome.data;
       update(
-        (p) => setRegistry(p, source.id, { provider: "crossref", retrievedAt: w.retrievedAt, url: w.url, record: w.record }, { status: "found", checkedAt: now }),
+        (p) => setRegistry(p, source.id, { provider: w.provider ?? "crossref", retrievedAt: w.retrievedAt, url: w.url, record: w.record }, { status: "found", checkedAt: now }),
         `Checked “${source.cited.title}” against Crossref again.`,
       );
     } else {
@@ -90,12 +91,12 @@ export function IdentityPanel({ source, compact, readOnly }: { source: Source; c
                     </Chip>
                   </div>
                   <p className="mt-1.5 break-words">
-                    You cite <span className="font-medium text-ink">{f.cited}</span>. Crossref records <span className="font-medium text-ink">{f.registry}</span>.
+                    You cite <span className="font-medium text-ink">{f.cited}</span>. {reg} records <span className="font-medium text-ink">{f.registry}</span>.
                   </p>
                   <p className="mt-1 text-sm">{f.message}</p>
                   {!readOnly && f.verdict !== "match" && (
                   <Button size="sm" className="mt-2" onClick={() => update((p) => takeRegistryValue(p, source.id, f.field), `Replaced the cited ${FIELD_LABEL[f.field].toLowerCase()} of “${source.cited.title}” with Crossref's value.`)}>
-                    Use Crossref&rsquo;s {FIELD_LABEL[f.field].toLowerCase()}
+                    Use {reg}&rsquo;s {FIELD_LABEL[f.field].toLowerCase()}
                   </Button>
                   )}
                 </li>
@@ -111,7 +112,7 @@ export function IdentityPanel({ source, compact, readOnly }: { source: Source; c
               <tr className="border-b border-line-strong text-left text-sm text-ink-soft">
                 <th className="py-1.5 pr-3 font-medium">Detail</th>
                 <th className="py-1.5 pr-3 font-medium">You cite</th>
-                <th className="py-1.5 pr-3 font-medium">Crossref records</th>
+                <th className="py-1.5 pr-3 font-medium">{reg} records</th>
                 <th className="py-1.5 font-medium">Result</th>
               </tr>
             </thead>
@@ -133,7 +134,7 @@ export function IdentityPanel({ source, compact, readOnly }: { source: Source; c
                         <>
                           <p className="mt-1 max-w-56 text-sm text-ink-soft">{f.message}</p>
                           <Button size="sm" className="mt-1.5" onClick={() => update((p) => takeRegistryValue(p, source.id, f.field), `Replaced the cited ${FIELD_LABEL[f.field].toLowerCase()} of “${source.cited.title}” with Crossref's value.`)}>
-                            Use Crossref&rsquo;s {FIELD_LABEL[f.field].toLowerCase()}
+                            Use {reg}&rsquo;s {FIELD_LABEL[f.field].toLowerCase()}
                           </Button>
                         </>
                       )}

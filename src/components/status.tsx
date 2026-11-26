@@ -19,6 +19,7 @@ import {
 import type { EffectiveDecision } from "@/lib/approvals";
 import type { ExcerptCheck } from "@/lib/excerpt";
 import type { Identity, IdentityStatus } from "@/lib/identity";
+import { DECISION_LABEL, excerptLabel, IDENTITY_LABEL, PARTIAL_LABEL, trustLabel } from "@/lib/labels";
 import type { Claim, Support } from "@/lib/types";
 import { Chip, type Tone } from "./ui";
 
@@ -34,24 +35,30 @@ export const RETRACTED: Badge = { tone: "bad", icon: TriangleAlert, label: "Retr
 /** 1. Reference identity. "Details match Crossref" is about the citation details only. */
 
 export const IDENTITY: Record<IdentityStatus, Badge> = {
-  matched: { tone: "ok", icon: Check, label: "Details match Crossref" },
-  mismatch: { tone: "bad", icon: TriangleAlert, label: "Details disagree with Crossref" },
-  not_found: { tone: "warn", icon: SearchX, label: "Not found in Crossref" },
-  could_not_check: { tone: "neutral", icon: WifiOff, label: "Could not check" },
-  user_entered: { tone: "neutral", icon: UserRound, label: "Not yet verified" },
+  matched: { tone: "ok", icon: Check, label: IDENTITY_LABEL.matched },
+  mismatch: { tone: "bad", icon: TriangleAlert, label: IDENTITY_LABEL.mismatch },
+  not_found: { tone: "warn", icon: SearchX, label: IDENTITY_LABEL.not_found },
+  could_not_check: { tone: "neutral", icon: WifiOff, label: IDENTITY_LABEL.could_not_check },
+  user_entered: { tone: "neutral", icon: UserRound, label: IDENTITY_LABEL.user_entered },
 };
 
 /** No compared detail disagrees, but the title wording, author count or year needs a look. Not a verified match. */
-export const PARTIAL: Badge = { tone: "warn", icon: TriangleAlert, label: "Partial match: check details" };
+export const PARTIAL: Badge = { tone: "warn", icon: TriangleAlert, label: PARTIAL_LABEL };
 
 /** A registry record exists. Says nothing yet about the details anyone cites. */
 export const FOUND: Badge = { tone: "neutral", icon: SearchCheck, label: "Found in Crossref" };
 
 export const INFERENCE: Badge = { tone: "neutral", icon: PenLine, label: "Inference" };
 
-/** The one trust label for a reference, used on every surface so the wording never drifts. */
-export function trustBadge(identity: Pick<Identity, "status" | "partial">): Badge {
-  return identity.status === "matched" && identity.partial ? PARTIAL : IDENTITY[identity.status];
+/** The one trust label for a reference, used on every surface so the wording never drifts. Names the registry compared. */
+export function trustBadge(identity: Pick<Identity, "status" | "partial"> & { registry?: Identity["registry"] }): Badge {
+  const badge = identity.status === "matched" && identity.partial ? PARTIAL : IDENTITY[identity.status];
+  return { ...badge, label: trustLabel(identity) };
+}
+
+/** "Found in Crossref" or "Found in DataCite": the DOI resolves there. Says nothing yet about cited details. */
+export function foundBadge(provider: "crossref" | "datacite" | undefined): Badge {
+  return provider === "datacite" ? { ...FOUND, label: "Found in DataCite" } : FOUND;
 }
 
 /** 2. Evidence access. */
@@ -63,9 +70,9 @@ export const ACCESS: Record<"abstract" | "user_pasted" | "none", Badge> = {
 
 /** 3. Excerpt integrity. */
 export function excerptBadge(check: ExcerptCheck): Badge {
-  if (check.status === "matched") return { tone: "ok", icon: Check, label: "Excerpt found in stored text" };
-  if (check.status === "mismatch") return { tone: "bad", icon: X, label: "Excerpt not in stored text" };
-  return { tone: "warn", icon: CircleDashed, label: "Excerpt cannot be checked" };
+  if (check.status === "matched") return { tone: "ok", icon: Check, label: excerptLabel(check) };
+  if (check.status === "mismatch") return { tone: "bad", icon: X, label: excerptLabel(check) };
+  return { tone: "warn", icon: CircleDashed, label: excerptLabel(check) };
 }
 
 /** 4. Support assessment: a suggestion from the model or the sample, never TRACE's own verdict. */
@@ -77,10 +84,10 @@ export const SUPPORT_LABEL: Record<Support, string> = {
 
 /** 5. Student decision. */
 export const DECISION: Record<EffectiveDecision, Badge> = {
-  pending: { tone: "warn", icon: CircleDashed, label: "Waiting for your decision" },
-  approved: { tone: "ok", icon: Check, label: "Student approved" },
-  rejected: { tone: "neutral", icon: X, label: "Rejected by you" },
-  stale: { tone: "warn", icon: RotateCcw, label: "Changed since you approved" },
+  pending: { tone: "warn", icon: CircleDashed, label: DECISION_LABEL.pending },
+  approved: { tone: "ok", icon: Check, label: DECISION_LABEL.approved },
+  rejected: { tone: "neutral", icon: X, label: DECISION_LABEL.rejected },
+  stale: { tone: "warn", icon: RotateCcw, label: DECISION_LABEL.stale },
 };
 
 export function originBadge(claim: Pick<Claim, "origin" | "model" | "edited">): Badge {
@@ -99,7 +106,7 @@ export function StatusChip({ badge, title }: { badge: Badge; title?: string }) {
 }
 
 const LEGEND: [Badge, string][] = [
-  [FOUND, "Crossref has a record for this DOI. Nothing anyone cites has been compared yet."],
+  [FOUND, "Crossref has a record for this DOI. Nothing anyone cites has been compared yet. When Crossref has none, TRACE asks DataCite and says so."],
   [IDENTITY.matched, "The cited title, first author's surname and year agree with Crossref. Given names and other authors are not compared."],
   [PARTIAL, "Nothing disagrees, but the title wording, author count or year needs a look."],
   [IDENTITY.mismatch, "At least one of title, first author's surname or year differs from Crossref."],

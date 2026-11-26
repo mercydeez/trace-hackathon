@@ -6,16 +6,14 @@ import { callApi, type SearchResult, type WorkRecord } from "@/lib/api";
 import { isPlanApproved } from "@/lib/approvals";
 import { parseAuthors, SOURCE_TYPES } from "@/lib/csl";
 import { doiUrl, normaliseDoi } from "@/lib/doi";
-import { sourceIdentity } from "@/lib/identity";
 import type { FieldCheck } from "@/lib/identity";
 import { judgeReference, type ListVerdict } from "@/lib/refCheck";
 import { MAX_REFERENCES, parseReference, splitReferences, type ParsedReference } from "@/lib/refList";
 import { addSource, findDuplicate, manualSource, sourceFromWork } from "@/lib/mutations";
 import { planQuery } from "@/lib/plan";
 import { formatAuthorsShort } from "@/lib/text";
-import type { Outcome, Source } from "@/lib/types";
-import { IdentityPanel } from "./IdentityPanel";
-import { FOUND, IDENTITY, RETRACTED, StatusChip, TrustLegend } from "./status";
+import type { Outcome } from "@/lib/types";
+import { FOUND, foundBadge, IDENTITY, RETRACTED, StatusChip, TrustLegend } from "./status";
 import { useProject, useStore } from "./store";
 import { Button, Chip, cx, Empty, Field, Notice, SectionTitle, Select, TextArea, TextInput } from "./ui";
 
@@ -24,7 +22,7 @@ type Failure = Extract<Outcome<never>, { ok: false }>;
 /** One wording for provider failures, so "not found" and "could not check" never blur. */
 function failureText(f: Failure): { tone: "warn" | "neutral" | "bad"; text: string } {
   if (f.kind === "not_found") {
-    return { tone: "warn", text: "Not found in Crossref. This does not show the paper is fake: it may be registered with another agency, or the DOI may be mistyped." };
+    return { tone: "warn", text: `Not found in Crossref. This does not show the paper is fake: it may be registered elsewhere, or the DOI may be mistyped. ${f.message}` };
   }
   if (f.kind === "bad_request") return { tone: "bad", text: f.message };
   return { tone: "neutral", text: `Could not check. ${f.message} Nothing has been marked as checked.` };
@@ -177,21 +175,23 @@ type DoiCheck =
   | { key: string; kind: "failed"; failure: Failure }
   | { key: string; kind: "found"; work: WorkRecord };
 
-/** The unsaved source a check would add, with the details the student typed, so it can be compared. */
-function previewOf(work: WorkRecord, given: { title: string; author: string; year: string }): Source {
-  const { source } = sourceFromWork(work, "citation_check", work.retrievedAt);
-  const y = Number(given.year);
-  const family = given.author.trim();
+/**
+ * What the student typed, as a reference to compare. Only supplied fields count: a resolving DOI with
+ * nothing (or only a junk year) typed is "DOI found, nothing to compare", never a citation match.
+ */
+function givenReference(doi: string, given: { title: string; author: string; year: string }): ParsedReference {
+  const y = Number(given.year.trim());
   return {
-    ...source,
-    cited: {
-      ...source.cited,
-      title: given.title.trim() || source.cited.title,
-      year: given.year.trim() && Number.isInteger(y) ? y : source.cited.year,
-      authors: family && family.toLowerCase() !== (source.cited.authors[0]?.family ?? "").toLowerCase() ? [{ family }] : source.cited.authors,
-    },
+    raw: "",
+    doi,
+    title: given.title.trim() || null,
+    firstAuthor: given.author.trim() || null,
+    year: given.year.trim() && Number.isInteger(y) && y >= 1000 && y <= 2100 ? y : null,
+    query: "",
   };
 }
+
+const FIELD_NAME: Record<FieldCheck["field"], string> = { title: "Title", first_author: "First author's surname", year: "Year", venue: "Journal" };
 
 function ByDoi() {
   const project = useProject();
@@ -223,9 +223,9 @@ function ByDoi() {
   }
 
   function add(work: WorkRecord) {
-    // The library keeps Crossref's record. The details typed for the comparison are never saved over it.
+    // The library keeps the registry's record. The details typed for the comparison are never saved over it.
     const { source, evidence } = sourceFromWork(work, hasGiven ? "citation_check" : "doi_lookup", new Date().toISOString());
-    update((p) => addSource(p, source, evidence), `Added “${source.cited.title}” by DOI, with Crossref's details.`);
+    update((p) => addSource(p, source, evidence), `Added “${source.cited.title}” by DOI, with ${work.provider === "datacite" ? "DataCite" : "Crossref"}'s details.`);
     setAdded(source.cited.title);
     setCheck(null);
     setDoi("");
@@ -234,10 +234,13 @@ function ByDoi() {
     setYear("");
   }
 
-  const preview = current?.kind === "found" ? previewOf(current.work, { title, author, year }) : null;
-  const identity = preview ? sourceIdentity(preview) : null;
+  const judged = current?.kind === "found" ? judgeReference(givenReference(current.work.doi, { title, author, year }), current.work.record, "doi") : null;
+  const registry = current?.kind === "found" && current.work.provider === "datacite" ? "DataCite" : "Crossref";
+  const verdict = judged ? { ...VERDICT[judged.verdict], label: VERDICT[judged.verdict].label.replace("Crossref", registry) } : null;
+  const notes = judged?.fields.some((f) => f.verdict === "note") ?? false;
   const saved = current?.kind === "found" ? findDuplicate(project, { doi: current.work.doi, cited: current.work.record }) : undefined;
-  const clean = identity && (!hasGiven || (identity.status === "matched" && !identity.partial));
+  // A trusted add only when nothing was compared (the DOI alone) or everything compared agrees.
+  const clean = judged && (judged.verdict === "doi_only" || (judged.verdict === "match" && !notes));
 
   return (
     <form
@@ -295,17 +298,38 @@ function ByDoi() {
             )}
           </Notice>
         )}
-        {current?.kind === "found" && preview && identity && (
+        {current?.kind === "found" && judged && verdict && (
           <div className="space-y-3 rounded-lg border border-line p-4" role="status">
             <div className="flex flex-wrap items-center gap-2">
-              <StatusChip badge={FOUND} />
-              {current.work.abstract ? <Chip tone="neutral" icon={FileText}>Abstract available</Chip> : <Chip tone="warn" icon={FileX2}>No abstract in Crossref</Chip>}
+              <StatusChip badge={foundBadge(current.work.provider)} />
+              {judged.verdict !== "doi_only" && (
+                <Chip tone={notes && judged.verdict === "match" ? "warn" : verdict.tone} icon={verdict.tone === "ok" && !notes ? Check : verdict.tone === "bad" ? FileX2 : undefined}>
+                  {notes && judged.verdict === "match" ? "Partial match: check details" : verdict.label}
+                </Chip>
+              )}
+              {current.work.record.retraction && <StatusChip badge={RETRACTED} />}
+              {current.work.abstract ? <Chip tone="neutral" icon={FileText}>Abstract available</Chip> : <Chip tone="warn" icon={FileX2}>No abstract in {registry}</Chip>}
             </div>
             <p className="text-sm text-ink">
-              Crossref record: <span className="font-semibold">{current.work.record.title}</span> ({formatAuthorsShort(current.work.record.authors, current.work.record.year)})
+              {registry} record: <span className="font-semibold">{current.work.record.title || "(no title recorded)"}</span> ({formatAuthorsShort(current.work.record.authors, current.work.record.year)})
             </p>
             {current.work.note && <p className="text-sm text-ink-soft">{current.work.note}</p>}
-            {hasGiven ? <IdentityPanel source={preview} compact readOnly /> : <p className="text-sm text-ink-soft">No details were given, so there is nothing to compare. Adding saves Crossref&rsquo;s details.</p>}
+            {judged.fields.length > 0 ? (
+              <ul className="space-y-1.5 text-sm" aria-label="Details compared">
+                {judged.fields.map((f) => (
+                  <li key={f.field} className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="font-semibold text-ink">{FIELD_NAME[f.field]}</span>
+                    <Chip tone={f.verdict === "match" ? "ok" : f.verdict === "note" ? "warn" : "bad"}>{f.verdict === "match" ? "Agrees" : f.verdict === "note" ? "Check" : "Disagrees"}</Chip>
+                    <span className="text-ink-soft">
+                      you gave “{f.cited}”, {registry} has “{f.registry}”
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-ink-soft">No usable details were typed, so only the DOI was checked: it resolves. That says nothing about a citation. Adding saves {registry}&rsquo;s details.</p>
+            )}
+            {judged.fields.length > 0 && <p className="text-xs text-ink-soft">Compared: only the details you typed. Of the authors, only the first author&rsquo;s surname is compared.</p>}
             {saved ? (
               <p className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
                 <Chip tone="neutral" icon={Check}>
@@ -319,7 +343,9 @@ function ByDoi() {
               </Button>
             ) : (
               <div className="space-y-2">
-                <p className="text-sm text-ink-soft">The details you gave {identity.status === "mismatch" ? "disagree with" : "only partly match"} Crossref. To add this paper, take Crossref&rsquo;s details instead. Nothing you typed is saved.</p>
+                <p className="text-sm text-ink-soft">
+                  The details you gave {judged.verdict === "mismatch" ? "disagree with" : judged.verdict === "possible" ? "agree, but without a title they cannot confirm" : "only partly match"} {registry}&rsquo;s record. To add this paper, take {registry}&rsquo;s details instead. Nothing you typed is saved.
+                </p>
                 <Button size="sm" icon={BookmarkPlus} onClick={() => add(current.work)}>
                   Use Crossref&rsquo;s details and add
                 </Button>
@@ -333,7 +359,9 @@ function ByDoi() {
 }
 
 function ByHand() {
+  const project = useProject();
   const { update } = useStore();
+  const [duplicate, setDuplicate] = useState<string | null>(null);
   const [type, setType] = useState("webpage");
   const [title, setTitle] = useState("");
   const [authors, setAuthors] = useState("");
@@ -356,7 +384,14 @@ function ByHand() {
       null,
       new Date().toISOString(),
     );
+    const existing = findDuplicate(project, src);
+    if (existing) {
+      setSaved(null);
+      setDuplicate(existing.cited.title);
+      return;
+    }
     update((p) => addSource(p, src, null), `Entered “${src.cited.title}” by hand.`);
+    setDuplicate(null);
     setSaved(src.cited.title);
     setTitle("");
     setAuthors("");
@@ -404,6 +439,11 @@ function ByHand() {
       {saved && (
         <Notice tone="neutral" role="status">
           Added “{saved}” as entered by hand. It stays labelled Not yet verified.
+        </Notice>
+      )}
+      {duplicate && (
+        <Notice tone="neutral" role="status">
+          Already in your library as “{duplicate}” (same title and year). Nothing was added.
         </Notice>
       )}
     </form>
@@ -508,7 +548,9 @@ function CheckList() {
         <ol className="divide-y divide-line rounded-lg border border-line" aria-live="polite" aria-label="Checked references">
           {rows.map((row, n) => {
             const partial = row.verdict === "match" && row.fields.some((f) => f.verdict === "note");
-            const v = partial ? { tone: "warn" as const, label: "Partial match: check details" } : VERDICT[row.verdict];
+            const v0 = partial ? { tone: "warn" as const, label: "Partial match: check details" } : VERDICT[row.verdict];
+            // A record DataCite supplied (Crossref had none) is named as DataCite's.
+            const v = row.work?.provider === "datacite" ? { ...v0, label: v0.label.replace("Crossref", "DataCite") } : v0;
             const disagree = row.fields.filter((f) => f.verdict !== "match");
             const saved = row.work ? findDuplicate(project, { doi: row.work.doi, cited: row.work.record }) : undefined;
             const label = addLabel(row);

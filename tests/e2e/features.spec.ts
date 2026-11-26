@@ -167,3 +167,62 @@ test("welcome: 'Check a reference' opens straight at a read-only DOI check", asy
   await expect(page.getByText("Not found in Crossref. This does not show the paper is fake")).toBeVisible();
   await expect(stepButton(page, /Library and evidence/)).toContainText("7 sources");
 });
+test("Home: reachable from the workspace, at a stable URL, and the same project resumes", async ({ page }) => {
+  await mockStatus(page, false);
+  // A fresh visit lands on the welcome page with nothing to resume.
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: "Open the demo project" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Continue / })).toHaveCount(0);
+
+  await openDemo(page);
+  await page.getByRole("button", { name: "Approve plan" }).click();
+  await expect(page.getByRole("heading", { name: "Your library" })).toBeVisible();
+
+  // Home from the workspace: the landing page at /home, offering to resume this project.
+  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByRole("heading", { name: "Continue Demo: retrieval practice" })).toBeVisible();
+
+  // Back returns to the workspace on the same step; Forward returns home.
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Your library" })).toBeVisible();
+  await page.goForward();
+  await expect(page).toHaveURL(/\/home$/);
+
+  // A direct visit or a refresh of /home still shows the landing page, not the project.
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Continue Demo: retrieval practice" })).toBeVisible();
+
+  // Resume: the same project and step, with the plan approval kept.
+  await page.getByRole("link", { name: "Resume project" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { name: "Your library" })).toBeVisible();
+  await expect(stepButton(page, /Plan/)).toContainText("Approved");
+
+  // The wordmark is a home link too, and keyboard focus reaches it.
+  await expect(page.getByRole("link", { name: "TRACE home" })).toHaveAttribute("href", "/home");
+});
+
+test("Home stays reachable on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockStatus(page, false);
+  await openDemo(page);
+  const home = page.getByRole("link", { name: "Home", exact: true });
+  await expect(home).toBeVisible();
+  await home.click();
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByRole("link", { name: "Resume project" })).toBeVisible();
+});
+
+test("verification report: a blocked citation trap says so, from the same checks as the export gate", async ({ page }) => {
+  await mockStatus(page, false);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Run the citation trap" }).first().click();
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Download verification report" }).click()]);
+  expect(download.suggestedFilename()).toMatch(/^trace-verification-TEST-COPY-.*\.md$/);
+  const text = await readFile((await download.path())!, "utf8");
+  expect(text).toContain("CITATION-TRAP TEST COPY");
+  expect(text).toContain("**Reviewed export: BLOCKED**");
+  expect(text).toContain("Excerpt not in stored text");
+  expect(text).toContain("## AI-use statement");
+});

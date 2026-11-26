@@ -123,6 +123,42 @@ function Editor({ i }: { i: ClaimInspection }) {
   );
 }
 
+const wordKey = (w: string) => w.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+
+/**
+ * The quote as cited beside the closest real sentence, with the cited words the source does not contain
+ * highlighted (for example "month" where the source says "week"). A reading aid only: the decision comes
+ * from the excerpt check, not from this word comparison.
+ */
+function QuoteComparison({ quote, text, nearest }: { quote: string; text: string; nearest: { start: number; end: number } }) {
+  // Widen the closest shared stretch to its whole sentence, so the real wording reads naturally.
+  const start = Math.max(0, text.lastIndexOf(".", nearest.start - 1) + 1);
+  const stop = text.indexOf(".", nearest.end);
+  const sentence = text.slice(start, stop === -1 ? text.length : stop + 1).trim();
+  const real = new Set(sentence.split(/\s+/).map(wordKey));
+  return (
+    <div className="mb-3 space-y-2 rounded-lg border border-bad/30 p-3 text-sm">
+      <p>
+        <span className="font-semibold text-ink">Quoted in the claim: </span>
+        <span>
+          “
+          {quote.split(/(\s+)/).map((w, n) =>
+            /\s+/.test(w) || !wordKey(w) || real.has(wordKey(w)) ? w : (
+              <mark key={n} className="rounded bg-bad-tint px-0.5 font-semibold text-bad">
+                {w}
+              </mark>
+            ),
+          )}
+          ”
+        </span>
+      </p>
+      <p>
+        <span className="font-semibold text-ink">Closest wording in the source: </span>“{sentence}”
+      </p>
+    </div>
+  );
+}
+
 export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose: () => void }) {
   const project = useProject();
   const { update } = useStore();
@@ -198,11 +234,14 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
           )}
         </div>
         {blocking.length > 0 && decision !== "rejected" && (
-          <ul className="mt-3 space-y-1 text-sm text-bad">
-            {blocking.map((b) => (
-              <li key={b.code}>{b.message.replace(/^Claim \d+: /, decision === "approved" ? "Still open: " : "Before approving: ")}</li>
-            ))}
-          </ul>
+          <div className="mt-3 rounded-lg bg-bad-tint px-3 py-2" role="note" aria-label="Why the reviewed export is blocked">
+            <p className="text-xs font-semibold tracking-wide text-bad uppercase">Blocks the reviewed export</p>
+            <ul className="mt-1 space-y-1 text-sm text-ink">
+              {blocking.map((b) => (
+                <li key={b.code}>{b.message.replace(/^Claim \d+: /, decision === "approved" ? "Still open: " : "Before approving: ")}</li>
+              ))}
+            </ul>
+          </div>
         )}
       </header>
 
@@ -224,6 +263,7 @@ export function ClaimInspector({ claimId, onClose }: { claimId: string; onClose:
               {excerpt.status === "matched" && " The excerpt is marked."}
               {excerpt.status === "mismatch" && excerpt.nearest && " The excerpt is not here; the closest real wording is marked."}
             </p>
+            {excerpt.status === "mismatch" && excerpt.nearest && <QuoteComparison quote={claim.excerpt} text={evidence.text} nearest={excerpt.nearest} />}
             <Passage text={evidence.text} check={excerpt} onSelection={setSelection} />
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <Button

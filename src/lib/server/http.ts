@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { HTTP_STATUS } from "../api";
 import type { Outcome } from "../types";
 
-const ALLOWED_HOSTS = new Set(["api.crossref.org", "api.openalex.org"]);
+const ALLOWED_HOSTS = new Set(["api.crossref.org", "api.openalex.org", "api.datacite.org"]);
 
 export interface FetchOptions {
   headers?: Record<string, string>;

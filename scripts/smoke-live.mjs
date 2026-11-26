@@ -37,7 +37,11 @@ const doi = await call(`/api/doi?doi=${encodeURIComponent("10.1126/science.11524
 report("Crossref DOI lookup", doi.body.ok && doi.body.data.record.year === 2008, doi.body.ok ? `${doi.body.data.record.title} (${doi.body.data.record.year}), abstract: ${doi.body.data.abstract ? "yes" : "no"}` : `${doi.body.kind}: ${doi.body.message}`);
 
 const unknown = await call(`/api/doi?doi=${encodeURIComponent("10.1234/trace-smoke-test-no-such-doi")}`);
-report("unknown DOI is 'not_found'", unknown.status === 404 && unknown.body.kind === "not_found", `HTTP ${unknown.status}, kind: ${unknown.body.kind}`);
+report("unknown DOI is 'not_found'", unknown.status === 404 && unknown.body.kind === "not_found", `HTTP ${unknown.status}, kind: ${unknown.body.kind}, ${unknown.body.message}`);
+
+// A DataCite DOI that Crossref does not have (a Dryad dataset): found through the fallback and labelled as DataCite's.
+const dc = await call(`/api/doi?doi=${encodeURIComponent("10.5061/dryad.8515")}`);
+report("DataCite fallback", dc.body.ok && dc.body.data.provider === "datacite" && dc.body.data.record.year === 2011, dc.body.ok ? `provider: ${dc.body.data.provider}, ${dc.body.data.record.title} (${dc.body.data.record.year})` : `${dc.body.kind}: ${dc.body.message}`);
 
 // A paper Crossref lists as retracted (Wakefield et al., 1998, retracted 2010).
 const retracted = await call(`/api/doi?doi=${encodeURIComponent("10.1016/S0140-6736(97)11096-0")}`);

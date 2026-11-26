@@ -103,7 +103,7 @@ export function inspectClaim(project: Project, claim: Claim): ClaimInspection {
         }
         for (const d of details) add("claim_detail_unsupported", d.message.replace(/^The claim/, "the claim"));
         if (identity?.status === "mismatch") {
-          add("identity_mismatch", "the reference details disagree with Crossref.", source?.id);
+          add("identity_mismatch", `the reference details disagree with ${identity.registry ?? "the registry"}.`, source?.id);
         } else if (source?.doi && identity?.status !== "matched") {
           add(
             "identity_unconfirmed",
@@ -180,7 +180,7 @@ function textIssues(project: Project, cites: CitationMatch[]): Issue[] {
     const id = source ? sourceIdentity(source) : null;
     const minYear = project.rules.minYear;
     if (id?.status === "mismatch") {
-      issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", whose reference details disagree with Crossref.`, sourceId: c.sourceId });
+      issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", whose reference details disagree with ${id.registry ?? "the registry"}.`, sourceId: c.sourceId });
     } else if (source?.doi && id?.status !== "matched") {
       issues.push({ code: "text_citation_flagged", message: `Your text cites "${c.raw}", whose DOI ${source.lookup.status === "not_found" ? "Crossref has no record of (that does not make it fake)" : "could not be checked against Crossref"}. Recheck it in the Library, or remove the citation.`, sourceId: c.sourceId });
     } else if (source && !source.doi) {

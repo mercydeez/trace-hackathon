@@ -102,7 +102,7 @@ export function sourceFromWork(work: WorkRecord, origin: Source["origin"], now: 
     doi: work.doi,
     origin,
     cited: biblioOf(work.record),
-    registry: { provider: "crossref", retrievedAt: work.retrievedAt, url: work.url, record: work.record },
+    registry: { provider: work.provider ?? "crossref", retrievedAt: work.retrievedAt, url: work.url, record: work.record },
     lookup: { status: "found", checkedAt: work.retrievedAt },
     tags: [],
     note: "",

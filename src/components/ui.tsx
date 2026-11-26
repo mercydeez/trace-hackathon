@@ -1,18 +1,51 @@
 "use client";
 
 import { Inbox, ScanSearch, X, type LucideIcon } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useId, useRef, useSyncExternalStore } from "react";
 
 export function cx(...parts: (string | false | null | undefined)[]): string {
   return parts.filter(Boolean).join(" ");
 }
 
-export function Brand({ compact }: { compact?: boolean }) {
-  return (
-    <span className="flex flex-none items-center gap-2">
+/** The TRACE wordmark. With `href` it is also the link home. */
+export function Brand({ compact, href }: { compact?: boolean; href?: string }) {
+  const mark = (
+    <>
       <span aria-hidden className="trace-mark grid size-7 place-items-center rounded-lg text-white"><ScanSearch className="size-4" /></span>
       <span className={cx("text-base font-bold tracking-[-0.02em] text-ink", compact && "lg:sr-only")}>TRACE</span>
-    </span>
+    </>
+  );
+  if (!href) return <span className="flex flex-none items-center gap-2">{mark}</span>;
+  return (
+    <Link href={href} aria-label="TRACE home" className="flex flex-none items-center gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+      {mark}
+    </Link>
+  );
+}
+
+const LINK_VARIANT = {
+  primary: "bg-brand text-white border-brand shadow-[0_2px_5px_rgb(71_52_113/0.18)] hover:bg-brand-deep hover:border-brand-deep",
+  secondary: "bg-surface text-ink border-line-strong hover:bg-s2",
+  ghost: "bg-transparent text-ink-soft border-transparent hover:bg-s2 hover:text-ink",
+};
+
+/** A navigation link that looks like a Button. Navigation stays a real link, so Back, Forward and new tabs work. */
+export function LinkButton({ href, variant = "secondary", size = "md", icon: Icon, className, children, ...props }: Omit<React.ComponentProps<typeof Link>, "href"> & { href: string; variant?: keyof typeof LINK_VARIANT; size?: "sm" | "md"; icon?: LucideIcon }) {
+  return (
+    <Link
+      href={href}
+      className={cx(
+        "inline-flex max-w-full shrink-0 items-center justify-center gap-2 rounded-lg border text-center text-sm font-semibold transition-[background-color,border-color,color] duration-150 ease-out",
+        size === "sm" ? "min-h-8 px-3" : "min-h-10 px-4",
+        LINK_VARIANT[variant],
+        className,
+      )}
+      {...props}
+    >
+      {Icon && <Icon aria-hidden className="size-4 shrink-0" />}
+      {children}
+    </Link>
   );
 }
 

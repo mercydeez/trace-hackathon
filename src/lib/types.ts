@@ -44,7 +44,7 @@ export const RegistryRecordSchema = BiblioSchema.extend({
 export type RegistryRecord = z.infer<typeof RegistryRecordSchema>;
 
 export const RegistrySnapshotSchema = z.object({
-  provider: z.literal("crossref"),
+  provider: z.enum(["crossref", "datacite"]),
   retrievedAt: z.string(),
   url: z.string(),
   record: RegistryRecordSchema,

@@ -9,6 +9,7 @@ import type { Biblio, RegistryRecord, Source } from "./types";
 
 export type IdentityStatus = "matched" | "mismatch" | "not_found" | "could_not_check" | "user_entered";
 export type IdentityField = "title" | "first_author" | "year" | "venue";
+export type RegistryName = "Crossref" | "DataCite";
 
 export interface FieldCheck {
   field: IdentityField;
@@ -25,6 +26,8 @@ export interface Identity {
   fields: FieldCheck[];
   summary: string;
   registryRetrievedAt: string | null;
+  /** The registry whose record was compared: Crossref, or DataCite when Crossref has none. Null when nothing was compared. */
+  registry: RegistryName | null;
   /**
    * Matched, but the title, first author or year is only a near match (wording, author count, an
    * alternative year). Shown as "partial" rather than a verified match; the export gate is unaffected.
@@ -54,6 +57,7 @@ function checkTitle(cited: Biblio, reg: RegistryRecord): FieldCheck {
   const a = norm(cited.title);
   const b = norm(reg.title);
   const base = { field: "title" as const, cited: cited.title || "(none)", registry: reg.title || "(none)" };
+  if (b === "") return { ...base, verdict: "note", message: "The registry lists no title, so the title cannot be compared." };
   if (a === b && a !== "") return { ...base, verdict: "match", message: "Title agrees with the registry." };
   if (a !== "" && jaccard(a, b) >= 0.8) {
     return { ...base, verdict: "note", message: "Title differs slightly from the registry. Check the wording." };
@@ -126,6 +130,7 @@ export function sourceIdentity(source: Source): Identity {
   if (!source.doi) {
     return {
       status: "user_entered",
+      registry: null,
       partial: false,
       fields: [],
       summary: "Entered by hand. Not checked against any registry.",
@@ -139,13 +144,15 @@ export function sourceIdentity(source: Source): Identity {
     const notes = fields.filter((f) => f.verdict === "note").length;
     const stale = source.lookup.status === "could_not_check" ? " The last refresh failed, so this uses the earlier record." : "";
     const date = source.registry.retrievedAt.slice(0, 10);
+    const registry: RegistryName = source.registry.provider === "datacite" ? "DataCite" : "Crossref";
     return {
       status: mismatches ? "mismatch" : "matched",
+      registry,
       partial: !mismatches && fields.some((f) => f.verdict === "note" && f.field !== "venue"),
       fields,
       summary: mismatches
-        ? `${mismatches} cited detail(s) disagree with the Crossref record retrieved ${date}.${stale}`
-        : `Cited details agree with the Crossref record retrieved ${date}${notes ? `, with ${notes} point(s) to check` : ""}.${stale}`,
+        ? `${mismatches} cited detail(s) disagree with the ${registry} record retrieved ${date}.${stale}`
+        : `Cited details agree with the ${registry} record retrieved ${date}${notes ? `, with ${notes} point(s) to check` : ""}.${stale}`,
       registryRetrievedAt: source.registry.retrievedAt,
       retraction: source.registry.record.retraction ?? null,
     };
@@ -153,6 +160,7 @@ export function sourceIdentity(source: Source): Identity {
   if (source.lookup.status === "not_found") {
     return {
       status: "not_found",
+      registry: null,
       partial: false,
       fields: [],
       summary:
@@ -164,6 +172,7 @@ export function sourceIdentity(source: Source): Identity {
   if (source.lookup.status === "could_not_check") {
     return {
       status: "could_not_check",
+      registry: null,
       partial: false,
       fields: [],
       summary: `Could not check: ${source.lookup.detail ?? "the registry did not answer"}. Try again later.`,
@@ -173,6 +182,7 @@ export function sourceIdentity(source: Source): Identity {
   }
   return {
     status: "user_entered",
+      registry: null,
       partial: false,
     fields: [],
     summary: "A DOI is recorded but has not been checked against the registry yet.",

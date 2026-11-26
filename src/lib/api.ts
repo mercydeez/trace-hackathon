@@ -11,6 +11,8 @@ export interface WorkRecord {
   url: string;
   /** Set when the record found is not for exactly the DOI that was typed. */
   note?: string;
+  /** The registry that holds the record. Crossref unless Crossref had none and DataCite did. */
+  provider?: "crossref" | "datacite";
 }
 
 export interface SearchResult {

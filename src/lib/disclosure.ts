@@ -42,13 +42,16 @@ export function aiUseStatement(project: Project, evaluation: ExportEvaluation): 
     const edited = live.filter((c) => c.edited).length;
     out.push(
       `I used TRACE with a generative AI model (${modelsOf(live)}) to draft ${plural(live.length, "claim")}` +
-        (passages === null ? ", from passages I had approved." : `, from ${plural(passages, "source passage")} I had approved; nothing else was sent to the model.`) +
+        (passages === null ? ", from passages I had approved." : `, from ${plural(passages, "source passage")} I had approved; the model was sent the research question and those passages only.`) +
         (edited ? ` I edited ${edited === live.length ? (live.length === 1 ? "it" : "all of them") : `${edited} of them`}.` : ""),
     );
   }
   if (sample.length) out.push(`${plural(sample.length, "claim")} ${sample.length === 1 ? "comes" : "come"} from TRACE's labelled SAMPLE brief, written during the tool's development; ${sample.length === 1 ? "it is" : "they are"} not the result of a live AI call.`);
   if (manual.length) out.push(`I wrote ${plural(manual.length, "claim")} myself, without AI drafting.`);
-  if (claims.length && !live.length && !sample.length) out.push("No generative AI drafted any claim.");
+  const usedLiveAi = project.aiRuns.some((r) => r.mode === "live");
+  if (claims.length && !live.length && !sample.length) {
+    out.push(usedLiveAi ? "AI drafting was used in this project, but none of its claims are included here." : "No generative AI drafted any claim.");
+  }
   if (project.writing.trim()) out.push("I wrote the main text myself; TRACE did not generate it.");
   out.push(`References were formatted from registry records by Citation.js, not written by AI.`);
 
@@ -97,10 +100,11 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation, 
     );
   }
   if (!live.length && !sample.length) {
-    lines.push("TRACE did not use generative AI to draft any included claims.");
+    lines.push(project.aiRuns.some((r) => r.mode === "live") ? "TRACE's AI drafting was used in this project, but none of its claims are included." : "TRACE did not use generative AI to draft any included claims.");
   }
 
-  const failedRuns = project.aiRuns.reduce((n, r) => n + r.rejected.length, 0);
+  // Only live runs: items rejected from the labelled sample brief were never AI-drafted.
+  const failedRuns = project.aiRuns.filter((r) => r.mode === "live").reduce((n, r) => n + r.rejected.length, 0);
   if (failedRuns) {
     lines.push(`TRACE rejected ${plural(failedRuns, "AI-drafted item")} that cited evidence outside the approved set or broke its output rules. None of those items appears here.`);
   }
@@ -113,7 +117,7 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation, 
   );
   lines.push(
     "TRACE checked three things automatically: that each quoted excerpt appears, by text matching, in the stored source passage; that the numbers " +
-    "and negations stated in each claim also appear in its excerpt; and that cited details agree with the Crossref record for sources with a DOI. Sources without a DOI may be entered manually. These checks do not establish that a source is correct, that a claim follows from " +
+    "and negations stated in each claim also appear in its excerpt; and that cited details agree with the registry record (Crossref, or DataCite when Crossref has none) for sources with a DOI. Sources without a DOI may be entered manually. These checks do not establish that a source is correct, that a claim follows from " +
       "its excerpt, or that the work is free of plagiarism. Any support rating shown beside a claim was suggested by the AI model or the sample and can be wrong.",
   );
   const r = project.rules;

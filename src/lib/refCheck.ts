@@ -30,7 +30,9 @@ export function judgeReference(parsed: ParsedReference, record: RegistryRecord, 
 
   if (fields.length === 0) return { verdict: via === "doi" ? "doi_only" : "possible", fields };
   const mismatched = fields.filter((f) => f.verdict === "mismatch");
-  if (via === "search" && mismatched.some((f) => f.field === "title")) return { verdict: "no_close_match", fields };
+  // A search hit is the student's paper only if its title agrees. Any disagreement without that is an unrelated record.
+  const titleAgrees = fields.some((f) => f.field === "title" && f.verdict !== "mismatch");
+  if (via === "search" && mismatched.length && !titleAgrees) return { verdict: "no_close_match", fields };
   if (mismatched.length) return { verdict: "mismatch", fields };
   // Agreement on a year, or an author and a year, fits many papers. Only a compared title makes it a match.
   const titleCompared = fields.some((f) => f.field === "title");

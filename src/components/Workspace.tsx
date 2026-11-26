@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, FlaskConical, LayoutGrid, ShieldAlert, TriangleAlert } from "lucide-react";
+import { Check, FlaskConical, House, LayoutGrid, ShieldAlert, TriangleAlert } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isEvidenceSetApproved, isPlanApproved } from "@/lib/approvals";
 import { buildDemoProject, FIXTURES_FETCHED_AT } from "@/lib/demo";
@@ -13,7 +14,7 @@ import { LibraryStep } from "./LibraryStep";
 import { PlanStep } from "./PlanStep";
 import { Sidebar } from "./Sidebar";
 import { StoreProvider, useStore } from "./store";
-import { Brand, Button, cx, Drawer, Notice, shortDate, useMediaQuery } from "./ui";
+import { Brand, Button, cx, Drawer, LinkButton, Notice, shortDate, useMediaQuery } from "./ui";
 import { Welcome } from "./Welcome";
 
 type StepId = "plan" | "discover" | "library" | "brief";
@@ -58,6 +59,24 @@ function stepStates(project: Project): StepState[] {
  * ponytail: module-level one-shot flag, enough for one entry point; a router would replace it.
  */
 let openAt: StepId | null = null;
+
+const STEP_IDS: StepId[] = ["plan", "discover", "library", "brief"];
+/** The step last shown for a project in this tab. Session storage only: a convenience, never project data. */
+function rememberedStep(projectId: string): StepId | null {
+  try {
+    const s = window.sessionStorage.getItem(`trace:step:${projectId}`);
+    return STEP_IDS.includes(s as StepId) ? (s as StepId) : null;
+  } catch {
+    return null;
+  }
+}
+function rememberStep(projectId: string, step: StepId) {
+  try {
+    window.sessionStorage.setItem(`trace:step:${projectId}`, step);
+  } catch {
+    /* storage blocked: resuming falls back to the step the project's state suggests */
+  }
+}
 
 // --- Project workspace ---------------------------------------------------------------------
 
@@ -110,17 +129,19 @@ function StepNav({ steps, step, compact, onSelect }: { steps: StepState[]; step:
 
 function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: () => void }) {
   const { deleteProject, status } = useStore();
-  const [step, setStep] = useState<StepId>(() => openAt ?? (!isPlanApproved(project) ? "plan" : project.claims.length > 0 ? "brief" : "library"));
+  const [step, setStep] = useState<StepId>(() => openAt ?? rememberedStep(project.id) ?? (!isPlanApproved(project) ? "plan" : project.claims.length > 0 ? "brief" : "library"));
   const [inspecting, setInspecting] = useState<string | null>(null);
   // "Check a reference" on the welcome screen opens the demo straight at Discover, where checking a DOI is read-only.
   // Read in the initial step above (safe if React calls the initialiser twice), then cleared so it applies once.
   useEffect(() => {
     openAt = null;
   }, []);
-  // A new step starts at its top, not wherever the last one was scrolled to.
+  // A new step starts at its top, not wherever the last one was scrolled to. The step is remembered for
+  // this tab, so Home → Resume (or a refresh) returns to the same place.
   useEffect(() => {
     window.scrollTo({ top: 0 });
-  }, [step]);
+    rememberStep(project.id, step);
+  }, [step, project.id]);
   const inspectorColumn = useMediaQuery("(min-width: 1200px)");
   const roomy = useMediaQuery("(min-width: 1440px)");
   const steps = stepStates(project);
@@ -148,10 +169,15 @@ function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: 
       <aside aria-label="Project" className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur lg:h-dvh lg:overflow-y-auto lg:border-r lg:border-b-0 lg:bg-surface">
         <div className={cx("flex flex-col gap-3 px-4 py-3 lg:h-full lg:gap-6 lg:py-6", compactRail ? "lg:px-3" : "lg:px-5")}>
           <div className={cx("flex items-center justify-between gap-2 lg:flex-col lg:items-stretch lg:gap-4", compactRail && "lg:items-center")}>
-            <Brand compact={compactRail} />
-            <Button size="sm" variant="ghost" icon={LayoutGrid} onClick={onOpenTools} aria-label={compactRail ? "Projects and tools" : undefined} className={cx("lg:justify-start", compactRail ? "lg:px-2" : "lg:-mx-3")}>
-              <span className={cx(compactRail && "lg:sr-only")}>Projects and tools</span>
-            </Button>
+            <Brand compact={compactRail} href="/home" />
+            <div className={cx("flex items-center gap-1 lg:flex-col lg:items-stretch lg:gap-1", compactRail && "lg:items-center")}>
+              <LinkButton href="/home" size="sm" variant="ghost" icon={House} aria-label="Home" className={cx("lg:justify-start", compactRail ? "lg:px-2" : "lg:-mx-3")}>
+                <span className={cx("max-sm:sr-only", compactRail && "lg:sr-only")}>Home</span>
+              </LinkButton>
+              <Button size="sm" variant="ghost" icon={LayoutGrid} onClick={onOpenTools} aria-label="Projects and tools" className={cx("lg:justify-start", compactRail ? "lg:px-2" : "lg:-mx-3")}>
+                <span className={cx("max-sm:sr-only", compactRail && "lg:sr-only")}>Projects and tools</span>
+              </Button>
+            </div>
           </div>
 
           {!compactRail && (
@@ -226,9 +252,18 @@ function ProjectView({ project, onOpenTools }: { project: Project; onOpenTools: 
   );
 }
 
-function Shell() {
-  const { ready, project, addProject, storageProblem, saveFailed, dismissStorageProblem, syncNotice, dismissSyncNotice } = useStore();
+function Shell({ view }: { view: "app" | "home" }) {
+  const { ready, state, project, addProject, storageProblem, saveFailed, dismissStorageProblem, syncNotice, dismissSyncNotice } = useStore();
   const [menu, setMenu] = useState(false);
+  const router = useRouter();
+  // On /home, opening or starting a project (demo, trap, new question, Projects and tools) goes to the workspace.
+  // The active project at arrival is not a change: Home must not bounce a returning student straight back.
+  const [arrivedWith, setArrivedWith] = useState<string | null | undefined>(undefined);
+  if (view === "home" && ready && arrivedWith === undefined) setArrivedWith(state.activeProjectId);
+  const activeId = state.activeProjectId;
+  useEffect(() => {
+    if (view === "home" && arrivedWith !== undefined && activeId !== arrivedWith && activeId !== null) router.push("/");
+  }, [view, arrivedWith, activeId, router]);
 
   if (!ready) {
     return (
@@ -272,8 +307,9 @@ function Shell() {
           TRACE couldn’t save to this browser. Keep this tab open and download a backup from Projects and tools.
         </Notice>
       )}
-      {project ? <ProjectView key={project.id} project={project} onOpenTools={() => setMenu(true)} /> : (
+      {project && view === "app" ? <ProjectView key={project.id} project={project} onOpenTools={() => setMenu(true)} /> : (
         <Welcome
+          resume={view === "home" ? project : null}
           onOpenTools={() => setMenu(true)}
           // "Check a reference" opens the demo at Discover, where checking a DOI is read-only.
           onCheckReference={() => {
@@ -289,10 +325,11 @@ function Shell() {
   );
 }
 
-export function Workspace() {
+/** `view="home"` is the landing page at /home: always shown, with a way to resume the open project. */
+export function Workspace({ view = "app" }: { view?: "app" | "home" }) {
   return (
     <StoreProvider>
-      <Shell />
+      <Shell view={view} />
     </StoreProvider>
   );
 }

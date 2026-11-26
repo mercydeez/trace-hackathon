@@ -1,5 +1,6 @@
 import { normaliseDoi, withoutTrailingPunctuation } from "@/lib/doi";
 import { lookupCrossref } from "@/lib/server/crossref";
+import { lookupDataCite } from "@/lib/server/datacite";
 import { clientKey, rateLimiter, respond } from "@/lib/server/http";
 
 const allow = rateLimiter(60, 60_000);
@@ -17,11 +18,23 @@ export async function GET(req: Request) {
 
   // The DOI as typed is unknown. If it ends in punctuation, that may have come from the surrounding sentence.
   const variant = withoutTrailingPunctuation(doi);
-  if (!variant) return respond(first);
-  const second = await lookupCrossref(variant);
-  if (!second.ok) return respond(second.kind === "not_found" ? first : second);
-  return respond({
-    ok: true,
-    data: { ...second.data, note: `"${doi}" is not in Crossref. This record is for "${variant}" (trailing punctuation removed).` },
-  });
+  if (variant) {
+    const second = await lookupCrossref(variant);
+    if (second.ok) {
+      return respond({
+        ok: true,
+        data: { ...second.data, note: `"${doi}" is not in Crossref. This record is for "${variant}" (trailing punctuation removed).` },
+      });
+    }
+    if (second.kind !== "not_found") return respond(second);
+  }
+
+  // Crossref has no record. DataCite registers many datasets, repository items and theses: ask it second.
+  const datacite = await lookupDataCite(doi);
+  if (datacite.ok) {
+    return respond({ ok: true, data: { ...datacite.data, note: "Not in Crossref. This record comes from DataCite, which registers many datasets and repository items." } });
+  }
+  if (datacite.kind === "not_found") return respond({ ok: false, kind: "not_found", message: "Neither Crossref nor DataCite has a record for this DOI." });
+  // DataCite did not answer: the DOI may well be registered there, so this is "could not check", not "not found".
+  return respond({ ok: false, kind: datacite.kind, message: `Crossref has no record for this DOI, and DataCite could not be checked (${datacite.message})` });
 }
