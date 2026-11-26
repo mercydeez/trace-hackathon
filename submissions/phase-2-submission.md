@@ -28,7 +28,7 @@ The log is chronological and includes the build prompt, the set-up answers, the 
 https://trace-hackathon.vercel.app
 ```
 
-Verified signed out on 25 Nov 2026 at about 23:20, release commit `9b97481` (Vercel deployment `4WectjuLoxHFoXPjF1Bt4YWg5m5G`). Rollback: Vercel → Deployments → Instant Rollback to `3ubHyssr1ba1nDaaB6g9PJqHVS4H`.
+Verified signed out on 26 Nov 2026 at about 11:30, final release commit `ae65b11` (Vercel deployment `ExQLWp9XoWZpi8GmNz4QaDASAGmW`). The landing page is also at https://trace-hackathon.vercel.app/home. Rollback: Vercel → Deployments → Instant Rollback to `7XwGQBch4yTtDofvqfEBjEfYUQp8` (commit `a1aa7c4`).
 
 ### The five judging requirements: demo action and evidence
 
@@ -40,7 +40,18 @@ Verified signed out on 25 Nov 2026 at about 23:20, release commit `9b97481` (Ver
 | 4. APA 7 reference list from the Library | Library → **Copy APA 7 reference list** or **Download APA 7 reference list** | On production: 8 references shown, and `references-apa7-2026-11-25.txt` downloaded with 8 entries. The browser test checks that the copied and downloaded text match. Excluded records are counted with reasons. Formatting errors offer a retry, and a refused clipboard shows selectable text. |
 | 5. Copyable AI-use statement | Brief and export → **Copy AI-use statement** | On production, after approving all 4 sample claims: "…labelled SAMPLE brief… I reviewed and approved all 4 claims…". Before approval it says "I have approved 0 of 3 claims so far" (phone run). Passage counts come from the run that produced the claims (unit test). |
 
-Totals for this release: 192 of 192 unit tests, 18 of 18 browser journeys, 8 of 8 live smoke checks against production (including a real Gemini draft through the new server-side screen).
+The table above was verified on 25 Nov (`9b97481`); every row still passes on the final release.
+
+Totals for the final release (26 Nov, `ae65b11`): 207 of 207 unit tests, 22 of 22 browser journeys, and 8 of 9 live smoke checks against production, including a real Gemini draft and the DataCite fallback. The one failure is the OpenAlex abstract fallback, rate-limited on Vercel and reported as rate limited, not as not found.
+
+### Also in the final release (26 Nov)
+
+| Addition | Demo action | Evidence |
+|---|---|---|
+| Home and resume | In the workspace, click **Home** (or the TRACE wordmark) to reach `/home`, then **Resume project** | Browser tests cover Back, Forward, refresh, the same step on resume and the phone layout. On production, Resume returned to the same trap project and step. |
+| DataCite fallback | Check DOI `10.5061/dryad.8515` (a Dryad dataset that is not in Crossref) | Labelled **Found in DataCite**; live smoke check passed. Crossref stays primary, and an outage is "Could not check". |
+| Verification report | Brief → **Verification report**, beside the export buttons | Built from the export gate and inspector checks. It says "Reviewed export: BLOCKED" or "ALLOWED", and labels sample and trap projects (unit and browser tests). |
+| Inspector clarity | Open claim 1 in the citation trap | "Blocks the reviewed export" box, then the cited quote beside the real sentence, with "month" highlighted |
 
 **If not deployed** (use this wording instead, as the guidelines allow):
 

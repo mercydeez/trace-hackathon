@@ -376,3 +376,17 @@ It also listed two optional items: a welcome "Check a reference" entry, and serv
 - **Tools:** Claude Code and Codex
 
 The owner asked for a stronger landing page with React, Framer Motion, and a visual style suited to TRACE. Codex sent [the landing page brief](claude-code-landing-page.md) to Claude Code in an isolated copy. Claude built a light editorial welcome page with an interactive excerpt comparison and a frosted result panel. Codex integrated Motion for React and verified the local production build, 192 unit tests, and 19 Chrome journeys. The new phone test exercises the preview by keyboard with reduced motion enabled.
+
+## 19 — Final release: navigation, backend audit, verification report
+
+- **Date:** 26 November 2026, about 09:30–11:40 Dubai time
+- **Model:** Claude Opus 5.5 (Claude Code)
+
+The owner pasted the release prompt saved unchanged in [claude-code-final-release.md](claude-code-final-release.md). Claude Code made these changes:
+- added Home navigation and a stable `/home` landing URL with resume;
+- evaluated and added a DataCite fallback that keeps provenance;
+- had an independent reviewer audit the trust and export paths, then fixed the defects it confirmed;
+- added a verification report;
+- deployed through the GitHub-to-Vercel workflow.
+
+Results are in [the QA report](qa-report.md) and [the Phase 2 submission notes](../submissions/phase-2-submission.md).

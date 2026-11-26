@@ -2,6 +2,70 @@
 
 Results of checks that were actually run. Each line is **passed**, **failed** or **not run**. Nothing is listed as passed without a run behind it.
 
+## Final release · 26 November 2026, about 09:30–11:40 Dubai time
+
+Built and verified by Claude Code (Claude Opus 5.5) from `docs/claude-code-final-release.md`.
+
+**Release:** commit `ae65b11`, Vercel deployment `ExQLWp9XoWZpi8GmNz4QaDASAGmW`, https://trace-hackathon.vercel.app (landing page also at `/home`). **Rollback target:** `7XwGQBch4yTtDofvqfEBjEfYUQp8` (commit `a1aa7c4`, the welcome-page redesign). Use Vercel → Deployments → Instant Rollback.
+
+### What changed
+
+- **Home.** Previously, once a project was open there was no way back to the landing page.
+  - There is now a Home link in the desktop rail and the phone top bar, and the TRACE wordmark links home.
+  - The landing page has a stable URL, `/home`. It opens even with saved projects, offers **Resume project**, and works with Back, Forward and refresh.
+  - The current step is remembered per project for the tab, so resuming returns to the same step. All project data stays in browser storage as before.
+- **DataCite fallback.** DataCite is asked only when Crossref says "not found". Its records keep their provenance (`registry.provider: "datacite"`), and every label, summary, export line and report names the registry that was compared. "Neither Crossref nor DataCite has a record" is Not found. A DataCite outage is Could not check. A resolving DOI alone is still never a citation match.
+- **Verification report** (beside the export controls). It is built from the same evaluation as the Claim Inspector and the export gate. Label wording now lives in `src/lib/labels.ts`, shared by the screen chips and the report.
+  - It contains the reference verdict with the registry named, evidence origin, quote check, student decision, export blockers and the AI-use statement.
+  - Sample and trap projects are labelled.
+  - It contains no prompts, payloads or complete passages.
+- **Inspector.** A "Blocks the reviewed export" box sits above the passage. On a quote mismatch, the cited quote is shown beside the closest real sentence, with the differing words highlighted (for example "month" against "week").
+
+### Defects found by an independent audit and fixed (each with a regression test)
+
+| # | Defect | Fix |
+|---|---|---|
+| 1 | A DOI check with only a year typed, or a junk year, showed a full "Details match" and a trusted add | The preview compares only the typed fields, with `judgeReference`. A year alone is "possible"; nothing usable is "DOI found, nothing to compare". |
+| 2 | A pasted reference with no title could match an unrelated search hit and be offered "Use Crossref's details and add" | For a search hit, any disagreement without an agreeing title is "No close match", with no add |
+| 3 | The AI-use statement said "No generative AI drafted any claim" when AI drafts had all been rejected, and "nothing else was sent" omitted the research question | It now says AI drafting was used and none of its claims are included, and names the question plus the passages |
+| 4 | Items rejected from the labelled sample were called "AI-drafted" in the disclosure | Only live runs are counted |
+| 5 | With retracted sources allowed by the rules, the reviewed brief promised a warning it never printed | A **RETRACTION NOTICE** is printed beside that claim's provenance |
+| 6 | A second hand-entered reference with the same title and year said "Added" but was silently dropped | Duplicates are reported: "Already in your library" |
+| 7 | An empty DataCite year became year 0; a registry record with no title gave "Title does not match" | No year means null; a missing registry title is a point to check |
+
+The audit also confirmed these were sound:
+- stale-result guards;
+- adds always using the registry's details;
+- duplicate detection by DOI;
+- provider failure mapping (404, 429, 5xx, timeout, malformed);
+- server and browser screening of AI output, and refusal when the evidence set changes mid-draft;
+- approvals going stale on edits.
+
+### Checks
+
+| Check | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck` | **Passed** |
+| `npm test` | **Passed**, 207 of 207 in 17 files |
+| `npm run build`, `npm run test:e2e` (production build, Edge) | **Passed**, 22 of 22. New: Home, stable URL, Back and Forward, refresh, resume; Home on a phone; verification report for a blocked trap. |
+| Local production build, 375 px | Phone top bar: wordmark, Home and Projects-and-tools icons (labelled). Inspector: blocking box, then the quote comparison with "month" highlighted, then the passage. No horizontal overflow. |
+| `npm run smoke:live` against `ae65b11` | **8 of 9 passed**: status, Crossref search, DOI lookup, unknown DOI ("Neither Crossref nor DataCite has a record"), **DataCite fallback** (`10.5061/dryad.8515`, provider datacite, 2011), retraction, APA 7, **live Gemini draft** (2 claims, IDs and excerpts verified). **Failed:** the OpenAlex abstract fallback, rate-limited (HTTP 429) from Vercel's shared addresses, reported as rate limited, never "not found". This is a known hosting limit; an `OPENALEX_API_KEY` would give the site its own budget. |
+| Production rehearsal, clean session, no Vercel login | All rows in the table below passed |
+
+| Production rehearsal step | Result |
+| --- | --- |
+| Fake DOI `10.1234/trace-smoke-test-no-such-doi` | Not found in Crossref, no add button |
+| Real unsaved DOI with a year 7 years off | Details disagree with Crossref; the only action is "Use Crossref's details and add"; library 7, then 8 after the explicit add |
+| Citation trap | "Blocks the reviewed export: the excerpt is not in the stored source text"; "month" highlighted |
+| Repair the quote only | Still blocked: "the claim says "one month", but the excerpt does not mention one month"; Approve disabled |
+| Correct the claim, reapprove; claim 2 → Crossref's details | Student approved; Details match Crossref; "5 claims, ready to export" |
+| Reviewed export, report, statement | `trace-TEST-COPY-…-reviewed.md` with its test-copy banner; `trace-verification-TEST-COPY-…md` reports "Reviewed export: ALLOWED"; statement labels the 5 sample claims |
+| APA 7 list | 7 verified references |
+| Home → Resume | `/home` showed "Continue Citation trap (test copy) · 7 sources, 5 claims"; Resume returned to the same project and step (Library), still "5 claims, ready to export" |
+| Phone, 375 px | Home link visible; Plan, Discover, Library and Brief have no horizontal overflow |
+
+**Not covered:** live AI drafting through the UI in this pass (it was run by the smoke check against the same deployment), and screen-reader testing beyond accessible names.
+
 ## Phase 2 judging requirements · 25 November 2026, about 22:00–23:30 Dubai time
 
 Built and verified by Claude Code (Claude Opus 5.5) from `docs/claude-code-phase-2.md`.

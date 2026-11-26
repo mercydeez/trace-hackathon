@@ -23,7 +23,12 @@ Use this when a judge asks to see the requirements one by one, or as the opening
 | 7 | Library → **Copy APA 7 reference list** (or Download). | "The whole library as an APA 7 list, formatted by Citation.js from Crossref's records. Unverified references are left out and counted." |
 | 8 | Brief → **Copy AI-use statement**. Paste it into a text box or email. | "A paste-ready statement built from what actually happened. It says 'reviewed and approved' only once every claim is approved." |
 
-If the network is slow, steps 1–3 can fail as **Could not check**: say "a timeout is no evidence either way" and continue with step 4. Steps 4–8 work with the stored demo data.
+| 9 | Brief → **Verification report** (beside the export buttons). Open the file. | "One page from the same checks as the export gate: each reference and the registry that confirmed it, each quote check, each decision, and whether the reviewed export is allowed or blocked." |
+| 10 | Click **Home** (or the TRACE logo), then **Resume project**. | "Home is always one click away, and resuming returns to the same project and step. Nothing is lost: the work is saved in this browser." |
+
+If the network is slow, steps 1–3 can fail as **Could not check**: say "a timeout is no evidence either way" and continue with step 4. Steps 4–10 work with the stored demo data.
+
+**If a judge asks about a DOI Crossref doesn't have:** check `10.5061/dryad.8515` (a Dryad dataset). "Crossref is asked first. When it has no record, TRACE asks DataCite and labels the result *Found in DataCite*. If DataCite is down, that's *Could not check*, never *Not found*."
 
 ## The eight minutes
 
