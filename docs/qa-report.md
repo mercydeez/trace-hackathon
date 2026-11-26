@@ -2,6 +2,45 @@
 
 Results of checks that were actually run. Each line is **passed**, **failed** or **not run**. Nothing is listed as passed without a run behind it.
 
+## Final feature: qualifying or challenging passage · 26 November 2026, about 13:05–13:40 Dubai time · FREEZE POINT
+
+**Release:** app commit `edc2895`, Vercel deployment `Cu7VqquvRtYuAgdEWNnPrWN1M1ny`, https://trace-hackathon.vercel.app. **Rollback target:** `3FRKisLLjuBWwYkLWBd5YheF8zMK` (`fba2a71`, the previous production build: app release `6428a91` plus a guide update). The documentation commit that records this section is the freeze point. No feature work or polish follows it. If a release-blocking regression appears, roll back to the target above and report the blocker.
+
+### What changed
+
+- **Second passage.** In the Claim Inspector, **Add qualifying or challenging passage** attaches a passage from a source already in the project. The choice follows the same rules as the supporting passage: the passage must be in the evidence set, and its provenance is shown.
+  - The student labels it **Qualifies** (limits where or when the claim applies) or **Challenges** (points against it). The student can change the label or remove the passage. Nothing is drafted by AI.
+  - Both passages are shown side by side on desktop and stacked on phones. Each shows its source, where its text came from, its excerpt and the existing checks. The panel says the label is the student's judgement, not a TRACE check.
+- **Approval.** The second passage is part of the claim's approval fingerprint. Adding, removing, replacing or editing it, editing its stored text, or changing its label makes the approval stale. The existing "Changed since you approved" status and **Approve again** action apply.
+  - Claims without a second passage keep their fingerprint unchanged, so approvals saved before this release still hold.
+  - The schema adds one optional field. The storage version is unchanged.
+- **Export gate.** `evaluateExport()` now also checks the second passage, with the same checks as the supporting passage:
+  - it exists, and so does its source;
+  - it is in the evidence set;
+  - its quote matches the stored text;
+  - its reference identity, retraction and the minimum-year rule.
+
+  A missing passage or source blocks the reviewed export. The numbers check stays on the supporting passage only, because a challenging passage need not repeat the claim's numbers.
+- **Brief, bibliography and report.**
+  - The reviewed brief lists the supporting excerpt and the labelled second excerpt under the claim, each with its citation and its own provenance line.
+  - Both sources are in the reference list, and a source used by both passages is listed once.
+  - The verification report adds the second passage's role, reference, origin and quote check.
+  - Draft exports keep their DRAFT label.
+
+### Checks
+
+| Check | Result |
+| --- | --- |
+| `npm run lint`, `npm run typecheck`, `npm run build` | **Passed** |
+| `npm test` | **Passed**, 226 of 226 in 19 files. Twelve are new (`tests/unit/secondPassage.test.ts`): <br>• old approvals and a saved state without the field still hold; <br>• adding makes the approval stale, and approving again passes; <br>• each of these makes it stale: label switch, either excerpt edited, passage replaced, passage removed, stored text edited; <br>• a removed linked source blocks even after approving again; <br>• a wrong quote and an unchosen passage block; <br>• an inference drops the passage; <br>• brief, bibliography (listed once) and report contents; <br>• schema round trip. |
+| `npm run test:e2e` (local production build, Edge) | **Passed**, 23 of 23. New journey: <br>• add, which blocks; <br>• choose a passage and quote; both checks found; <br>• approve again; <br>• Challenges, which blocks; <br>• approve again; <br>• the downloaded reviewed brief and report contain both passages, roles and checks, with Karpicke & Roediger (2008) listed once; <br>• remove, which blocks; approve again. |
+| Local visual check, 1440 px and 390 px | **Passed** after one fix: check chips wrap inside the narrow desktop cards. Cards sit side by side at 1440 px and stack at 390 px, with no sideways scroll. |
+| Public site, browser journeys (`E2E_BASE_URL`) | **Passed**, 6 of 6: <br>• second passage; <br>• main journey; <br>• citation trap; <br>• Library APA 7 list and AI-use statement; <br>• laptop 1366×768; <br>• phone 390×844. |
+| Public site, phone 390×844, labelled sample demo | **Passed**: approve → add passage (blocked) → approve again → change label (blocked, "Changed since you approved") → approve again. The downloaded reviewed brief has the Challenges line, both provenance lines, the 2008 source once and the SAMPLE label. The report shows the role, the quote check and "Student approved". No horizontal overflow. |
+| Public URL serves this build | **Passed**: the new journey, which needs this release, passes against https://trace-hackathon.vercel.app. |
+
+Not run for this release: `npm run smoke:live`. It exercises the providers (Crossref, DataCite, OpenAlex, Gemini), which this release does not touch. It last passed 9 of 9 on 26 November against `6428a91`.
+
 ## AI-use counts, report readiness, favicon and polish · 26 November 2026, about 11:50–12:15 Dubai time
 
 **Release:** commit `6428a91` (feature commit `9f9491c` plus a one-line wording fix found on the live site), Vercel deployment `FXRWhgUVndm8ffzzvbL3FAeB4vwt`, https://trace-hackathon.vercel.app. **Rollback target:** `ExQLWp9XoWZpi8GmNz4QaDASAGmW` (`ae65b11`).

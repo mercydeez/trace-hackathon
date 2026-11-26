@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 25 November 2026, Dubai time
+Last updated: 26 November 2026, about 13:40 Dubai time (freeze point)
 
 ## Status
 
@@ -40,6 +40,7 @@ Last updated: 25 November 2026, Dubai time
 - 25 Nov 2026, ~23:30: **Phase 2 judging requirements** shipped (commit `9b97481`, deployment `4WectjuLoxHFoXPjF1Bt4YWg5m5G`): read-only checks with an explicit Add, Not yet verified kept out of trusted output, trust labels with a legend, a Library APA 7 list, and a copyable AI-use statement. 192/192 unit, 18/18 journeys, 8/8 live smoke on production, and the signed-out production walkthrough all passed. Repo Git author is now the owner's GitHub identity, so pushes deploy. The repo is still private, so organiser access is the owner's choice.
 - 26 Nov 2026, ~11:40: **final release** `ae65b11` (deployment `ExQLWp9XoWZpi8GmNz4QaDASAGmW`; rollback `7XwGQBch4yTtDofvqfEBjEfYUQp8`). Added Home navigation and `/home` with resume, a DataCite fallback, 7 audit fixes, a verification report and inspector polish. 207/207 unit, 22/22 journeys, 8/9 live smoke (OpenAlex rate-limited on Vercel), and the full production rehearsal passed.
 - 26 Nov 2026, ~12:15: **polish release** `6428a91` (deployment `FXRWhgUVndm8ffzzvbL3FAeB4vwt`; rollback `ExQLWp9XoWZpi8GmNz4QaDASAGmW`): AI-use statement separates drafted from included; one export-readiness state for the buttons and the report; favicon; tab title; motion. 214/214 unit, 22/22 journeys, 9/9 live smoke; live Gemini (3 drafted, 1 rejected, 2 included) consistent across statement, report and brief.
+- 26 Nov 2026, ~13:40: **final feature and FREEZE**. App commit `edc2895` (deployment `Cu7VqquvRtYuAgdEWNnPrWN1M1ny`; rollback `3FRKisLLjuBWwYkLWBd5YheF8zMK`, commit `fba2a71`). A student can attach a qualifying or challenging second passage to a claim. It is part of the approval fingerprint and the export gate, and it is carried into the brief, the bibliography and the report. 226/226 unit and 23/23 journeys passed locally; on the public site, 6/6 journeys and the phone scenario passed. Feature work and polish stop here; only a rollback for a release-blocking regression is allowed.
 
 Details: `docs/qa-report.md`.
 

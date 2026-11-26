@@ -408,4 +408,4 @@ The owner asked for the presenter guide PDF to be updated for the final release 
 - **Date:** 26 November 2026, about 13:05 Dubai time onwards
 - **Model:** Claude Opus 5.5 (Claude Code)
 
-The owner pasted the prompt saved unchanged in [claude-code-second-passage.md](claude-code-second-passage.md). Results, the release commit, the rollback target and the freeze point are in [the QA report](qa-report.md).
+The owner pasted the prompt saved unchanged in [claude-code-second-passage.md](claude-code-second-passage.md). Released as app commit `edc2895` (Vercel deployment `Cu7VqquvRtYuAgdEWNnPrWN1M1ny`, https://trace-hackathon.vercel.app). Rollback target: `3FRKisLLjuBWwYkLWBd5YheF8zMK` (`fba2a71`). Observed results: 226/226 unit, 23/23 browser journeys locally; on the public site 6/6 journeys and the phone scenario. The commit that records this is the freeze point. Details are in [the QA report](qa-report.md).

@@ -28,7 +28,7 @@ The log is chronological and includes the build prompt, the set-up answers, the 
 https://trace-hackathon.vercel.app
 ```
 
-Verified signed out on 26 Nov 2026 at about 12:15, release commit `6428a91` (Vercel deployment `FXRWhgUVndm8ffzzvbL3FAeB4vwt`). The landing page is also at https://trace-hackathon.vercel.app/home. Rollback: Vercel → Deployments → Instant Rollback to `ExQLWp9XoWZpi8GmNz4QaDASAGmW` (commit `ae65b11`).
+Final release, verified on the public site on 26 Nov 2026 at about 13:40: app commit `edc2895` (Vercel deployment `Cu7VqquvRtYuAgdEWNnPrWN1M1ny`). This is the freeze point; see the QA report. The landing page is also at https://trace-hackathon.vercel.app/home. Rollback: Vercel → Deployments → Instant Rollback to `3FRKisLLjuBWwYkLWBd5YheF8zMK` (commit `fba2a71`, app release `6428a91`).
 
 ### The five judging requirements: demo action and evidence
 
@@ -52,6 +52,7 @@ Totals for the final release (26 Nov, `ae65b11`): 207 of 207 unit tests, 22 of 2
 | DataCite fallback | Check DOI `10.5061/dryad.8515` (a Dryad dataset that is not in Crossref) | Labelled **Found in DataCite**; live smoke check passed. Crossref stays primary, and an outage is "Could not check". |
 | Verification report | Brief → **Verification report**, beside the export buttons | Built from the export gate and inspector checks. It says "Reviewed export: BLOCKED" or "ALLOWED", and labels sample and trap projects (unit and browser tests). |
 | Inspector clarity | Open claim 1 in the citation trap | "Blocks the reviewed export" box, then the cited quote beside the real sentence, with "month" highlighted |
+| Qualifying or challenging passage | In the demo, open a claim → **Add qualifying or challenging passage** → choose a passage, label it **Qualifies** or **Challenges**, quote it → **Approve again** | Both passages are shown side by side, each with its own checks. Any change, including only the label, makes the approval stale and blocks the reviewed export until it is approved again. The reviewed brief, reference list and verification report carry both passages. Passed 23 of 23 browser tests locally, and the same journey on the public site at desktop and phone sizes. |
 
 **If not deployed** (use this wording instead, as the guidelines allow):
 
