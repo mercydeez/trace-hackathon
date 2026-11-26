@@ -2,7 +2,39 @@
 
 Results of checks that were actually run. Each line is **passed**, **failed** or **not run**. Nothing is listed as passed without a run behind it.
 
-## Day-of requirements · 26 November 2026, about 13:40–14:15 Dubai time · FREEZE POINT
+## Day-of requirements · 26 November 2026, about 13:40–14:25 Dubai time · FREEZE POINT
+
+**Final release:** app commit `5a1e7ac`, Vercel deployment `EU3r6hVnhEhRYV6ezgwDu1yCzC4Q`, https://trace-hackathon.vercel.app. The release shipped in three commits: `ca0df83` (the six cases and the assistant), `e37a362` (gaps closed after an audit against the brief's constraints) and `5a1e7ac` (a subtitle fix found by an off-pack reference).
+
+### Audit against the brief, and the gaps closed (owner's follow-up prompt)
+
+| Requirement or constraint | Where it is met | Status |
+| --- | --- | --- |
+| Six required cases | Check a list and Research assistant (table below) | Met |
+| C1. Nothing verified by default; a status on every reference | Review rows, the Library trust labels, and the exports. The brief and the APA download now say that unmarked entries are Verified; flagged ones carry a WARNING or appear under Excluded or unresolved | Met (gap closed in `e37a362`) |
+| C2. The student decides | Accept/Reject fix, Add, Keep flagged, Merge, Keep as web source and Save note are all explicit; checking leaves the library count unchanged | Met |
+| C3. No guessing | Missing fields read "year missing" or "title unclear"; a failed lookup is Could not check; nothing comes from AI | Met |
+| C4. Warnings travel | Brief (WARNING beside the entry), verification report and APA download (Excluded or unresolved section), and the AI-use statement and brief disclosure (a WARNING sentence naming flagged references a claim uses) | Met (gap closed in `e37a362`) |
+| C5. Phase 1 design | FIND, CHECK, the student decides, DRAFT, EXPORT, as listed below | Met |
+| C6. No hard-coding; samples labelled | General parsing and rules. On the public site, an off-pack list (wrong year, invented title, compact duplicate, a web page, a real DOI with the wrong paper) and an off-pack request were checked | Met |
+| B2. Web page in APA 7 | Citation.js gives "World Health Organization. (n.d.). *Mental health*. Retrieved November 26, 2026, from https://www.who.int/health-topics/mental-health"; it can be kept as a web source, which stays Not yet verified | Met (closed in `e37a362`) |
+
+**Off-pack checks on the public site (`5a1e7ac`):**
+
+| Input | Result |
+| --- | --- |
+| Roediger & Karpicke with year 2005 and the real DOI | Needs fix; already in the library |
+| Invented paper with no DOI | Not found · no matching record in Crossref search |
+| Compact duplicate of row 1 | Likely match · Duplicate of row 1 |
+| Learning Scientists web page | Web source · Not checked |
+| Real Science DOI under another author and title | Mismatch |
+| "Find studies on retrieval practice and long-term retention" | 14 Crossref records contain every term |
+| An unclear request | Asks the student to choose an action |
+| Phone at 390 px | Review rows stack, with no horizontal scroll |
+
+Before the subtitle fix, the first item read Mismatch, because Crossref stores that paper's subtitle separately.
+
+### Original day-of release
 
 **Release:** app commit `ca0df83`, Vercel deployment `3rUEF2JmVvLfrBVPVhmNhZ6XGPtP`, https://trace-hackathon.vercel.app. **Rollback target:** `9uKEiTXwej1ooSyaseT8hrCcwfFb` (`218df18`, the previous production build: app `edc2895`). This reopened the earlier freeze for the organisers' day-of requirements; the documentation commit that records this section is the new freeze point.
 
@@ -36,7 +68,7 @@ Results of checks that were actually run. Each line is **passed**, **failed** or
 | E Hinton & Bengio (2017) | Real DOI, wrong paper | **Mismatch · the DOI points to another paper**: Crossref record (Silver et al., 2017) beside the paste; no swap action | **Pass** |
 | F Vaswani et al. (2017), no DOI | Bonus B1 | **Uncertain · no confirmed record**: the closest Crossref record is not substituted and the paper is not called fake | **Pass** |
 | G LECUN Y… 2015 (compact) | Duplicate of B | **Likely match · Duplicate of row B** → **Merge into row B**; library 7 → 10 after adding A, B and D, with G not saved | **Pass** |
-| H WHO web page | Bonus B2 | **Web source · Not checked**, no add. APA 7 formatting with "n.d." was **not done** | **Partial** |
+| H WHO web page | Bonus B2 | **Web source · Not checked**. APA 7 by Citation.js: "World Health Organization. (n.d.). *Mental health*. Retrieved November 26, 2026, from https://…". **Keep as web source** saves it as Not yet verified, so it is excluded from the APA list and listed as NOT YET VERIFIED in the report and the download (re-run on `5a1e7ac`) | **Pass** |
 | Request 1 (hackathon studies) | No source exists | **Not found**: Crossref searched, 20 records examined, none contains all terms; nothing invented | **Pass** |
 | Request 2 (LeCun quote) | Bonus B3 | **Could not check**: no stored text for LeCun et al. (2015) (Crossref has no abstract), so the full text was not available and the quote is not confirmed | **Pass** |
 | Request 3 (SYSTEM note) | Bonus B5 | Note previewed verbatim on LeCun et al. (2015) with a warning that it reads like an instruction; saved as text, and no status changed | **Pass** |
@@ -51,11 +83,15 @@ Results of checks that were actually run. Each line is **passed**, **failed** or
 | `npm run test:e2e` (local production build) | **Passed**, 23 of 23 (the list and DOI journeys were updated for the new statuses, the duplicate flag and Merge) |
 | Public site, existing journeys | **Passed**, 4 of 4: main journey, citation trap, second passage, Library APA list |
 
-**Not verified or not done:**
-- APA 7 formatting of the WHO page.
-- Warnings inside the AI-use statement. It lists no references, so there is nothing to mark.
-- Phone layout of the new review table (desktop was the target).
-- Unseen references were tested by unit tests, not on the live site.
+**Final checks (`5a1e7ac`):**
+- lint, typecheck and build passed;
+- 245 of 245 unit tests passed, including 19 in `dayOf.test.ts`;
+- 23 of 23 browser journeys passed locally;
+- on the public site, all 12 pack items, the off-pack list and request, and the phone check passed.
+
+**Not verified:**
+- Phone use of the Research assistant tab. The review rows were checked at 390 px.
+- Browsers other than Edge.
 
 ## Final feature: qualifying or challenging passage · 26 November 2026, about 13:05–13:40 Dubai time
 

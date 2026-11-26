@@ -28,7 +28,7 @@ The log is chronological and includes the build prompt, the set-up answers, the 
 https://trace-hackathon.vercel.app
 ```
 
-Day-of release, verified on the public site on 26 Nov 2026 at about 14:15: app commit `ca0df83` (Vercel deployment `3rUEF2JmVvLfrBVPVhmNhZ6XGPtP`). This is the freeze point; see the QA report. The landing page is also at https://trace-hackathon.vercel.app/home. Rollback: Vercel → Deployments → Instant Rollback to `9uKEiTXwej1ooSyaseT8hrCcwfFb` (commit `218df18`, app `edc2895`).
+Final release, verified on the public site on 26 Nov 2026 at about 14:25: app commit `5a1e7ac` (Vercel deployment `EU3r6hVnhEhRYV6ezgwDu1yCzC4Q`). This is the freeze point; see the QA report. The landing page is also at https://trace-hackathon.vercel.app/home. Rollback: Vercel → Deployments → Instant Rollback to `9uKEiTXwej1ooSyaseT8hrCcwfFb` (commit `218df18`, app `edc2895`).
 
 ### The five judging requirements: demo action and evidence
 
@@ -104,7 +104,8 @@ Bonus:
 - Request 3: the note is stored verbatim as text, flagged, and changes no status.
 - A rate limit gives "Could not check · Retry".
 - DOI-less F gives "Uncertain"; it is not called fake.
-- H gives "Web source · Not checked". It is not APA-formatted.
+- H gives "Web source · Not checked", with its APA 7 form from Citation.js ("World Health Organization. (n.d.). *Mental health*. Retrieved …").
+- Warnings travel: flagged references are marked in the brief, the verification report, the APA download and the AI-use statement.
 
 ## Known limits (say these before you are asked)
 

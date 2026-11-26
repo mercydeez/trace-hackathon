@@ -1,6 +1,6 @@
 # Progress
 
-Last updated: 26 November 2026, about 14:15 Dubai time (day-of freeze point)
+Last updated: 26 November 2026, about 14:25 Dubai time (final freeze point)
 
 ## Status
 
@@ -41,7 +41,8 @@ Last updated: 26 November 2026, about 14:15 Dubai time (day-of freeze point)
 - 26 Nov 2026, ~11:40: **final release** `ae65b11` (deployment `ExQLWp9XoWZpi8GmNz4QaDASAGmW`; rollback `7XwGQBch4yTtDofvqfEBjEfYUQp8`). Added Home navigation and `/home` with resume, a DataCite fallback, 7 audit fixes, a verification report and inspector polish. 207/207 unit, 22/22 journeys, 8/9 live smoke (OpenAlex rate-limited on Vercel), and the full production rehearsal passed.
 - 26 Nov 2026, ~12:15: **polish release** `6428a91` (deployment `FXRWhgUVndm8ffzzvbL3FAeB4vwt`; rollback `ExQLWp9XoWZpi8GmNz4QaDASAGmW`): AI-use statement separates drafted from included; one export-readiness state for the buttons and the report; favicon; tab title; motion. 214/214 unit, 22/22 journeys, 9/9 live smoke; live Gemini (3 drafted, 1 rejected, 2 included) consistent across statement, report and brief.
 - 26 Nov 2026, ~13:40: **final feature and FREEZE**. App commit `edc2895` (deployment `Cu7VqquvRtYuAgdEWNnPrWN1M1ny`; rollback `3FRKisLLjuBWwYkLWBd5YheF8zMK`, commit `fba2a71`). A student can attach a qualifying or challenging second passage to a claim. It is part of the approval fingerprint and the export gate, and it is carried into the brief, the bibliography and the report. 226/226 unit and 23/23 journeys passed locally; on the public site, 6/6 journeys and the phone scenario passed. Feature work and polish stop here; only a rollback for a release-blocking regression is allowed.
-- 26 Nov 2026, ~14:15: **day-of requirements and FREEZE**. App commit `ca0df83` (deployment `3rUEF2JmVvLfrBVPVhmNhZ6XGPtP`; rollback `9uKEiTXwej1ooSyaseT8hrCcwfFb`, commit `218df18`). Check a list now gives one row per pasted reference, with these statuses: Verified, Needs fix (accept/reject), Mismatch, Retracted, Not found (naming the registries), Could not check, Uncertain, Web source and Duplicate (merge). A Research assistant offers Find studies, Check a quote and Save a note. The report lists excluded references. On the public site, 11 of 12 test-pack items pass; H is partial because the WHO page is not APA-formatted. 242/242 unit and 23/23 journeys passed.
+- 26 Nov 2026, ~14:15: **day-of requirements and FREEZE**. App commit `ca0df83` (deployment `3rUEF2JmVvLfrBVPVhmNhZ6XGPtP`; rollback `9uKEiTXwej1ooSyaseT8hrCcwfFb`, commit `218df18`). Check a list now gives one row per pasted reference, with these statuses: Verified, Needs fix (accept/reject), Mismatch, Retracted, Not found (naming the registries), Could not check, Uncertain, Web source and Duplicate (merge). A Research assistant offers Find studies, Check a quote and Save a note. The report lists excluded references. On the public site, 11 of 12 test-pack items passed; H was partial because the WHO page was not APA-formatted.
+- 26 Nov 2026, ~14:25: **gaps closed, FINAL FREEZE**. App commit `5a1e7ac` (deployment `EU3r6hVnhEhRYV6ezgwDu1yCzC4Q`; rollback `9uKEiTXwej1ooSyaseT8hrCcwfFb`). Warnings now appear in every export and in the AI-use statement, and a web source gets APA 7 with "n.d.". A subtitle fix came from an off-pack check. 245/245 unit and 23/23 journeys passed; on the public site, 12 of 12 pack items, the off-pack list and the phone check passed.
 
 Details: `docs/qa-report.md`.
 

@@ -416,3 +416,17 @@ The owner pasted the prompt saved unchanged in [claude-code-second-passage.md](c
 - **Model:** Claude Opus 5.5 (Claude Code)
 
 The organisers released the day-of requirements at the event: a pasted list of eight references (A–H) and three typed requests, with six required cases (Not found, Mismatch, Needs fix, Retracted, Duplicate, No source exists). The owner attached the brief and pasted the prompt saved unchanged in [claude-code-day-of.md](claude-code-day-of.md). Claude Code planned the change in plan mode; the owner approved the plan. Released as app commit `ca0df83` (Vercel deployment `3rUEF2JmVvLfrBVPVhmNhZ6XGPtP`, https://trace-hackathon.vercel.app). Rollback target: `9uKEiTXwej1ooSyaseT8hrCcwfFb` (`218df18`). Observed results: 242/242 unit and 23/23 browser journeys locally; on the public site, 11 of 12 pack items pass and H is partial. The pass/fail table is in [the QA report](qa-report.md). The commit that records this is the new freeze point.
+
+## 24 — Audit the day-of requirements and finish the gaps
+
+- **Date:** 26 November 2026, about 14:10–14:25 Dubai time
+- **Model:** Claude Opus 5.5 (Claude Code)
+
+The owner's prompt, verbatim: "Check whether all the requirement and the contrains are satisfied after that give me the above thing which awas left incomplete"
+
+Claude Code checked every required case and constraint against the code and the live site, then closed the gaps:
+- warnings in the AI-use statement, the brief and the APA download;
+- APA 7 for web sources;
+- an off-pack check on the live site and a phone check.
+
+The off-pack check exposed a subtitle mismatch, which was fixed. Final release: app commit `5a1e7ac` (deployment `EU3r6hVnhEhRYV6ezgwDu1yCzC4Q`). Rollback target: `9uKEiTXwej1ooSyaseT8hrCcwfFb` (`218df18`). Observed results: 245/245 unit and 23/23 browser journeys locally; on the public site, 12 of 12 pack items. Details are in [the QA report](qa-report.md). The commit that records this is the freeze point.
