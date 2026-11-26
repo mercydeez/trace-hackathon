@@ -84,7 +84,8 @@ test("Library APA 7 list and the copyable AI-use statement", async ({ page, cont
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Download APA 7 reference list" }).click()]);
   expect(download.suggestedFilename()).toMatch(/^references-apa7-\d{4}-\d{2}-\d{2}\.txt$/);
   const file = (await readFile((await download.path())!, "utf8")).replace(/\r\n/g, "\n");
-  expect(file.trim()).toBe(apa.trim());
+  expect(file.startsWith(apa.trim())).toBe(true);
+  expect(file).toContain("Status: every reference in the list above is Verified");
   await shot(page, "15-apa-list");
 });
 

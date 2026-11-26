@@ -2,7 +2,7 @@
 
 import { BookmarkPlus, Check, ExternalLink, FileText, FileX2, ListChecks, Search, WifiOff } from "lucide-react";
 import { useRef, useState } from "react";
-import { callApi, type SearchResult, type WorkRecord } from "@/lib/api";
+import { callApi, type FormattedReference, type SearchResult, type WorkRecord } from "@/lib/api";
 import { isPlanApproved } from "@/lib/approvals";
 import { parseAuthors, SOURCE_TYPES } from "@/lib/csl";
 import { doiUrl, normaliseDoi } from "@/lib/doi";
@@ -13,10 +13,10 @@ import { MAX_REFERENCES, parseReference, splitReferences, type ParsedReference }
 import { addSource, findDuplicate, manualSource, sourceFromWork } from "@/lib/mutations";
 import { planQuery } from "@/lib/plan";
 import { formatAuthorsShort } from "@/lib/text";
-import type { Outcome } from "@/lib/types";
+import type { Biblio, Outcome } from "@/lib/types";
 import { FOUND, foundBadge, IDENTITY, RETRACTED, StatusChip, TrustLegend } from "./status";
 import { useProject, useStore } from "./store";
-import { Button, Chip, cx, Empty, Field, Notice, SectionTitle, Select, TextArea, TextInput } from "./ui";
+import { Button, Chip, cx, Empty, Field, Notice, ReferenceText, SectionTitle, Select, TextArea, TextInput } from "./ui";
 
 type Failure = Extract<Outcome<never>, { ok: false }>;
 
@@ -475,11 +475,22 @@ interface ListRow {
   work: WorkRecord | null;
   fields: FieldCheck[];
   note: string | null;
+  /** Web sources only: details read from the paste, and their APA 7 form from Citation.js (null if formatting failed). */
+  web?: { cited: Biblio; apa: FormattedReference | null };
+}
+
+/** A pasted web page: "Title. Organisation. URL". The organisation is the group author; no date means n.d. */
+function webCited(parsed: ParsedReference): Biblio {
+  const url = parsed.raw.match(/\bhttps?:\/\/\S+|\bwww\.\S+/i)?.[0]?.replace(/[.,;]$/, "");
+  const parts = parsed.query.replace(/^\s*(?:\[\d+\]|\d+[.)]|[A-Z][.)])\s+/, "").split(/\.\s+|\.$/).map((s) => s.trim()).filter(Boolean);
+  return { title: parts[0] ?? "Untitled web page", authors: parts[1] ? [{ family: parts[1] }] : [], year: null, type: "webpage", ...(url ? { url } : {}) };
 }
 
 async function checkOne(parsed: ParsedReference): Promise<ListRow> {
   if (parsed.web) {
-    return { parsed, verdict: "web", work: null, fields: [], note: "A web page with no DOI, author or date. It was not checked in a scholarly database." };
+    const cited = webCited(parsed);
+    const f = await callApi<FormattedReference[]>("/api/cite", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "each", style: "apa", items: [{ id: "web", doi: null, cited, accessed: new Date().toISOString().slice(0, 10) }] }) });
+    return { parsed, verdict: "web", work: null, fields: [], note: "A web page with no DOI and no date. It was not checked in a scholarly database.", web: { cited, apa: f.ok ? (f.data[0] ?? null) : null } };
   }
   if (parsed.doi) {
     const r = await callApi<WorkRecord>(`/api/doi?doi=${encodeURIComponent(parsed.doi)}`);
@@ -635,7 +646,7 @@ function CheckList() {
             const retracted = Boolean(record?.retraction) && status.tone === "bad" && status.label.startsWith("Retracted");
             const duplicateOf = earlier >= 0 ? `row ${rowName(rows[earlier]!, earlier)}` : null;
             const libDup = earlier < 0 && inLibrary && !added.includes(n) ? inLibrary : null;
-            const isSaved = added.includes(n) && inLibrary !== null;
+            const isSaved = added.includes(n) && (inLibrary !== null || row.verdict === "web");
             return (
               <li key={n} className="p-4" aria-label={`Reference ${name}`}>
                 <div className="flex flex-wrap items-center gap-2">
@@ -674,6 +685,12 @@ function CheckList() {
                       <p className="mt-1 text-ink-soft">None.</p>
                     )}
                     {row.note && <p className="mt-1 text-ink-soft">{row.note}</p>}
+                    {row.web && (
+                      <div className="mt-2">
+                        <p className="text-xs font-semibold tracking-wide text-ink-faint uppercase">APA 7 (web source, not checked in a scholarly database)</p>
+                        <p className="mt-1 break-words text-ink">{row.web.apa ? <ReferenceText parts={row.web.apa.parts} /> : "Could not format this reference."}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -744,6 +761,18 @@ function CheckList() {
                   ) : row.work && (row.verdict === "match" || row.verdict === "doi_only" || row.verdict === "possible") ? (
                     <Button size="sm" icon={BookmarkPlus} onClick={() => add(row, "registry", n)}>
                       {retracted ? "Add with retraction warning" : row.verdict === "possible" ? "This is the paper: add Crossref’s record" : status.tone === "warn" ? "Use Crossref’s details and add" : "Add to library"}
+                    </Button>
+                  ) : row.verdict === "web" && row.web ? (
+                    <Button
+                      size="sm"
+                      icon={BookmarkPlus}
+                      onClick={() => {
+                        const source = manualSource(row.web!.cited, null, new Date().toISOString());
+                        setAdded((a) => [...a, n]);
+                        update((p) => addSource(p, source, null), `Kept “${source.cited.title}” as a web source. It stays Not yet verified.`);
+                      }}
+                    >
+                      Keep as web source (Not yet verified)
                     </Button>
                   ) : row.verdict === "could_not_check" ? (
                     <Button size="sm" onClick={() => void retry(n)}>

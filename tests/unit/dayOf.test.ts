@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { aiUseStatement, buildDisclosure } from "@/lib/disclosure";
+import { buildBrief } from "@/lib/exportMarkdown";
+import { evaluateExport } from "@/lib/exportPolicy";
+import { buildVerificationReport } from "@/lib/verificationReport";
 import { checkQuote, judgeStudies, looksLikeInstruction, parseNoteRequest, routeRequest } from "@/lib/assistant";
 import { bestCandidate, dupKey, judgeReference, libraryDuplicate, sameWork } from "@/lib/refCheck";
 import { parseReference, splitReferences } from "@/lib/refList";
@@ -76,6 +80,25 @@ describe("duplicates", () => {
     const lib = reviewedDemo().sources;
     const s = lib[0]!;
     expect(libraryDuplicate(dupKey(s.doi, { title: "anything", authors: [], year: null }), lib)?.source.id).toBe(s.id);
+  });
+});
+
+describe("warnings travel", () => {
+  it("a retracted source used by a claim is marked in the AI-use statement, the brief and the report", () => {
+    let p = reviewedDemo();
+    const used = p.evidence.find((e) => e.id === p.claims[0]!.evidenceId)!.sourceId;
+    p = { ...p, rules: { ...p.rules, blockRetracted: false }, sources: p.sources.map((s) => (s.id === used && s.registry ? { ...s, registry: { ...s.registry, record: { ...s.registry.record, retraction: { kind: "retraction" as const, noticeDoi: null, date: "2020-01-01", source: null } } } } : s)) };
+    const ev = evaluateExport(p);
+    expect(aiUseStatement(p, ev)).toMatch(/WARNING: one reference used here is flagged: .+\(RETRACTED\)/);
+    expect(buildDisclosure(p, ev).join(" ")).toContain("(RETRACTED)");
+    const brief = buildBrief(p, null, "draft", "2026-11-26T10:00:00.000Z");
+    expect(brief.ok && brief.markdown).toContain("**WARNING: RETRACTED.**");
+    expect(brief.ok && brief.markdown).toContain("Status: entries without a WARNING are Verified");
+    expect(buildVerificationReport(p, "2026-11-26T10:00:00.000Z").text).toMatch(/## Excluded or unresolved references \(1\)\n\n- \*\*RETRACTED:\*\*/);
+  });
+  it("a clean project has no warning sentence", () => {
+    const p = reviewedDemo();
+    expect(aiUseStatement(p, evaluateExport(p))).not.toContain("WARNING");
   });
 });
 

@@ -166,6 +166,7 @@ export function buildBrief(project: Project, refs: FormattedReference[] | null, 
   for (const s of unformatted) {
     out.push(`- UNFORMATTED: ${formatAuthorsShort(s.cited.authors, s.cited.year)}. ${s.cited.title}. ${sourceLink(s.doi, s.cited) ?? ""}${warning.has(s.id) ? ` **WARNING: ${warning.get(s.id)}.**` : ""}`);
   }
+  if (cited.length) out.push("", `Status: entries without a WARNING are Verified (title, first author and year match the registry record, no retraction notice). ${warning.size ? `${warning.size} ${warning.size === 1 ? "entry is" : "entries are"} marked above.` : "None is flagged."}`);
   if (ordered.length) {
     out.push(
       "",

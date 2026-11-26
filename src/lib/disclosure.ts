@@ -4,6 +4,8 @@
  * It is never a fixed paragraph.
  */
 import type { ExportEvaluation } from "./exportPolicy";
+import { referenceListEligibility } from "./referenceList";
+import { formatAuthorsShort } from "./text";
 import type { Claim, Project } from "./types";
 
 function plural(n: number, one: string, many = `${one}s`): string {
@@ -128,6 +130,8 @@ export function aiUseStatement(project: Project, evaluation: ExportEvaluation): 
   if (claims.length && !live.length && !sample.length && !d.used) out.push("No generative AI drafted any claim.");
   if (project.writing.trim()) out.push("I wrote the main text myself; TRACE did not generate it.");
   out.push(`References were formatted from registry records by Citation.js, not written by AI.`);
+  const flagged = flaggedReferences(project);
+  if (flagged) out.push(flagged);
 
   const approved = included.filter((i) => i.decision === "approved").length;
   if (claims.length) {
@@ -138,6 +142,19 @@ export function aiUseStatement(project: Project, evaluation: ExportEvaluation): 
     );
   }
   return out.join(" ");
+}
+
+/** Warnings travel: references used by included claims that are retracted, disagree with the registry, or are unverified. */
+export function flaggedReferences(project: Project): string | null {
+  const used = new Set(
+    project.claims
+      .filter((c) => c.decision !== "rejected" && c.kind === "evidence")
+      .flatMap((c) => [c.evidenceId, c.second?.evidenceId])
+      .flatMap((id) => project.evidence.find((e) => e.id === id)?.sourceId ?? []),
+  );
+  const { excluded } = referenceListEligibility(project.sources.filter((s) => used.has(s.id)));
+  if (excluded.length === 0) return null;
+  return `WARNING: ${excluded.length === 1 ? "one reference used here is" : `${word(excluded.length)} references used here are`} flagged: ${excluded.map((e) => `${formatAuthorsShort(e.source.cited.authors, e.source.cited.year)} (${e.reason.toUpperCase()})`).join("; ")}.`;
 }
 
 export function buildDisclosure(project: Project, evaluation: ExportEvaluation, { reviewed = evaluation.eligible, referencesFormatted = true } = {}): string[] {
@@ -189,6 +206,8 @@ export function buildDisclosure(project: Project, evaluation: ExportEvaluation, 
         ? `Citation.js formatted the references in ${project.citationStyle === "harvard1" ? "Harvard" : "APA 7th edition"} style.`
         : "This draft contains some unformatted references."),
   );
+  const flagged = flaggedReferences(project);
+  if (flagged) lines.push(flagged);
   lines.push(
     "TRACE checked three things automatically: that each quoted excerpt appears, by text matching, in the stored source passage; that the numbers " +
     "and negations stated in each claim also appear in its excerpt; and that cited details agree with the registry record (Crossref, or DataCite when Crossref has none) for sources with a DOI. Sources without a DOI may be entered manually. These checks do not establish that a source is correct, that a claim follows from " +

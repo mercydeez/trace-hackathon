@@ -302,7 +302,9 @@ function ReferenceListPanel() {
   const project = useProject();
   const [attempt, setAttempt] = useState(0);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
-  const { eligible, summary } = referenceListEligibility(project.sources);
+  const { eligible, excluded, summary } = referenceListEligibility(project.sources);
+  // Warnings travel: the downloaded file names every left-out reference with its reason, below the clean list.
+  const excludedLines = excluded.map((e) => `- [${e.reason.toUpperCase()}] ${formatAuthorsShort(e.source.cited.authors, e.source.cited.year)}. ${e.source.cited.title}.${e.source.doi ? ` https://doi.org/${e.source.doi}` : ""}`);
   // Whole-list mode, APA 7 always: a/b letters and alphabetical order come from Citation.js, not from this code.
   const refs = useReferences(eligible, "list", "apa", attempt);
   const ready = eligible.length > 0 && refs.state === "ok" && refs.ordered.length === eligible.length;
@@ -356,12 +358,25 @@ function ReferenceListPanel() {
             >
               {copyState === "copied" ? "Copied" : "Copy APA 7 reference list"}
             </Button>
-            <Button icon={Download} onClick={() => downloadText(`references-apa7-${new Date().toISOString().slice(0, 10)}.txt`, `${text}\n`, "text/plain")}>
+            <Button icon={Download} onClick={() => downloadText(`references-apa7-${new Date().toISOString().slice(0, 10)}.txt`, `${text}\n\nStatus: every reference in the list above is Verified (title, first author and year match the registry record, no retraction notice).\n${excludedLines.length ? `\nExcluded or unresolved references (not part of the APA 7 list above):\n${excludedLines.join("\n")}\n` : ""}`, "text/plain")}>
               Download APA 7 reference list
             </Button>
           </div>
           {copyState === "failed" && <CopyFallback text={text} label="APA 7 reference list to copy" />}
         </>
+      )}
+      {excluded.length > 0 && (
+        <div className="mt-5 rounded-lg border border-line p-4 text-sm" aria-label="Excluded or unresolved references">
+          <p className="font-semibold text-ink">Excluded or unresolved references ({excluded.length})</p>
+          <ul className="mt-2 space-y-1">
+            {excluded.map((e) => (
+              <li key={e.source.id}>
+                <Chip tone={e.reason === "retracted" || e.reason === "details disagree with Crossref" ? "bad" : "warn"}>{e.reason[0]!.toUpperCase() + e.reason.slice(1)}</Chip> {formatAuthorsShort(e.source.cited.authors, e.source.cited.year)}, “{e.source.cited.title}”
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-ink-soft">Kept out of the list above. The downloaded file names them with these warnings.</p>
+        </div>
       )}
     </section>
   );
